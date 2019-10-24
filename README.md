@@ -1,15 +1,5 @@
-# cs3110-midterm
+# cs3110-dbms
 
-## project ideas
-- DBMS
-  - https://github.com/mfp/ocaml-sqlexpr
-  - input folder & output folder
-  - user specifies input folder with queries 
-  - primary folder: schema of db
-  - secondary folder (folder within db folder for data): store text files as tuples 
-    - keep it to one format, don't store strings (variable length)
-  - output folder: writing out processed data
-  - possible queries: create table, delete table, select, insert, delete, where, like,...
-- candy crush
-- chess AI
-- graphing calculator
+Midterm project for CS 3110 Fall 2019.
+
+A database management system that reads SQL queries and performs basic operations, then writes the output to the user. 

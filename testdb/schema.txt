@@ -1,0 +1,3 @@
+cornell
+((students, ()), (name, string), (netid, string), (gradyear, int), (major, string), (home, string))
+((buildings, ()), (name, string), (location, string), (goodforstudying, bool))
