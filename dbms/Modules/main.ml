@@ -1,5 +1,5 @@
 open Datardwt
-open Commands
+open Queries
 open Computation
 
 let rec process_queries =
