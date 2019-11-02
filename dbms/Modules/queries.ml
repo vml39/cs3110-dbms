@@ -1,11 +1,11 @@
 (* type entry = 
-  | String of string 
-  | Int of int 
-  | Bool of bool
+   | String of string 
+   | Int of int 
+   | Bool of bool
 
-type table = 
-  | Nil 
-  | Cons of entry * entry list *)
+   type table = 
+   | Nil 
+   | Cons of entry * entry list *)
 
 type object_phrase = string list
 
@@ -15,7 +15,7 @@ type command =
   (* SELECT * FROM table *)
   | Insert of object_phrase
   (* INSERT INTO table_name (column1, column2, column3, ...)
-VALUES (value1, value2, value3, ...); *)
+     VALUES (value1, value2, value3, ...); *)
   | Delete of object_phrase
   | Where of object_phrase
   | Like of object_phrase
@@ -34,26 +34,17 @@ let rec join_string_list acc = function
   | [] -> acc
   | h::t -> join_string_list (acc^" "^h) t
 
-(** [trim_list acc sl] is [sl] with all whitespace and empty strings 
-    removed and returned in [acc]. *)
-let rec trim_list acc = function
-  | [] -> acc
-  | h::t ->
-    if String.trim h = "" then trim_list acc t
-    else trim_list (h::acc) t
-
 let parse str =
-  let trimmed_str = String.trim str |> String.split_on_char ' ' in
-  match trimmed_str with
-    | [] -> raise Empty
-    | [""] -> raise Empty
-    | h::t -> 
-      if h = "quit" && t = [] then Quit 
-      else if h = "go" && t != [] then Go (List.rev (trim_list [] t))
-      else if h = "score" && t = [] then Score
-      else if h = "take" && t != []
-        then Take (String.trim (join_string_list "" t))
-      else if h = "drop" && t != []
-        then Drop (String.trim (join_string_list "" t))
-      else if h = "inventory" && t = [] then Inventory
-      else raise Malformed
+  match (str |> String.split_on_char ' ' |> List.filter ( fun s -> s <> "")) with
+  | [] -> raise Empty
+  | h::t when h = "SCAN" -> if t = [] then raise Malformed else Scan t
+  | h::t when h = "SELECT" -> if t = [] then raise Malformed else Select t
+  | h::t when h = "INSERT" -> if t = [] then raise Malformed else Insert t
+  | h::t when h = "DELETE" -> if t = [] then raise Malformed else Delete t
+  | h::t when h = "WHERE" -> if t <> [] then raise Malformed else Where t
+  | h::t when h = "LIKE" -> if t <> [] then raise Malformed else Like t
+  | h::t when h = "ORDER" -> if t <> [] then raise Malformed else Order t
+  | h::t when h = "SORT" -> if t <> [] then raise Malformed else Sort t
+  | h::t when h = "JOIN" -> if t <> [] then raise Malformed else Join t
+  | h::t when h = "quit" -> if t <> [] then raise Malformed else Quit
+  | _ -> raise Malformed
