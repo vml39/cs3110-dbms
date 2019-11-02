@@ -1,4 +1,4 @@
-MODULES=adventure command state main author
+MODULES=computation commands datardwt main authors
 OBJECTS=$(MODULES:=.cmo)
 MLS=$(MODULES:=.ml)
 MLIS=$(MODULES:=.mli)
@@ -26,7 +26,7 @@ finalcheck: check
 	bash finalcheck.sh
 
 zip:
-	zip adventure.zip *.ml* *.json _tags Makefile
+	zip dbms.zip *.ml* _tags Makefile
 	
 docs: docs-public docs-private
 	
