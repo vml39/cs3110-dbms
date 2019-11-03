@@ -1,4 +1,5 @@
 open Queries
+open Datardwt
 
 (* param is a string list *)
 let where param = 
@@ -7,12 +8,12 @@ let where param =
 let like param = 
   failwith "unimplemented"
 
-let order param = 
+(** [order table field] is [table] with rows sorted by the [field]. *)
+let rec order table field = 
   failwith "unimplemented"
 
-let sort param = 
-  failwith "unimplemented"
-
+(** [select_fields acc qry] is the list of field names [acc] directly 
+    following the "SELECT" keyword in a [qry]. *)
 let rec select_fields acc = function 
   | [] -> raise Malformed
   | h::t when h = "FROM" -> List.rev acc
@@ -23,8 +24,32 @@ let rec select_table = function
   | h::t when h = "FROM" -> List.hd t
   | h::t -> select_table t
 
-(* gets the output from the datardwt function *)
+(** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
+    command and Some of [field name] indicating the field the table should be
+    sorted by otherwise. *)
+let rec select_order = function 
+  | [] -> None
+  | h::h'::t when h = "ORDER" && h' = "BY" -> Some (List.hd t)
+  | h::t -> select_order t
+
+let rec filter_fields schema acc = function 
+  | [] -> List.rev acc
+  | h::t -> filter_fields schema acc t
+  (* if this field correponds with schema field, then add to acc *)
+
+(* only get the specific schema requirements *)
+let rec filter_table schema acc = function 
+  (* | [] -> List.rev acc 
+  | h::t -> filter_table schema (filter_fields schema [] h)::acc t *)
+  failwith "unimplemented"
+
 let select qry =
+  (* let table = 
+    table_from_txt (select_table qry) |> filter_table schema_from_txt [] in
+  let order_by = select_order qry in 
+  match order_by with 
+  | None -> table
+  | Some field -> order table order_by *)
   failwith "unimplemented"
 
 let insert qry = 
