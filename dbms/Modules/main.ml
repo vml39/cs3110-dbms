@@ -15,7 +15,10 @@ let rec process_queries =
     process_queries
   | msg -> begin
       match msg with
-      | Quit -> ()
+      | Quit -> print_endline "Goodbye for now.\n";
+        exit 0
+      | Scan obj -> ()
+      | Select obj -> ()
     end
 
 
