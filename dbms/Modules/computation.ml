@@ -23,12 +23,17 @@ let rec order table field =
     following the "SELECT" keyword in a [qry]. *)
 let rec select_fields acc = function 
   | [] -> raise Malformed
-  | h::t when h = "FROM" -> List.rev acc
+  | h::t when h = "FROM" -> 
+    if acc = [] then raise Malformed 
+    else List.rev acc
   | h::t -> h::acc
 
 let rec select_table = function
   | [] -> raise Malformed
-  | h::t when h = "FROM" -> List.hd t
+  | h::t when h = "FROM" -> 
+    try List.hd t with 
+      | Failure "hd" -> raise Malformed
+    List.hd t
   | h::t -> select_table t
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
@@ -49,7 +54,8 @@ let rec filter_table schema acc =
   (* function *)
   (* | [] -> List.rev acc 
      | h::t -> filter_table schema (filter_fields schema [] h)::acc t *)
-  |_ -> failwith "unimplemented"
+  (* |_ ->  *)
+  failwith "unimplemented"
 
 (* get table
    filter table by field name --> consider where clause
