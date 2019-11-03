@@ -37,6 +37,6 @@ let parse str =
   | h::t when h = "SELECT" -> if t = [] then raise Malformed else Select t
   | h::t when h = "INSERT" -> if t = [] then raise Malformed else Insert t
   | h::t when h = "DELETE" -> if t = [] then raise Malformed else Delete t
-  | h::t when h = "JOIN" -> if t <> [] then raise Malformed else Join t
+  | h::t when h = "JOIN" -> if t = [] then raise Malformed else Join t
   | h::t when h = "QUIT" -> if t <> [] then raise Malformed else Quit
   | _ -> raise Malformed
