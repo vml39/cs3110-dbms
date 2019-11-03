@@ -1,12 +1,3 @@
-(* type entry = 
-   | String of string 
-   | Int of int 
-   | Bool of bool
-
-   type table = 
-   | Nil 
-   | Cons of entry * entry list *)
-
 type object_phrase = string list
 
 type query = 
@@ -29,20 +20,11 @@ let rec join_string_list acc = function
   | [] -> acc
   | h::t -> join_string_list (acc^" "^h) t
 
-(* [get_string_list str] is the string list of words in [str] deliminated by
-   spaces and commas.  Example: "SELECT cats,dogs FROM tableA, tableB" is 
-   ["Select","cats","dogs","FROM","tableA","tableB"] *)
-let get_string_list str =
-  let remove_space str = 
-    (str |> String.split_on_char ' ' |> List.filter ( fun s -> s <> "")) in
-  let rec remove_comma = function
-    | [] -> []
-    | h::t when String.contains h ',' -> (String.split_on_char 'h' h)@(remove_comma t)
-    | h::t -> h::(remove_comma t) in
-  str |> remove_space |> remove_comma
-
 let parse str =
-  match get_string_list str with
+  match str 
+        |> Str.global_replace (Str.regexp "[\( \) ,]") " " 
+        |> String.split_on_char ' ' 
+        |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty
   | h::t when h = "SELECT" -> if t = [] then raise Malformed else Select t
   | h::t when h = "INSERT" -> if t = [] then raise Malformed else Insert t
