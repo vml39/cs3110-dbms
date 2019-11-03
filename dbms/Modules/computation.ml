@@ -31,9 +31,8 @@ let rec select_fields acc = function
 let rec select_table = function
   | [] -> raise Malformed
   | h::t when h = "FROM" -> 
-    try List.hd t with 
-      | Failure "hd" -> raise Malformed
-    List.hd t
+    if t = [] then raise Malformed
+    else List.hd t
   | h::t -> select_table t
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
