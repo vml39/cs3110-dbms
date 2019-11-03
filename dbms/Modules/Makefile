@@ -1,4 +1,4 @@
-MODULES=computation queries datardwt main authors
+MODULES=computation query datardwt main authors
 OBJECTS=$(MODULES:=.cmo)
 MLS=$(MODULES:=.ml)
 MLIS=$(MODULES:=.mli)

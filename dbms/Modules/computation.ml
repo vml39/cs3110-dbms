@@ -1,4 +1,4 @@
-open Queries
+open Query
 
 (* param is a string list *)
 let where param = 
