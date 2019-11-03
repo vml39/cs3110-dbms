@@ -10,7 +10,6 @@
 type object_phrase = string list
 
 type query = 
-  | Scan of object_phrase
   | Select of object_phrase
   (* SELECT * FROM table *)
   | Insert of object_phrase
@@ -33,7 +32,6 @@ let rec join_string_list acc = function
 let parse str =
   match (str |> String.split_on_char ' ' |> List.filter ( fun s -> s <> "")) with
   | [] -> raise Empty
-  | h::t when h = "SCAN" -> if t = [] then raise Malformed else Scan t
   | h::t when h = "SELECT" -> if t = [] then raise Malformed else Select t
   | h::t when h = "INSERT" -> if t = [] then raise Malformed else Insert t
   | h::t when h = "DELETE" -> if t = [] then raise Malformed else Delete t

@@ -17,7 +17,6 @@ type object_phrase = string list
 (** The type [query] represents a use query that is decomposed
     into a verb and possibly an object phrase. *)
 type query = 
-  | Scan of object_phrase
   | Select of object_phrase
   | Insert of object_phrase
   | Delete of object_phrase
