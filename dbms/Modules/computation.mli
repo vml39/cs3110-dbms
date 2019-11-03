@@ -6,10 +6,14 @@ val order : 'a -> 'b
 
 val sort : 'a -> 'b
 
-val select : 'a -> unit
+val select : string list -> string list list
 
-val insert : 'a -> unit
+val select_fields : string list -> string list -> string list
 
-val delete : 'a -> unit
+val select_table : string list -> string
 
-val join: 'a -> unit
+val insert : string list -> unit
+
+val delete : string list -> unit
+
+val join: string list -> string list list 
