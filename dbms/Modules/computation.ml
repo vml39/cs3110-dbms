@@ -1,4 +1,4 @@
-open Queries
+open Query
 open Datardwt
 
 let like param = 
@@ -42,14 +42,14 @@ let rec select_order = function
 let rec filter_fields schema acc = function 
   | [] -> List.rev acc
   | h::t -> filter_fields schema acc t
-  (* if this field correponds with schema field, then add to acc *)
+(* if this field correponds with schema field, then add to acc *)
 
 (* only get the specific schema requirements *)
 let rec filter_table schema acc = 
   (* function *)
   (* | [] -> List.rev acc 
-  | h::t -> filter_table schema (filter_fields schema [] h)::acc t *)
-  failwith "unimplemented"
+     | h::t -> filter_table schema (filter_fields schema [] h)::acc t *)
+  |_ -> failwith "unimplemented"
 
 (* get table
    filter table by field name --> consider where clause
@@ -57,11 +57,11 @@ let rec filter_table schema acc =
     *)
 let select qry =
   (* let table = 
-    table_from_txt (select_table qry) |> filter_table schema_from_txt [] in
-  let order_by = select_order qry in 
-  match order_by with 
-  | None -> table
-  | Some field -> order table order_by *)
+     table_from_txt (select_table qry) |> filter_table schema_from_txt [] in
+     let order_by = select_order qry in 
+     match order_by with 
+     | None -> table
+     | Some field -> order table order_by *)
   failwith "unimplemented"
 
 let insert qry = 

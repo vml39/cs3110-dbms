@@ -30,16 +30,20 @@ let empty_test name s =
       assert_raises Empty (fun () ->  (parse s)))
 
 let queries_tests = [
-  query_test "'SELECT a FROM alpha' is Select ['a','FROM','alpha']"
+  query_test "'SELECT a FROM alpha' is Select ['a';'FROM';'alpha']"
     (Select ["a";"FROM";"alpha"]) "SELECT a FROM alpha";
   query_test 
-    "'SELECT (a,b,c) FROM (alpha)' is Select ['a','b','c','FROM','alpha']"
+    "'SELECT (a,b,c) FROM (alpha)' is Select ['a';'b';'c';'FROM';'alpha']"
     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
     "SELECT (a,b,c) FROM (alpha)";
   query_test 
-    "'SELECT ( a,   b,c) FROM (alpha  )' is Select ['a','b','c','FROM','alpha']"
+    "'SELECT ( a,   b,c) FROM (alpha  )' is Select ['a';'b';'c';'FROM';'alpha']"
     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
     "SELECT (a,b,c) FROM (alpha)";
+  query_test
+    "'I'm (Hungry     right,now); Dawg' is Select ['I'm';'Hungry;'right';'now']"
+    (Select ["I'm";"Hungry";"right";"now"])
+    "I'm (Hungry     right,now); Dawg";
 ]
 
 (******************************************************************************)

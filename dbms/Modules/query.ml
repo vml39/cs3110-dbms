@@ -23,6 +23,7 @@ let rec join_string_list acc = function
 let parse str =
   match str 
         |> Str.global_replace (Str.regexp "[\( \) ,]") " " 
+        |> Str.replace_first (Str.regexp ";.+") ""
         |> String.split_on_char ' ' 
         |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty
