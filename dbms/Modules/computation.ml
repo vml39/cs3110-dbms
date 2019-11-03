@@ -1,3 +1,6 @@
+open Queries
+
+(* param is a string list *)
 let where param = 
   failwith "unimplemented"
 
@@ -10,7 +13,17 @@ let order param =
 let sort param = 
   failwith "unimplemented"
 
-(* qry = object phrase *)
+let rec select_fields acc = function 
+  | [] -> raise Malformed
+  | h::t when h = "FROM" -> List.rev acc
+  | h::t -> h::acc
+
+let rec select_table = function
+  | [] -> raise Malformed
+  | h::t when h = "FROM" -> List.hd t
+  | h::t -> select_table t
+
+(* gets the output from the datardwt function *)
 let select qry =
   failwith "unimplemented"
 
