@@ -1,12 +1,19 @@
 open Queries
 open Datardwt
 
-(* param is a string list *)
+let like param = 
+  failwith "unimplemented"
+
+(*  *)
 let where param = 
   failwith "unimplemented"
 
-let like param = 
-  failwith "unimplemented"
+(* gets the contents of the where clause *)
+let rec where_helper acc = function 
+  | [] -> where (List.rev acc)
+  | h::t when h = "WHERE" -> where_helper (h::acc) t
+  | h::t when h = "LIKE" -> like t
+  | h::t -> where_helper acc t 
 
 (** [order table field] is [table] with rows sorted by the [field]. *)
 let rec order table field = 
@@ -38,11 +45,16 @@ let rec filter_fields schema acc = function
   (* if this field correponds with schema field, then add to acc *)
 
 (* only get the specific schema requirements *)
-let rec filter_table schema acc = function 
+let rec filter_table schema acc = 
+  (* function *)
   (* | [] -> List.rev acc 
   | h::t -> filter_table schema (filter_fields schema [] h)::acc t *)
   failwith "unimplemented"
 
+(* get table
+   filter table by field name --> consider where clause
+   order table
+    *)
 let select qry =
   (* let table = 
     table_from_txt (select_table qry) |> filter_table schema_from_txt [] in
