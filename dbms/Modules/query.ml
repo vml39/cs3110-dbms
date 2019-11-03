@@ -1,12 +1,3 @@
-(* type entry = 
-   | String of string 
-   | Int of int 
-   | Bool of bool
-
-   type table = 
-   | Nil 
-   | Cons of entry * entry list *)
-
 type object_phrase = string list
 
 type query = 
