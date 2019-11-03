@@ -21,10 +21,6 @@ type query =
   | Select of object_phrase
   | Insert of object_phrase
   | Delete of object_phrase
-  | Where of object_phrase
-  | Like of object_phrase
-  | Order of object_phrase
-  | Sort of object_phrase
   | Join of object_phrase
   | Quit
 
