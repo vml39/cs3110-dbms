@@ -41,9 +41,9 @@ let queries_tests = [
     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
     "SELECT (a,b,c) FROM (alpha)";
   query_test
-    "'I'm (Hungry     right,now); Hi' is Select ['I'm';'Hungry;'right';'now']"
+    "'I'm (Hungry     right,now); Dawg' is Select ['I'm';'Hungry;'right';'now']"
     (Select ["I'm";"Hungry";"right";"now"])
-    "I'm (Hungry     right,now); Hi";
+    "I'm (Hungry     right,now); Dawg";
 ]
 
 (******************************************************************************)
