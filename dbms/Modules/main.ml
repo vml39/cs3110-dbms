@@ -2,8 +2,6 @@ open Datardwt
 open Query
 open Computation
 
-
-
 let rec process_queries () =
   print_string "> ";
   (*Read the command from Terminal *)
@@ -22,6 +20,8 @@ let rec process_queries () =
       | Select obj -> ()
     end
 
+let print_terminal = 
+  failwith "unimplemented"
 
 let main () = 
   ANSITerminal.(print_string [red]

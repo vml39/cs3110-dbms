@@ -3,6 +3,22 @@ open Computation
 open Query
 open Datardwt
 
+(** [pp_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
+    to pretty-print each element of [lst]. *)
+let pp_list pp_elt lst =
+  let pp_elts lst =
+    let rec loop n acc = function
+      | [] -> acc
+      | [h] -> acc ^ pp_elt h
+      | h1::(h2::t as t') ->
+        if n=100 then acc ^ "..."  (* stop printing long list *)
+        else loop (n+1) (acc ^ (pp_elt h1) ^ "; ") t'
+    in loop 0 "" lst
+  in "[" ^ pp_elts lst ^ "]"
+
+(** [pp_string s] pretty-prints string [s]. *)
+let pp_query s = "\"" ^ s ^ "\""
+
 (******************************************************************************)
 
 let data_read_write_tests = [
@@ -41,16 +57,16 @@ let queries_tests = [
     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
     "SELECT (a,b,c) FROM (alpha)";
   query_test
-    "'I'm (Hungry     right,now); Dawg' is Select ['I'm';'Hungry;'right';'now']"
-    (Select ["I'm";"Hungry";"right";"now"])
-    "I'm (Hungry     right,now); Dawg";
+    "'SELECT Im (Hungry  rite,now); Dawg' is Select ['Im';'Hungry;'rite';'now']"
+    (Select ["Im";"Hungry";"rite";"now"])
+    "SELECT Im (Hungry rite,now); Dawg";
 ]
 
 (******************************************************************************)
 
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select s))  
+      assert_equal expected (select s))  
 
 let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
