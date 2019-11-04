@@ -2,6 +2,8 @@ open Datardwt
 open Query
 open Computation
 
+
+
 let rec process_queries () =
   print_string "> ";
   (*Read the command from Terminal *)
