@@ -20,7 +20,7 @@ let rec process_queries () =
       | Select obj -> ()
     end
 
-let print_terminal = 
+let print_terminal schema output= 
   failwith "unimplemented"
 
 let main () = 

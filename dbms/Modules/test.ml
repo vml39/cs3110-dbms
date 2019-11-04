@@ -63,23 +63,37 @@ let queries_tests = [
 ]
 
 (******************************************************************************)
-
+(* [select_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.select*)
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
       assert_equal expected (select s))  
 
+(* [select_table_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.select_table*)
 let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
       assert_equal expected (select_table s))
 
+(* [select_fields_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
       assert_equal expected (select_fields [] s))
 
+(* [malformed_table_test name s] constructs an OUnit test named 
+   [name] that asserts [s] applied to Computation.select_table raises a 
+   query.Malformed exception*)
 let malformed_table_test name s =
   "Malformed select table test: " ^ name >:: (fun _ -> 
       assert_raises Malformed (fun () -> (select_table s)))
 
+(* [malformed_fields_test name s] constructs an OUnit test named 
+   [name] that asserts [s] applied to Computation.select_fields raises a 
+   query.Malformed exception*)
 let malformed_fields_test name s = 
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
