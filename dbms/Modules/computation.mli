@@ -1,4 +1,5 @@
-(** [select] is the *)
+(** [select qry] is the result of performing the select [qry] on the 
+    database. *)
 val select : string list -> string list list
 
 (** [select_table qry] is the table name parsed out from [qry]. 
