@@ -3,6 +3,22 @@ open Computation
 open Query
 open Datardwt
 
+(** [pp_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
+    to pretty-print each element of [lst]. *)
+let pp_list pp_elt lst =
+  let pp_elts lst =
+    let rec loop n acc = function
+      | [] -> acc
+      | [h] -> acc ^ pp_elt h
+      | h1::(h2::t as t') ->
+        if n=100 then acc ^ "..."  (* stop printing long list *)
+        else loop (n+1) (acc ^ (pp_elt h1) ^ "; ") t'
+    in loop 0 "" lst
+  in "[" ^ pp_elts lst ^ "]"
+
+(** [pp_string s] pretty-prints string [s]. *)
+let pp_query s = "\"" ^ s ^ "\""
+
 (******************************************************************************)
 
 let data_read_write_tests = [
@@ -41,29 +57,43 @@ let queries_tests = [
     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
     "SELECT (a,b,c) FROM (alpha)";
   query_test
-    "'I'm (Hungry     right,now); Dawg' is Select ['I'm';'Hungry;'right';'now']"
-    (Select ["I'm";"Hungry";"right";"now"])
-    "I'm (Hungry     right,now); Dawg";
+    "'SELECT Im (Hungry  rite,now); Dawg' is Select ['Im';'Hungry;'rite';'now']"
+    (Select ["Im";"Hungry";"rite";"now"])
+    "SELECT Im (Hungry rite,now); Dawg";
 ]
 
 (******************************************************************************)
-
+(* [select_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.select*)
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select s))  
+      assert_equal expected (select s))  
 
+(* [select_table_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.select_table*)
 let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
       assert_equal expected (select_table s))
 
+(* [select_fields_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
       assert_equal expected (select_fields [] s))
 
+(* [malformed_table_test name s] constructs an OUnit test named 
+   [name] that asserts [s] applied to Computation.select_table raises a 
+   query.Malformed exception*)
 let malformed_table_test name s =
   "Malformed select table test: " ^ name >:: (fun _ -> 
       assert_raises Malformed (fun () -> (select_table s)))
 
+(* [malformed_fields_test name s] constructs an OUnit test named 
+   [name] that asserts [s] applied to Computation.select_fields raises a 
+   query.Malformed exception*)
 let malformed_fields_test name s = 
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))

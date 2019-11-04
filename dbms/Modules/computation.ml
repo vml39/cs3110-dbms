@@ -47,6 +47,13 @@ let rec select_fields acc = function
     else List.rev acc
   | h::t -> h::acc
 
+(* match db schema *)
+let rec table_schema db_schema tablename = 
+  (* match db_schema with 
+  | [] -> raise Malformed
+  | h::t -> if fst h = tablename then snd h else table_schema t tablename *)
+  failwith "unimplemented"
+
 let rec select_table = function
   | [] -> raise Malformed
   | h::t when h = "FROM" -> 
@@ -93,13 +100,14 @@ let rec filter_table schema acc =
    order table
     *)
 let select qry =
-  let table = 
+  (* let table = 
      table_from_txt (select_table qry) |> filter_table schema_from_txt [] in
+  table *)
      (* let order_by = select_order qry in 
      match order_by with 
      | None -> table
      | Some field -> order table order_by *)
-  (* failwith "unimplemented" *)
+  failwith "unimplemented"
 
 let insert qry = 
   failwith "unimplemented"
