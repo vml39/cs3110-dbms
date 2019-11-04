@@ -35,7 +35,7 @@ let schema_from_txt =
              "testdb" ^ Filename.dir_sep ^ 
              "schema.txt") 
   in  
-  read_file empty "schema.txt" file_channel parse_shema_line
+  read_file empty "schema.txt" file_channel parse_schema_line
 
 
 let table_from_txt filename = 
