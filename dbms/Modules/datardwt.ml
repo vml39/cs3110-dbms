@@ -5,21 +5,19 @@ type s = (string * (string list)) list
 let empty = []
 
 
-let rec parse_table_line acc_tbl acc_line filename s idx = 
-  let r' = Str.regexp ("TODO: Create") in
-  match Str.search_forward r' s idx with 
-  | exception Not_found -> acc_line :: acc_tbl
-  (* print_endline ("word is " ^ word); *)
-  | i -> let word = Str.matched_string s in 
-    parse_table_line acc_tbl (word :: acc_line) filename s (i+String.length word)
+let parse_table_line acc_tbl acc_line filename s idx = 
+  (*Remove Parens*)
+  let reg = Str.regexp "//(//|//)" in
+  let s' = Str.global_replace reg "" s in 
+  (*Split on Commas and remove leading whitespace*)
+  acc_tbl :: List.map String.trim (String.split_on_char ',' s')
 
 let rec parse_schema_line acc_tbl acc_line filename s idx = 
-  let r' = Str.regexp ("TODO: Create") in
-  match Str.search_forward r' s idx with 
-  | exception Not_found -> acc_line :: acc_tbl
-  (* print_endline ("word is " ^ word); *)
-  | i -> let word = Str.matched_string s in 
-    parse_schema_line acc_tbl (word :: acc_line) filename s (i+String.length word)
+  (* take table name *)
+  let temp = String.split_on_char ':' in
+  let temp.hd = tbl_name in
+  let temp.tl = col_names in
+  acc_tbl :: tbl_name * List.map String.trim (String.split_on_char ',' col_names)
 
 let rec read_file acc_tbl filename file_channel parser =  
   try 

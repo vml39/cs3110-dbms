@@ -1,8 +1,8 @@
 (** The abstract type representing a table *)
-type t
+type t = (string list) list
 
 (** The abstract type representa schema *)
-type s
+type s = (string * (string list)) list
 
 val schema_from_txt : t
 
