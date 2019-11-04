@@ -48,8 +48,37 @@ let queries_tests = [
 
 (******************************************************************************)
 
-let computation_tests = [
+let select_test name expected s = 
+  "Select test: " ^ name >:: (fun _ -> 
+    assert_equal expected (select s))  
 
+let select_table_test name expected s =
+  "Select table test: " ^ name >:: (fun _ -> 
+      assert_equal expected (select_table s))
+
+let select_fields_test name expected s =
+  "Select fields test: " ^ name >:: (fun _ -> 
+      assert_equal expected (select_fields [] s))
+
+let malformed_table_test name s =
+  "Malformed select table test: " ^ name >:: (fun _ -> 
+      assert_raises Malformed (fun () -> (select_table s)))
+
+let malformed_fields_test name s = 
+  "Malformed select fields test: " ^ name >:: (fun _ ->
+      assert_raises Malformed (fun () -> (select_fields [] s)))
+
+let computation_tests = [
+  select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
+  malformed_table_test "no FROM keyword" ["*"];
+  malformed_table_test "no table called after FROM" ["*"; "FROM"];
+  malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"];
+  select_fields_test "select all" ["*"] ["*"; "FROM"; "animals"];
+  select_fields_test "get multiple fields" ["dog"; "cat"; "fish"] 
+    ["dogs"; "cat"; "fish"; "FROM"; "animals"];
+  malformed_fields_test "no fields" ["FROM"; "tablename"];
+  malformed_fields_test "no FROM keyword" ["*"];
+  malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
 ]
 
 (******************************************************************************)
