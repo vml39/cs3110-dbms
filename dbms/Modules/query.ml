@@ -1,12 +1,3 @@
-(* type entry = 
-   | String of string 
-   | Int of int 
-   | Bool of bool
-
-   type table = 
-   | Nil 
-   | Cons of entry * entry list *)
-
 type object_phrase = string list
 
 type query = 
@@ -30,7 +21,11 @@ let rec join_string_list acc = function
   | h::t -> join_string_list (acc^" "^h) t
 
 let parse str =
-  match (str |> String.split_on_char ' ' |> List.filter ( fun s -> s <> "")) with
+  match str 
+        |> Str.global_replace (Str.regexp "[\( \) ,]") " " 
+        |> Str.replace_first (Str.regexp ";.+") ""
+        |> String.split_on_char ' ' 
+        |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty
   | h::t when h = "SELECT" -> if t = [] then raise Malformed else Select t
   | h::t when h = "INSERT" -> if t = [] then raise Malformed else Insert t
