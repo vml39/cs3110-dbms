@@ -34,8 +34,6 @@ let where qry =
   (* the field is equal to the param set *)
   (* failwith "unimplemented" *)
 
-(** [select_fields acc qry] is the list of field names [acc] directly 
-    following the "SELECT" keyword in a [qry]. *)
 let rec select_fields acc = function 
   | [] -> raise Malformed
   | h::t when h = "FROM" -> 
@@ -123,7 +121,7 @@ let join qry =
 
 let execute = function
   | Select qry -> Some (select qry)
-  | Insert qry -> insert qry; None
-  | Delete qry -> delete qry; None
+  | Insert qry -> ignore (insert qry); None
+  | Delete qry -> ignore (delete qry); None
   | Join qry -> Some (join qry)
   | Quit -> None

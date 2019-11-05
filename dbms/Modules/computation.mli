@@ -13,7 +13,8 @@ val select_table : string list -> string
     from [dbs]. *)
 val table_schema : (string * string list) list -> string -> string list 
 
-(** [select_table qry] is the list of field name parsed out from [qry]. 
+(** [select_table qry] is the list of field name parsed out from [qry]
+    immediately following the "SELECT" keyword. 
     Raises [Malformed] if no field names provided in [qry] or if 
     illegal [qry]. *)
 val select_fields : string list -> string list -> string list
@@ -27,4 +28,4 @@ val join: string list -> string list list
 (** [execute qry] is [Some rows] that results from executing [qry] on database 
     if [qry] is Select or Join. It is [None] if [qry] is Insert, Delete, or
     or Quit. *)
-val execute: query -> string list list 
+val execute: query -> string list list option
