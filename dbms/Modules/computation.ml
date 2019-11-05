@@ -26,17 +26,13 @@ let rec select_where = function
 
 (** [where qry] is *)
 let where qry = 
-  match select_where qry with 
+  match select_where qry with
     | None -> 
       fun lst -> lst 
     | Some param -> 
       fun lst -> List.filter (fun fd -> fd = param)
   (* the field is equal to the param set *)
   (* failwith "unimplemented" *)
-
-(** [order table field] is [table] with rows sorted by the [field]. *)
-let rec order table field = 
-  failwith "unimplemented"
 
 (** [select_fields acc qry] is the list of field names [acc] directly 
     following the "SELECT" keyword in a [qry]. *)
@@ -47,12 +43,10 @@ let rec select_fields acc = function
     else List.rev acc
   | h::t -> h::acc
 
-(* match db schema *)
 let rec table_schema db_schema tablename = 
-  (* match db_schema with 
+  match db_schema with 
   | [] -> raise Malformed
-  | h::t -> if fst h = tablename then snd h else table_schema t tablename *)
-  failwith "unimplemented"
+  | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
 let rec select_table = function
   | [] -> raise Malformed
@@ -70,7 +64,13 @@ let rec select_order = function
     (* what if there's a space? need to parse further *)
   | h::t -> select_order t
 
+(** [order table field] is [table] with rows sorted by the [field]. *)
+let rec order table field = 
+  failwith "unimplemented"
+
 (* need a compare function *)
+(** [order table qry] is [table] with rows sorted by the the field following the
+    "ORDER BY" keyword in [qry]. *)
 let order qry = 
   (* match select_order qry with 
   | None -> 
@@ -79,35 +79,38 @@ let order qry =
     fun lst -> List.sort lst  *)
   failwith "unimplemented"
 
-(**[filter_fields schema acc qry] is [qry] *)
-(* take in schema, construct bool list and correspond if field should be selected *)
-let rec filter_fields schema acc = function 
+(** [filter_fields schema acc fields] is a bool list [acc] where each elt 
+    corresponds to a field in [fields], where the elt is [true] if the field 
+    is in [schema] and false otherwise. *)
+let rec filter_fields schema acc fields = 
+  match fields with 
   | [] -> List.rev acc
-  | h::t -> filter_fields schema acc t
-(* if this field correponds with schema field, then add to acc *)
-
-(* take bool list and filter each row based on true/false *)
-let rec filter_table schema acc = 
-(* function *)
-  (* | [] -> List.rev acc 
+  | h::t when h = "*" -> 
+    List.map (fun _ -> true) fields
   | h::t -> 
-    filter_table schema (filter_fields schema [] h)::acc t
-  | _ ->  *)
-  failwith "unimplemented"
+    if List.mem h schema then filter_fields schema (true::acc) t
+    else filter_fields schema (false::acc) t
 
-(* get table
-   filter table by field name --> consider where clause
-   order table
-    *)
+(** [filter_table schema acc table] is [table] with each row filtered to contain
+    only the fields in [schema]. *)
+let rec filter_table schema acc = function
+  | [] -> List.rev acc 
+  | h::t -> 
+    let i = ref (-1) in 
+    let filtered_row = 
+      List.filter (fun _ -> i := !i + 1; List.nth schema !i) h in 
+    filter_table schema (filtered_row::acc) t
+
 let select qry =
-  (* let table = 
-     table_from_txt (select_table qry) |> filter_table schema_from_txt [] in
-  table *)
+  let schema = table_schema schema_from_txt (select_table qry) in 
+  let fields = select_fields [] qry |> filter_fields schema [] in 
+  let table = 
+     table_from_txt (select_table qry) |> filter_table fields [] in
      (* let order_by = select_order qry in 
      match order_by with 
      | None -> table
      | Some field -> order table order_by *)
-  failwith "unimplemented"
+  table
 
 let insert qry = 
   failwith "unimplemented"
@@ -117,3 +120,10 @@ let delete qry =
 
 let join qry = 
   failwith "unimplemented"
+
+let execute = function
+  | Select qry -> Some (select qry)
+  | Insert qry -> insert qry; None
+  | Delete qry -> delete qry; None
+  | Join qry -> Some (join qry)
+  | Quit -> None
