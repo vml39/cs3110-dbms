@@ -109,7 +109,7 @@ let select qry =
     match order_by with 
     | None -> table
     | Some field -> order table order_by *)
-  (schema, table)
+  (fields, table)
     (* currently taking in open/closed parens in table *)
 
 let insert qry = 
