@@ -2,6 +2,6 @@
 #require "ANSITerminal";;
 #require "Str";;
 #directory "_build";;
-#load "computation.cmo";;
-#load "datardwt.cmo";;
 #load "query.cmo";;
+#load "datardwt.cmo";;
+#load "computation.cmo";;

@@ -102,12 +102,12 @@ let computation_tests = [
   select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
   malformed_table_test "no FROM keyword" ["*"];
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
-  malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"];
+  malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"]; (* failed *)
   select_fields_test "select all" ["*"] ["*"; "FROM"; "animals"];
-  select_fields_test "get multiple fields" ["dog"; "cat"; "fish"] 
+  select_fields_test "get multiple fields" ["dog"; "cat"; "fish"] (* failed *)
     ["dogs"; "cat"; "fish"; "FROM"; "animals"];
   malformed_fields_test "no fields" ["FROM"; "tablename"];
-  malformed_fields_test "no FROM keyword" ["*"];
+  malformed_fields_test "no FROM keyword" ["*"]; (* failed *)
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
 ]
 

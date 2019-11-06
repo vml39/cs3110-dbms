@@ -16,7 +16,7 @@ type object_phrase = string list
 
 (** The type [query] represents a use query that is decomposed
     into a verb and possibly an object phrase. *)
-type query = 
+type t = 
   | Select of object_phrase
   | Insert of object_phrase
   | Delete of object_phrase
@@ -45,7 +45,7 @@ exception Malformed
     is {i malformed} if the verb is neither "quit" nor "go",
     or if the verb is "quit" and there is a non-empty object phrase,
     or if the verb is "go" and there is an empty object phrase.*)
-val parse : string -> query
+val parse : string -> t
 
 (* END DO NOT CHANGE
  **********************************************************************)

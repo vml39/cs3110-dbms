@@ -20,7 +20,7 @@ let rec read_schema acc_tbl filename file_channel =
   with
   | End_of_file -> close_in file_channel; acc_tbl
 
-let schema_from_txt = 
+let schema_from_txt () = 
   let file_channel = 
     open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
              "input" ^ Filename.dir_sep ^ 

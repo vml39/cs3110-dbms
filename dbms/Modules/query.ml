@@ -1,6 +1,6 @@
 type object_phrase = string list
 
-type query = 
+type t = 
   | Select of object_phrase
   (* SELECT * FROM table *)
   | Insert of object_phrase

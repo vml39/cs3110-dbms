@@ -4,7 +4,7 @@ type t = (string list) list
 (** The abstract type representa schema *)
 type s = (string * (string list)) list
 
-val schema_from_txt : s
+val schema_from_txt : unit -> s
 
 (** [from_txt filename] is the table contained within the file filename
     Requires: filename is a valid filename contained in the directory*)

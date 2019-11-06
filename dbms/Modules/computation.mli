@@ -28,4 +28,4 @@ val join: string list -> string list list
 (** [execute qry] is [Some rows] that results from executing [qry] on database 
     if [qry] is Select or Join. It is [None] if [qry] is Insert, Delete, or
     or Quit. *)
-val execute: query -> string list list option
+val execute: t -> string list list option
