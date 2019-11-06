@@ -80,9 +80,9 @@ let order qry =
 (** [filter_fields schema acc fields] is a bool list [acc] where each elt 
     corresponds to a field in [schema], where the elt is [true] if the field 
     is in [fields] and false otherwise. *)
-let rec filter_fields schema acc fields = 
-  if List.nth fields 0 = "*" then List.map (fun _ -> true) schema
-  else List.map (fun x -> if List.mem x fields then true else false) schema
+let rec filter_fields fields acc schema = 
+  if List.nth fields 0 = "*" then List.map (fun _ -> true) fields
+  else List.map (fun x -> if List.mem x schema then true else false) fields
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
@@ -102,9 +102,10 @@ let test_schema =
 let select qry =
   (* let schema = table_schema (schema_from_txt ()) (select_table qry) in  *)
   let schema = table_schema test_schema (select_table qry) in
-  let fields = select_fields [] qry |> filter_fields schema [] in 
+  let fields = select_fields [] qry in 
+  let bool_fields = filter_fields schema [] fields in 
   let table = 
-    table_from_txt (select_table qry) |> filter_table fields [] in
+    table_from_txt (select_table qry) |> filter_table bool_fields [] in
     (* let order_by = select_order qry in 
     match order_by with 
     | None -> table
