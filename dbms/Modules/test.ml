@@ -75,10 +75,6 @@ let queries_tests = [
 ]
 
 (******************************************************************************)
-let rec print_list = function 
-  | [] -> ""
-  | h::t -> h ^ " " ^ print_list t
-
 let get_qry = function 
   | Select qry -> qry
   | _ -> failwith "unimplemented"
@@ -102,7 +98,7 @@ let select_table_test name expected s =
    Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
-      assert_equal ~printer:(print_list) expected (select_fields [] s))
+      assert_equal expected (select_fields [] s))
 
 (* [malformed_table_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_table raises a 
