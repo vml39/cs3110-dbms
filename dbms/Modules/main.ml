@@ -21,18 +21,23 @@ let rec process_queries () =
       | _ -> failwith "unimplemented"
     end
 
-let get_length schema output = 
-  let schema_lengths = List.map (fun s -> String.length s) schema in 
-  let output_lengths = List.fold_left (fun acc lst -> (List.fold_left (fun acc s -> String.length s + acc) 0 lst)::acc) [] output in
-  failwith "unimplemented"
+let calc_lengths fields output = 
+  let column_lens = Array.of_list (List.map (fun s -> String.length s) fields) in 
+  let output_lens = Array.of_list (List.map (fun lst -> (Array.of_list (List.map (fun s -> String.length s) lst))) output) in
+  for i = 0 to ((Array.length output_lens) - 1) do 
+    for j = 0 to ((Array.length column_lens) - 1) do
+      column_lens.(j) <- max column_lens.(j) output_lens.(i).(j)
+    done
+  done; 
+  column_lens |> Array.map (fun s -> s + 1)
 
 let rec repeat_string str length = 
   if length = 0 then "" else str ^ repeat_string str (length - 1)
 
-let pp_word element =
+let pp_word element length=
   print_string " ";
   print_string element;
-  print_string (repeat_string " " (19 - String.length element));()
+  print_string (repeat_string " " (length - String.length element));()
 
 let rec pp_divider num_columns = 
   match num_columns with
@@ -42,15 +47,21 @@ let rec pp_divider num_columns =
 
 (*[pp_table schema output] is the printing of [schema] and [output]. The
   elements in [schema] are the  *)
-let rec pp_table (schema, fields, output) =
-  let rec pp_row  = function
+let rec pp_table (fields, output) =
+  let column_lengths = calc_lengths fields output in
+  let rec pp_row ind row = 
+    (ind := !ind + 1);
+    match row with
     | [] -> print_endline ""
-    | h::[] -> pp_word h; print_endline ""
-    | h::t -> pp_word h; print_string "|"; pp_row t in
-  let rec pp_output = function
+    | h::[] -> pp_word h column_lengths.(!ind); print_endline ""
+    | h::t ->  pp_word h column_lengths.(!ind); print_string "|"; pp_row ind t in
+  let rec pp_output output =
+    let ind = ref(-1) in
+    match output with
     | [] -> ()
-    | h::t ->  pp_row h; pp_output t in
-  pp_row fields;
+    | h::t -> pp_row ind h; pp_output t in
+  let ind = ref(-1) in
+  pp_row ind fields;
   pp_divider (List.length fields);
   pp_output output; ()
 

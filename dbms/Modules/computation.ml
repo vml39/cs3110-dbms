@@ -107,7 +107,7 @@ let select qry =
      | Some field -> order table order_by *)
   let i = ref(-1) in
   let fields = filter_row i fields [] schema in
-  (schema, fields, table)
+  (fields, table)
 
 let insert qry = 
   failwith "unimplemented"
