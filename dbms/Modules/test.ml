@@ -16,13 +16,25 @@ let pp_list pp_elt lst =
     in loop 0 "" lst
   in "[" ^ pp_elts lst ^ "]"
 
+(** [pp_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
+    to pretty-print each element of [lst]. *)
+let pp_list_list pp_elt lst =
+  let pp_elts lst =
+    let rec loop n acc = function
+      | [] -> acc
+      | [h] -> acc ^ pp_elt h
+      | h1::(h2::t as t') ->
+        if n=100 then acc ^ "..."  (* stop printing long list *)
+        else loop (n+1) (acc ^ (pp_elt h1) ^ "; ") t'
+    in loop 0 "" lst
+  in "[" ^ pp_elts (List.flatten lst) ^ "]"
+
 (** [pp_string s] pretty-prints string [s]. *)
 let pp_query s = "\"" ^ s ^ "\""
 
 (******************************************************************************)
 
-let data_read_write_tests = [
-]
+
 
 (******************************************************************************)
 
@@ -102,6 +114,16 @@ let malformed_fields_test name s =
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
+
+(* [table_from_txt_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   DataRdWt.txt*)
+let table_from_text_test name expected s = 
+  "Tabel from Text test: " ^ name >:: (fun _ -> 
+      assert_equal  ~printer:(pp_list_list pp_query) expected (table_from_txt s))
+
+
+
 let qry = parse "SELECT netid FROM students"
 let qry' = parse "SELECT netid, name FROM students"
 let qry'' = parse "SELECT * FROM students"
@@ -128,11 +150,15 @@ let computation_tests = [
   malformed_fields_test "no fields" ["FROM"; "tablename"];
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
-  select_test "SELECT netid FROM students" 
+  (*select_test "SELECT netid FROM students" 
     (schema, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
-  select_test "SELECT netid, name FROM students" 
+    select_test "SELECT netid, name FROM students" 
     (schema, namenetid) qry';
-  select_test "SELECT * FROM students" (schema, students) qry''
+    select_test "SELECT * FROM students" (schema, students) qry''*)
+]
+
+let data_read_write_tests = [
+  table_from_text_test "students" students "students"
 ]
 
 (******************************************************************************)
