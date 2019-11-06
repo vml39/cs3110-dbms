@@ -105,6 +105,11 @@ let malformed_fields_test name s =
 let qry = parse "SELECT netid FROM students"
 let qry' = parse "SELECT netid, name FROM students"
 let qry'' = parse "SELECT * FROM students"
+let namenetid = [
+  ["Daniel Stabile"; "dis52"]; 
+  ["Robert Morgowicz"; "rjm448"]; 
+  ["Vivian Li"; "vml39"]
+  ]
 let students = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
@@ -125,7 +130,7 @@ let computation_tests = [
   select_test "SELECT netid FROM students" 
     (Some [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
   select_test "SELECT netid, name FROM students" 
-    (Some [["Daniel Stabile"; "dis52"]; ["Robert Morgowicz"; "rjm448"]; ["Vivian Li"; "vml39"]]) qry';
+    (Some namenetid) qry';
   select_test "SELECT * FROM students" (Some students) qry''
 ]
 
