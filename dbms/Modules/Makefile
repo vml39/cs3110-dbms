@@ -18,7 +18,7 @@ test:
 bisect-test:
 	BISECT_COVERAGE=YES $(OCAMLBUILD) -tag 'debug' $(TEST) && ./$(TEST) -runner sequential
 
-play:
+query:
 	$(OCAMLBUILD) $(MAIN) && ./$(MAIN)
 
 check:
