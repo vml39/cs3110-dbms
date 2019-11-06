@@ -66,13 +66,13 @@ let queries_tests = [
 let rec print_list = function 
   | [] -> ""
   | h::t -> h ^ " " ^ print_list t
-  
+
 (* [select_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select*)
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select s))  
+      assert_equal expected (execute s))  
 
 (* [select_table_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
@@ -102,17 +102,21 @@ let malformed_fields_test name s =
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
+let qry = parse "SELECT netid FROM students"
+
 let computation_tests = [
   select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
   malformed_table_test "no FROM keyword" ["*"];
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
-  malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"]; (* failed *)
+  malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"];
   select_fields_test "select all" ["*"] ["*"; "FROM"; "animals"];
-  select_fields_test "get multiple fields" ["dogs"; "cat"; "fish"] (* failed *)
+  select_fields_test "get multiple fields" ["dogs"; "cat"; "fish"]
     ["dogs"; "cat"; "fish"; "FROM"; "animals"];
   malformed_fields_test "no fields" ["FROM"; "tablename"];
-  malformed_fields_test "no FROM keyword" ["*"]; (* failed *)
+  malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
+  select_test "SELECT netid FROM students" 
+    (Some [["dis52"]; ["rjm448"]; ["vml39"]]) qry
 ]
 
 (******************************************************************************)
