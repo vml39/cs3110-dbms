@@ -109,7 +109,7 @@ let namenetid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
   ["Vivian Li"; "vml39"]
-  ]
+]
 let students = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
