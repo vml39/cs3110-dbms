@@ -17,7 +17,8 @@ let rec process_queries () =
       match msg with
       | Quit -> print_endline "Goodbye for now.\n";
         exit 0
-      | Select obj -> ()
+      | Select obj -> select obj
+      | _ -> failwith "unimplemented"
     end
 
 let get_length schema output = 

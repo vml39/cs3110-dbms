@@ -99,21 +99,18 @@ let rec filter_table schema acc = function
 let test_schema = 
   [("students", ["name"; "netid"; "gradyear"; "major"; "home"])]
 
-let select query =
-  match query with 
-  | Select qry -> 
+let select qry =
   (* let schema = table_schema (schema_from_txt ()) (select_table qry) in  *)
-    let schema = table_schema test_schema (select_table qry) in
-    let fields = select_fields [] qry |> filter_fields schema [] in 
-    let table = 
-      table_from_txt (select_table qry) |> filter_table fields [] in
-      (* let order_by = select_order qry in 
-      match order_by with 
-      | None -> table
-      | Some field -> order table order_by *)
-    (schema, table)
+  let schema = table_schema test_schema (select_table qry) in
+  let fields = select_fields [] qry |> filter_fields schema [] in 
+  let table = 
+    table_from_txt (select_table qry) |> filter_table fields [] in
+    (* let order_by = select_order qry in 
+    match order_by with 
+    | None -> table
+    | Some field -> order table order_by *)
+  (schema, table)
     (* currently taking in open/closed parens in table *)
-  | _ -> failwith "Illegal"
 
 let insert qry = 
   failwith "unimplemented"
@@ -123,10 +120,3 @@ let delete qry =
 
 let join qry = 
   failwith "unimplemented"
-
-let execute = function
-  | Select qry -> Some (select qry)
-  | Insert qry -> ignore (insert qry); None
-  | Delete qry -> ignore (delete qry); None
-  | Join qry -> Some (join qry)
-  | Quit -> None
