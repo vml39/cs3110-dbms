@@ -20,11 +20,39 @@ let rec process_queries () =
       | Select obj -> ()
     end
 
-let print_terminal schema output= 
+let get_length schema output = 
+  let schema_lengths = List.map (fun s -> String.length s) schema in 
+  let output_lengths = List.fold_left (fun acc lst -> (List.fold_left (fun acc s -> String.length s + acc) 0 lst)::acc) [] output in
   failwith "unimplemented"
 
-let main () = 
-  ANSITerminal.(print_string [red]
-                  "\n\nWelcome to Ocaml DBMS\n");
-  print_endline "Please enter your query\n";
-  process_queries ()
+let rec repeat_string str length = 
+  if length = 0 then "" else str ^ repeat_string str (length - 1)
+
+let pp_word element =
+  print_string " ";
+  print_string element;
+  print_string (repeat_string " " (19 - String.length element));()
+
+let rec pp_divider num_columns = 
+  match num_columns with
+  | 0 -> ()
+  | 1 -> print_string ((repeat_string "-" 20) ^ "\n");
+  | n -> print_string ((repeat_string "-" 20) ^ "+"); pp_divider (n-1)
+
+let rec pp_table schema output =
+  let rec pp_row  = function
+    | [] -> print_endline ""
+    | h::[] -> pp_word h; print_endline ""
+    | h::t -> pp_word h; print_string "|"; pp_row t in
+  let rec pp_output = function
+    | [] -> ()
+    | h::t ->  pp_row h; pp_output t in
+  pp_row schema;
+  pp_divider (List.length schema);
+  pp_output output;
+
+  let main () = 
+    ANSITerminal.(print_string [red]
+                    "\n\nWelcome to Ocaml DBMS\n");
+    print_endline "Please enter your query\n";
+    process_queries ()
