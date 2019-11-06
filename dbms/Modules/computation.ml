@@ -81,7 +81,7 @@ let order qry =
     corresponds to a field in [schema], where the elt is [true] if the field 
     is in [fields] and false otherwise. *)
 let rec filter_fields fields acc schema = 
-  if List.nth fields 0 = "*" then List.map (fun _ -> true) fields
+  if List.nth schema 0 = "*" then List.map (fun _ -> true) fields
   else List.map (fun x -> if List.mem x schema then true else false) fields
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
@@ -109,8 +109,8 @@ let select qry =
     match order_by with 
     | None -> table
     | Some field -> order table order_by *)
+
   (schema, fields, table)
-    (* currently taking in open/closed parens in table *)
 
 let insert qry = 
   failwith "unimplemented"

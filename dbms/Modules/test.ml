@@ -118,7 +118,6 @@ let malformed_fields_test name s =
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
-
 (* [table_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    DataRdWt.table_from_text*)
