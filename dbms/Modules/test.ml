@@ -118,11 +118,10 @@ let malformed_fields_test name s =
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
-
 (* [table_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    DataRdWt.table_from_text*)
-let table_from_text_test name expected s = 
+let table_from_txt_test name expected s = 
   "Tabel from Text test: " ^ name >:: (fun _ -> 
       assert_equal  ~printer:(pp_list_list pp_query) 
         expected (table_from_txt s))
@@ -130,9 +129,9 @@ let table_from_text_test name expected s =
 (* [schema_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
-let table_from_text_test name expected s = 
+let schema_from_txt_test name expected s = 
   "Tabel from Text test: " ^ name >:: (fun _ -> 
-      assert_equal  ~printer:(pp_list_list pp_query) expected (table_from_txt s))
+      assert_equal expected (schema_from_txt s))
 
 
 let qry = parse "SELECT netid FROM students" |> get_qry
@@ -151,6 +150,11 @@ let students = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
+]
+
+let schema2 = [
+  ("students", ["name"; "netid"; "gradyear"; "major"; "home"]);
+  ("buildings", ["name"; "location"; "goodforstudying"])
 ]
 
 let computation_tests = [
@@ -172,7 +176,8 @@ let computation_tests = [
 ]
 
 let data_read_write_tests = [
-  table_from_text_test "students" students "students"
+  table_from_txt_test "students" students "students";
+  schema_from_txt_test "example" schema2 ()
 ]
 
 (******************************************************************************)
