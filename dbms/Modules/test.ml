@@ -117,11 +117,18 @@ let malformed_fields_test name s =
 
 (* [table_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
-   DataRdWt.txt*)
+   DataRdWt.table_from_text*)
+let table_from_text_test name expected s = 
+  "Tabel from Text test: " ^ name >:: (fun _ -> 
+      assert_equal  ~printer:(pp_list_list pp_query) 
+        expected (table_from_txt s))
+
+(* [schema_from_txt_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   DataRdWt.schema_from_text*)
 let table_from_text_test name expected s = 
   "Tabel from Text test: " ^ name >:: (fun _ -> 
       assert_equal  ~printer:(pp_list_list pp_query) expected (table_from_txt s))
-
 
 
 let qry = parse "SELECT netid FROM students"

@@ -18,7 +18,7 @@ let rec read_schema acc_tbl filename file_channel =
     let s = input_line file_channel in 
     read_schema (parse_schema_line acc_tbl s) filename  file_channel
   with
-  | End_of_file -> close_in file_channel; acc_tbl
+  | End_of_file -> close_in file_channel; List.rev acc_tbl
 
 let schema_from_txt () = 
   let file_channel = 
@@ -27,12 +27,11 @@ let schema_from_txt () =
              "testdb" ^ Filename.dir_sep ^ 
              "schema.txt") 
   in  
-  print_endline(Filename.parent_dir_name);
   read_schema empty "schema.txt" file_channel
 
 let parse_table_line acc_tbl s = 
   (*Remove Parens*)
-  let reg = Str.regexp "//(//|//)" in
+  let reg = Str.regexp "(\\|)" in
   let s' = Str.global_replace reg "" s in 
   (*Split on Commas and remove leading whitespace*)
   (List.map String.trim (String.split_on_char ',' s')) :: acc_tbl
@@ -42,7 +41,7 @@ let rec read_file acc_tbl filename file_channel =
     let s = input_line file_channel in 
     read_file (parse_table_line acc_tbl s) filename file_channel
   with
-  | End_of_file -> close_in file_channel; acc_tbl
+  | End_of_file -> close_in file_channel; List.rev acc_tbl
 
 (*[table_from_txt f] is a list of string list where each string list is 
   a row in the table named f*)
