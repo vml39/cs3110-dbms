@@ -2,11 +2,6 @@ open Datardwt
 open Query
 open Computation
 
-<<<<<<< HEAD
-let get_lengths schema output = 
-  let schema_lens = Array.of_list (List.map (fun s -> String.length s) schema) in 
-  let output_lens = Array.of_list (List.map (fun lst -> Array.of_list (List.map (fun s -> String.length s) lst)) output) in
-=======
 let rec process_queries () =
   print_string "> ";
   (*Read the command from Terminal *)
@@ -29,7 +24,6 @@ let rec process_queries () =
 let get_length schema output = 
   let schema_lengths = List.map (fun s -> String.length s) schema in 
   let output_lengths = List.fold_left (fun acc lst -> (List.fold_left (fun acc s -> String.length s + acc) 0 lst)::acc) [] output in
->>>>>>> 11f2b6a1a46ddcb0abcb1109fed46e6c55f1269f
   failwith "unimplemented"
 
 let rec repeat_string str length = 
