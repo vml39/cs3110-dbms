@@ -94,13 +94,8 @@ let rec filter_table schema acc = function
       List.filter (fun _ -> i := !i + 1; List.nth schema !i) h in
     filter_table schema (filtered_row::acc) t
 
-(* schema from txt is failing *)
-let test_schema = 
-  [("students", ["name"; "netid"; "gradyear"; "major"; "home"])]
-
 let select qry =
-  (* let schema = table_schema (schema_from_txt ()) (select_table qry) in  *)
-  let schema = table_schema test_schema (select_table qry) in
+  let schema = table_schema (schema_from_txt ()) (select_table qry) in 
   let fields = select_fields [] qry |> filter_fields schema [] in 
   let table = 
     table_from_txt (select_table qry) |> filter_table fields [] in
