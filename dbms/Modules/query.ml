@@ -32,4 +32,4 @@ let parse str =
   | h::t when h = "DELETE" -> if t = [] then raise Malformed else Delete t
   | h::t when h = "JOIN" -> if t = [] then raise Malformed else Join t
   | h::t when h = "QUIT" -> if t <> [] then raise Malformed else Quit
-  | _ -> print_string " why "; raise Malformed
+  | _ -> raise Malformed
