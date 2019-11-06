@@ -63,6 +63,10 @@ let queries_tests = [
 ]
 
 (******************************************************************************)
+let rec print_list = function 
+  | [] -> ""
+  | h::t -> h ^ " " ^ print_list t
+  
 (* [select_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select*)
@@ -82,7 +86,7 @@ let select_table_test name expected s =
    Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select_fields [] s))
+      assert_equal ~printer:(print_list) expected (select_fields [] s))
 
 (* [malformed_table_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_table raises a 
@@ -104,7 +108,7 @@ let computation_tests = [
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
   malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"]; (* failed *)
   select_fields_test "select all" ["*"] ["*"; "FROM"; "animals"];
-  select_fields_test "get multiple fields" ["dog"; "cat"; "fish"] (* failed *)
+  select_fields_test "get multiple fields" ["dogs"; "cat"; "fish"] (* failed *)
     ["dogs"; "cat"; "fish"; "FROM"; "animals"];
   malformed_fields_test "no fields" ["FROM"; "tablename"];
   malformed_fields_test "no FROM keyword" ["*"]; (* failed *)

@@ -39,7 +39,7 @@ let rec select_fields acc = function
   | h::t when h = "FROM" -> 
     if acc = [] then raise Malformed 
     else List.rev acc
-  | h::t -> h::acc
+  | h::t -> select_fields (h::acc) t
 
 let rec table_schema db_schema tablename = 
   match db_schema with 
