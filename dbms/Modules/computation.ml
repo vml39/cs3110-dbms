@@ -103,7 +103,6 @@ let select qry =
     match order_by with 
     | None -> table
     | Some field -> order table order_by *)
-
   (schema, fields, table)
 
 let insert qry = 
