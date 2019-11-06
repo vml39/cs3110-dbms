@@ -27,6 +27,7 @@ let schema_from_txt () =
              "testdb" ^ Filename.dir_sep ^ 
              "schema.txt") 
   in  
+  let throw_out = input_line file_channel in
   read_schema empty "schema.txt" file_channel
 
 let parse_table_line acc_tbl s = 
