@@ -1,3 +1,3 @@
 (Daniel Stabile, dis52, 2021, CS, Cascadilla Hall)
-(Robert Morgowicz, rjm448, senior, ECE, Cascadilla Hall)
-(Vivian Li, vml39, senior, IS, Collegetown)
+(Robert Morgowicz, rjm448, 2020, ECE, Cascadilla Hall)
+(Vivian Li, vml39, 2020, IS, Collegetown)

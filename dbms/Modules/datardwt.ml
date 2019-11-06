@@ -39,7 +39,7 @@ let parse_table_line acc_tbl s =
 let rec read_file acc_tbl filename file_channel =  
   try 
     let s = input_line file_channel in 
-    read_file (parse_table_line acc_tbl s) filename  file_channel
+    read_file (parse_table_line acc_tbl s) filename file_channel
   with
   | End_of_file -> close_in file_channel; acc_tbl
 
@@ -51,7 +51,7 @@ let table_from_txt filename =
     open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
              "input" ^ Filename.dir_sep ^ 
              "testdb" ^ Filename.dir_sep ^ 
-             "tables" ^ Filename.dir_sep ^ filename) 
+             "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
   in
   (*read it, line by line*)
   read_file empty filename file_channel 

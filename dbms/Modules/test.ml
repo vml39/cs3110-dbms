@@ -103,6 +103,13 @@ let malformed_fields_test name s =
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
 let qry = parse "SELECT netid FROM students"
+let qry' = parse "SELECT netid, name FROM students"
+let qry'' = parse "SELECT * FROM students"
+let students = [
+  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
+  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
+]
 
 let computation_tests = [
   select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
@@ -116,7 +123,10 @@ let computation_tests = [
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
   select_test "SELECT netid FROM students" 
-    (Some [["dis52"]; ["rjm448"]; ["vml39"]]) qry
+    (Some [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
+  select_test "SELECT netid, name FROM students" 
+    (Some [["Daniel Stabile"; "dis52"]; ["Robert Morgowicz"; "rjm448"]; ["Vivian Li"; "vml39"]]) qry';
+  select_test "SELECT * FROM students" (Some students) qry''
 ]
 
 (******************************************************************************)

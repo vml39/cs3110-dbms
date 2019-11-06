@@ -78,29 +78,30 @@ let order qry =
   failwith "unimplemented"
 
 (** [filter_fields schema acc fields] is a bool list [acc] where each elt 
-    corresponds to a field in [fields], where the elt is [true] if the field 
-    is in [schema] and false otherwise. *)
+    corresponds to a field in [schema], where the elt is [true] if the field 
+    is in [fields] and false otherwise. *)
 let rec filter_fields schema acc fields = 
-  match fields with 
-  | [] -> List.rev acc
-  | h::t when h = "*" -> 
-    List.map (fun _ -> true) fields
-  | h::t -> 
-    if List.mem h schema then filter_fields schema (true::acc) t
-    else filter_fields schema (false::acc) t
+  if List.nth fields 0 = "*" then List.map (fun _ -> true) schema
+  else List.map (fun x -> if List.mem x fields then true else false) schema
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
 let rec filter_table schema acc = function
-  | [] -> List.rev acc 
+  | [] -> 
+    acc 
   | h::t -> 
     let i = ref (-1) in 
     let filtered_row = 
-      List.filter (fun _ -> i := !i + 1; List.nth schema !i) h in 
+      List.filter (fun _ -> i := !i + 1; List.nth schema !i) h in
     filter_table schema (filtered_row::acc) t
 
+(* schema from txt is failing *)
+let test_schema = 
+  [("students", ["name"; "netid"; "gradyear"; "major"; "home"])]
+
 let select qry =
-  let schema = table_schema (schema_from_txt ()) (select_table qry) in 
+  (* let schema = table_schema (schema_from_txt ()) (select_table qry) in  *)
+  let schema = table_schema test_schema (select_table qry) in
   let fields = select_fields [] qry |> filter_fields schema [] in 
   let table = 
      table_from_txt (select_table qry) |> filter_table fields [] in
@@ -109,6 +110,7 @@ let select qry =
      | None -> table
      | Some field -> order table order_by *)
   table
+  (* currently taking in open/closed parens in table *)
 
 let insert qry = 
   failwith "unimplemented"
