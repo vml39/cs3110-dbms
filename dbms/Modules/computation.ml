@@ -102,15 +102,14 @@ let test_schema =
 let select qry =
   (* let schema = table_schema (schema_from_txt ()) (select_table qry) in  *)
   let schema = table_schema test_schema (select_table qry) in
-  let fields = select_fields [] qry in 
-  let bool_fields = filter_fields schema [] fields in 
+  let fields = select_fields [] qry |> filter_fields schema [] in 
   let table = 
-    table_from_txt (select_table qry) |> filter_table bool_fields [] in
+    table_from_txt (select_table qry) |> filter_table fields [] in
     (* let order_by = select_order qry in 
     match order_by with 
     | None -> table
     | Some field -> order table order_by *)
-  (fields, table)
+  (schema, fields, table)
     (* currently taking in open/closed parens in table *)
 
 let insert qry = 
