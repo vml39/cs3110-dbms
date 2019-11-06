@@ -42,7 +42,7 @@ let rec pp_divider num_columns =
 
 (*[pp_table schema output] is the printing of [schema] and [output]. The
   elements in [schema] are the  *)
-let rec pp_table (schema,output) =
+let rec pp_table (schema, bool, output) =
   let rec pp_row  = function
     | [] -> print_endline ""
     | h::[] -> pp_word h; print_endline ""
