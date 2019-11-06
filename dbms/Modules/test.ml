@@ -79,6 +79,10 @@ let rec print_list = function
   | [] -> ""
   | h::t -> h ^ " " ^ print_list t
 
+let get_qry = function 
+  | Select qry -> qry
+  | _ -> failwith "unimplemented"
+
 (* [select_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select*)
@@ -131,10 +135,13 @@ let table_from_text_test name expected s =
       assert_equal  ~printer:(pp_list_list pp_query) expected (table_from_txt s))
 
 
-let qry = parse "SELECT netid FROM students"
-let qry' = parse "SELECT netid, name FROM students"
-let qry'' = parse "SELECT * FROM students"
+let qry = parse "SELECT netid FROM students" |> get_qry
+let qry' = parse "SELECT netid, name FROM students" |> get_qry
+let qry'' = parse "SELECT * FROM students" |> get_qry
 let schema = ["name"; "netid"; "gradyear"; "major"; "home"]
+let fields = [false; true; false; false; false]
+let fields' = [true; true; false; false; false]
+let fields'' = [true; true; true; true; true ]
 let namenetid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
@@ -157,11 +164,11 @@ let computation_tests = [
   malformed_fields_test "no fields" ["FROM"; "tablename"];
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
-  (*select_test "SELECT netid FROM students" 
-    (schema, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
-    select_test "SELECT netid, name FROM students" 
-    (schema, namenetid) qry';
-    select_test "SELECT * FROM students" (schema, students) qry''*)
+  select_test "SELECT netid FROM students" 
+    (schema, fields, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
+  select_test "SELECT netid, name FROM students" 
+    (schema, fields', namenetid) qry';
+  select_test "SELECT * FROM students" (schema, fields'', students) qry''
 ]
 
 let data_read_write_tests = [
