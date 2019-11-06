@@ -27,12 +27,12 @@ let rec select_where = function
 (** [where qry] is *)
 let where qry = 
   match select_where qry with
-    | None -> 
-      fun lst -> lst 
-    | Some param -> 
-      fun lst -> List.filter (fun fd -> fd = param)
-  (* the field is equal to the param set *)
-  (* failwith "unimplemented" *)
+  | None -> 
+    fun lst -> lst 
+  | Some param -> 
+    fun lst -> List.filter (fun fd -> fd = param)
+(* the field is equal to the param set *)
+(* failwith "unimplemented" *)
 
 let rec select_fields acc = function 
   | [] -> raise Malformed
@@ -59,7 +59,7 @@ let rec select_table = function
 let rec select_order = function 
   | [] -> None
   | h::h'::t when h = "ORDER" && h' = "BY" -> Some (List.hd t)
-    (* what if there's a space? need to parse further *)
+  (* what if there's a space? need to parse further *)
   | h::t -> select_order t
 
 (** [order table field] is [table] with rows sorted by the [field]. *)
@@ -71,10 +71,10 @@ let rec order table field =
     "ORDER BY" keyword in [qry]. *)
 let order qry = 
   (* match select_order qry with 
-  | None -> 
-    fun lst -> lst 
-  | Some param -> 
-    fun lst -> List.sort lst  *)
+     | None -> 
+     fun lst -> lst 
+     | Some param -> 
+     fun lst -> List.sort lst  *)
   failwith "unimplemented"
 
 (** [filter_fields schema acc fields] is a bool list [acc] where each elt 
@@ -84,14 +84,16 @@ let rec filter_fields fields acc schema =
   if List.nth schema 0 = "*" then List.map (fun _ -> true) fields
   else List.map (fun x -> if List.mem x schema then true else false) fields
 
+let filter_row i schema acc row =
+  List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
+
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
 let rec filter_table schema acc = function
   | [] -> List.rev acc 
   | h::t -> 
     let i = ref (-1) in 
-    let filtered_row = 
-      List.filter (fun _ -> i := !i + 1; List.nth schema !i) h in
+    let filtered_row = filter_row i schema acc h in
     filter_table schema (filtered_row::acc) t
 
 let select qry =
@@ -99,10 +101,12 @@ let select qry =
   let fields = select_fields [] qry |> filter_fields schema [] in 
   let table = 
     table_from_txt (select_table qry) |> filter_table fields [] in
-    (* let order_by = select_order qry in 
-    match order_by with 
-    | None -> table
-    | Some field -> order table order_by *)
+  (* let order_by = select_order qry in 
+     match order_by with 
+     | None -> table
+     | Some field -> order table order_by *)
+  let i = ref(-1) in
+  let fields = filter_row i fields [] schema in
   (schema, fields, table)
 
 let insert qry = 

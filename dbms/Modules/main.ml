@@ -42,7 +42,7 @@ let rec pp_divider num_columns =
 
 (*[pp_table schema output] is the printing of [schema] and [output]. The
   elements in [schema] are the  *)
-let rec pp_table (schema, bool, output) =
+let rec pp_table (schema, fields, output) =
   let rec pp_row  = function
     | [] -> print_endline ""
     | h::[] -> pp_word h; print_endline ""
@@ -50,8 +50,8 @@ let rec pp_table (schema, bool, output) =
   let rec pp_output = function
     | [] -> ()
     | h::t ->  pp_row h; pp_output t in
-  pp_row schema;
-  pp_divider (List.length schema);
+  pp_row fields;
+  pp_divider (List.length fields);
   pp_output output; ()
 
 
@@ -71,6 +71,9 @@ let rec process_queries () =
       | Quit -> print_endline "Goodbye for now.\n";
         exit 0
       | Select obj ->  pp_table (Computation.select obj); process_queries ()
+      | Insert obj -> process_queries ()
+      | Delete obj -> process_queries ()
+      | Join obj -> process_queries ()
     end
 
 let main () = 

@@ -164,11 +164,11 @@ let computation_tests = [
   malformed_fields_test "no fields" ["FROM"; "tablename"];
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
-  select_test "SELECT netid FROM students" 
-    (schema, fields, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
-  select_test "SELECT netid, name FROM students" 
-    (schema, fields', namenetid) qry';
-  select_test "SELECT * FROM students" (schema, fields'', students) qry''
+  (* select_test "SELECT netid FROM students" 
+     (schema, fields, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
+     select_test "SELECT netid, name FROM students" 
+     (schema, fields', namenetid) qry';
+     select_test "SELECT * FROM students" (schema, fields'', students) qry'' *)
 ]
 
 let data_read_write_tests = [
