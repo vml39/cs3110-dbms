@@ -122,7 +122,7 @@ let malformed_fields_test name s =
    [name] that asserts the quality of [expected] of [s] applied to 
    DataRdWt.table_from_text*)
 let table_from_txt_test name expected s = 
-  "Tabel from Text test: " ^ name >:: (fun _ -> 
+  "Table from Text test: " ^ name >:: (fun _ -> 
       assert_equal  ~printer:(pp_list_list pp_query) 
         expected (table_from_txt s))
 
@@ -130,7 +130,7 @@ let table_from_txt_test name expected s =
    [name] that asserts the quality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
 let schema_from_txt_test name expected s = 
-  "Tabel from Text test: " ^ name >:: (fun _ -> 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_equal expected (schema_from_txt s))
 
 

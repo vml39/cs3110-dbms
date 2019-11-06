@@ -87,8 +87,7 @@ let rec filter_fields fields acc schema =
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
 let rec filter_table schema acc = function
-  | [] -> 
-    acc 
+  | [] -> List.rev acc 
   | h::t -> 
     let i = ref (-1) in 
     let filtered_row = 
