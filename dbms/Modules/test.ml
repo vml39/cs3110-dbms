@@ -72,7 +72,7 @@ let rec print_list = function
    Computation.select*)
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
-      assert_equal expected (execute s))  
+      assert_equal expected (select s))  
 
 (* [select_table_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
@@ -105,6 +105,7 @@ let malformed_fields_test name s =
 let qry = parse "SELECT netid FROM students"
 let qry' = parse "SELECT netid, name FROM students"
 let qry'' = parse "SELECT * FROM students"
+let schema = ["name"; "netid"; "gradyear"; "major"; "home"]
 let namenetid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
@@ -128,10 +129,10 @@ let computation_tests = [
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
   select_test "SELECT netid FROM students" 
-    (Some [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
+    (schema, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
   select_test "SELECT netid, name FROM students" 
-    (Some namenetid) qry';
-  select_test "SELECT * FROM students" (Some students) qry''
+    (schema, namenetid) qry';
+  select_test "SELECT * FROM students" (schema, students) qry''
 ]
 
 (******************************************************************************)

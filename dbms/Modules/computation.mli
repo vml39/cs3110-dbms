@@ -2,7 +2,7 @@ open Query
 
 (** [select qry] is the result of performing the select [qry] on the 
     database. *)
-val select : string list -> string list list
+val select : string list -> (string list * string list list)
 
 (** [select_table qry] is the table name parsed out from [qry]. 
     Raises [Malformed] if no table name provided in [qry] or if 
@@ -24,8 +24,3 @@ val insert : string list -> unit
 val delete : string list -> unit
 
 val join: string list -> string list list 
-
-(** [execute qry] is [Some rows] that results from executing [qry] on database 
-    if [qry] is Select or Join. It is [None] if [qry] is Insert, Delete, or
-    or Quit. *)
-val execute: t -> string list list option
