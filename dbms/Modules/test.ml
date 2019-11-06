@@ -60,6 +60,10 @@ let queries_tests = [
     "'SELECT Im (Hungry  rite,now); Dawg' is Select ['Im';'Hungry;'rite';'now']"
     (Select ["Im";"Hungry";"rite";"now"])
     "SELECT Im (Hungry rite,now); Dawg";
+  query_test
+    "'SELECT * FROM buildings' is Select ['*';'FROM';'buildings']"
+    (Select ["*";"FROM";"buildings"])
+    "SELECT * FROM buildings"
 ]
 
 (******************************************************************************)
@@ -128,11 +132,11 @@ let computation_tests = [
   malformed_fields_test "no fields" ["FROM"; "tablename"];
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
-  select_test "SELECT netid FROM students" 
-    (schema, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
-  select_test "SELECT netid, name FROM students" 
-    (schema, namenetid) qry';
-  select_test "SELECT * FROM students" (schema, students) qry''
+  (* select_test "SELECT netid FROM students" 
+     (schema, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
+     select_test "SELECT netid, name FROM students" 
+     (schema, namenetid) qry';
+     select_test "SELECT * FROM students" (schema, students) qry'' *)
 ]
 
 (******************************************************************************)
