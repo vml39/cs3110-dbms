@@ -1,4 +1,3 @@
-open Datardwt
 open Query
 open Computation
 
@@ -84,7 +83,7 @@ let rec process_queries () =
       | Quit -> print_endline "Goodbye for now.\n";
         exit 0
       | Select obj ->  begin
-          try pp_table (Computation.select obj); process_queries ()
+          try pp_table (select obj); process_queries ()
           with _ -> ANSITerminal.(
               print_string [red] "Invalid Command, Please try again.\n");
             process_queries () end 
