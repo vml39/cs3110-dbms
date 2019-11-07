@@ -1,10 +1,13 @@
+type l = string list
+
 type t = string list list
 
 type s = (string * (string list)) list
 
 let empty = []
 
-
+(*[parse_schema_line a s] is the line from the schema s parsed into a
+  tuple fo string and string list for further computation*)
 let rec parse_schema_line acc_tbl s = 
   (* take table name *)
   let temp = String.split_on_char ':' s in
@@ -13,6 +16,7 @@ let rec parse_schema_line acc_tbl s =
     (h , (List.map String.trim (String.split_on_char ',' s))) :: acc_tbl
   | _ -> failwith "Invalid schema pattern"
 
+(*[read_file a f fc] is the list of lines from file f*)
 let rec read_schema acc_tbl filename file_channel =  
   try 
     let s = input_line file_channel in 
@@ -30,6 +34,8 @@ let schema_from_txt () =
   let throw_out = input_line file_channel in
   read_schema empty "schema.txt" file_channel
 
+(*[parse_table_line a s] is the line from the table s parsed into a
+  string list for further computation*)
 let parse_table_line acc_tbl s = 
   (*Remove Parens*)
   let reg = Str.regexp "(\\|)" in
@@ -37,6 +43,8 @@ let parse_table_line acc_tbl s =
   (*Split on Commas and remove leading whitespace*)
   (List.map String.trim (String.split_on_char ',' s')) :: acc_tbl
 
+
+(*[read_file a f fc] is the list of lines from file f*)
 let rec read_file acc_tbl filename file_channel =  
   try 
     let s = input_line file_channel in 
@@ -56,3 +64,6 @@ let table_from_txt filename =
   in
   (*read it, line by line*)
   read_file empty filename file_channel 
+
+let next_line filename =
+  failwith "unimplimented"
