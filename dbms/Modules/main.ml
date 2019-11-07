@@ -69,24 +69,25 @@ let rec pp_table (fields, rows) =
   pp_divider (Array.to_list widths);
   pp_all_rows ind widths rows; ()
 
+(* [invalid_command ()] is the printing of ""Invalid Command, Please try 
+   again.\n"" *)
+let invalid_command () = ANSITerminal.(
+    print_string [red] "Invalid Command, Please try again.\n")
+
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
   user queries*)
 let rec process_queries () =
   print_string "> ";
   match parse (read_line ()) with 
   | exception (Empty) -> process_queries ()
-  | exception (Malformed) -> 
-    ANSITerminal.(print_string [red] "Invalid Command, Please try again.\n");
-    process_queries ()
-  | msg -> begin
-      match msg with
+  | exception (Malformed) -> invalid_command (); process_queries ()
+  | command -> begin
+      match command with
       | Quit -> print_endline "Goodbye for now.\n";
         exit 0
       | Select obj ->  begin
           try pp_table (select obj); process_queries ()
-          with _ -> ANSITerminal.(
-              print_string [red] "Invalid Command, Please try again.\n");
-            process_queries () end 
+          with _ ->  invalid_command (); process_queries () end
       | Insert obj -> process_queries ()
       | Delete obj -> process_queries ()
       | Join obj -> process_queries ()
