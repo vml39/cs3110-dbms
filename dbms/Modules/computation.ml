@@ -24,7 +24,7 @@ let rec select_where = function
   | h::t when h = "WHERE" -> where_helper [] t
   | h::t -> select_where t 
 
-(** [where qry] is *)
+(** [where qry] is [qry] sorted by the parameter following keyword "WHERE". *)
 let where qry = 
   match select_where qry with
   | None -> 
