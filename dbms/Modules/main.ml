@@ -39,22 +39,25 @@ let pp_word element length=
   print_string element;
   print_string (repeat_string " " (length - String.length element));()
 
-let rec pp_divider num_columns = 
-  match num_columns with
-  | 0 -> ()
-  | 1 -> print_string ((repeat_string "-" 20) ^ "\n");
-  | n -> print_string ((repeat_string "-" 20) ^ "+"); pp_divider (n-1)
+let rec pp_divider = function
+  | [] -> ()
+  | h::[] -> print_string ((repeat_string "-" (h+1)) ^ "\n");
+  | h::t -> print_string ((repeat_string "-" (h+1)) ^ "+"); pp_divider t
+(* match num_columns with
+   | 0 -> ()
+   | 1 -> print_string ((repeat_string "-" 20) ^ "\n");
+   | n -> print_string ((repeat_string "-" 20) ^ "+"); pp_divider (n-1) *)
 
 (*[pp_table schema output] is the printing of [schema] and [output]. The
   elements in [schema] are the  *)
 let rec pp_table (fields, output) =
-  let column_lengths = calc_lengths fields output in
+  let col_lens = calc_lengths fields output in
   let rec pp_row ind row = 
     (ind := !ind + 1);
     match row with
     | [] -> print_endline ""
-    | h::[] -> pp_word h column_lengths.(!ind); print_endline ""
-    | h::t ->  pp_word h column_lengths.(!ind); print_string "|"; pp_row ind t in
+    | h::[] -> pp_word h col_lens.(!ind); (ind := -1); print_endline ""
+    | h::t ->  pp_word h col_lens.(!ind); print_string "|"; pp_row ind t in
   let rec pp_output output =
     let ind = ref(-1) in
     match output with
@@ -62,7 +65,7 @@ let rec pp_table (fields, output) =
     | h::t -> pp_row ind h; pp_output t in
   let ind = ref(-1) in
   pp_row ind fields;
-  pp_divider (List.length fields);
+  pp_divider (Array.to_list col_lens);
   pp_output output; ()
 
 
