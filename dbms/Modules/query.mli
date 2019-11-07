@@ -15,7 +15,7 @@
 type object_phrase = string list
 
 (** The type [query] represents a use query that is decomposed
-    into a verb and possibly an object phrase. *)
+    into a command and possibly an object phrase. *)
 type t = 
   | Select of object_phrase
   | Insert of object_phrase
@@ -29,25 +29,21 @@ exception Empty
 (** Raised when a malformed query is encountered. *)
 exception Malformed
 
-(** [parse str] parses a player's input into a [query], as follows. The first
+(* [parse str] parses a user's input into a [query], as follows. The first
     word (i.e., consecutive sequence of non-space characters) of [str] becomes 
-    the verb. The rest of the words, if any, become the object phrase.
+    the command. The rest of the words, if any, become the object phrase.
     Examples: 
-    - [parse "    go   clock   tower   "] is [Go ["clock"; "tower"]]
-    - [parse "quit"] is [Quit]. 
+   - [parse "    SELECT * FROM students  "] is [SELECT ["*";"FROM";"students"]]
+   - [parse "QUIT"] is [Quit]. 
 
-    Requires: [str] contains only alphanumeric (A-Z, a-z, 0-9) and space 
-    characters (only ASCII character code 32; not tabs or newlines, etc.).
+    Requires: [str] contains only alphanumeric (A-Z, a-z, 0-9) and commas and 
+    space characters (only ASCII character code 32; not tabs or newlines, etc.).
 
     Raises: [Empty] if [str] is the empty string or contains only spaces. 
 
     Raises: [Malformed] if the query is malformed. A query
-    is {i malformed} if the verb is neither "quit" nor "go",
-    or if the verb is "quit" and there is a non-empty object phrase,
-    or if the verb is "go" and there is an empty object phrase.*)
+    is {i malformed} if the command is not "QUIT","SELECT","INSERT","DELETE",
+    or "JOIN", or if the command is "QUIT" and there is a non-empty object 
+    phrase, or if the command is any of the other option and there is an empty 
+    object phrase.*)
 val parse : string -> t
-
-(* END DO NOT CHANGE
- **********************************************************************)
-
-(* You are free to add more code here. *)
