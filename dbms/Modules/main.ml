@@ -8,19 +8,26 @@ let rec repeat_str acc str width =
   then acc
   else repeat_str (str ^ acc) str (width - 1)
 
-(*[pp_divider widths] is the printing of (length [width]) hyphen segments. Each
-  segment of hyphen is determined by the value in each element of [width]. 
-  Between each two segments of hyphens there is a "+" to separate. The last 
-  segment is followed by a new line.*)
-let rec pp_divider = function
-  | [] -> ()
-  | h::[] -> print_string ((repeat_str "" "-" (h+1)) ^ "\n");
-  | h::t -> print_string ((repeat_str "" "-" (h+1)) ^ "+"); pp_divider t
+(*[pp_divider left inter right widths] is the printing of (length [width]) 
+  "═" segments. The first "═" segment is preceded by [left] and the last
+  segment is followed by [right] and new line. Between each segment of "═" there 
+  is an [inter]. The length of each segment of "═" is determined by the
+  corresponding int in [widths] i.e. the first segment's length is the int in 
+  the first element of [width], the second segment length is the second int in 
+  [width] and so on*)
+let rec pp_divider left inter right widths =
+  print_string left;
+  let rec pp_divider_rec = function
+    | [] -> ()
+    | h::[] -> print_string (repeat_str "" "═" (h));
+    | h::t -> print_string ((repeat_str "" "═" (h)) ^ inter); pp_divider_rec t in 
+  pp_divider_rec widths;
+  print_endline right; ()
 
 (* [pp_word width word] is the printing of [word] with one space on the left and
    ([width] - length [word]) spaces on the right *)
 let pp_word width word =
-  print_string " ";
+  print_string "║ ";
   print_string word;
   print_string (repeat_str "" " " (width - String.length word))
 
@@ -33,10 +40,10 @@ let rec pp_row ind widths = function
   | h::[] -> 
     pp_word widths.(!ind) h ; 
     ind := 0; 
-    print_string "\n"
+    print_endline "║"
   | h::t ->  
     pp_word widths.(!ind) h; 
-    print_string "|"; 
+    (* print_string "║";  *)
     ind := !ind + 1; 
     pp_row ind widths t 
 
@@ -65,9 +72,12 @@ let calc_widths fields rows =
 let rec pp_table (fields, rows) =
   let widths = calc_widths fields rows in (* Calc width of each column *)
   let ind = ref(0) in
+  let widths_lst = (Array.to_list widths) in
+  pp_divider "╔═" "╦═" "╗" widths_lst;
   pp_row ind widths fields ;
-  pp_divider (Array.to_list widths);
-  pp_all_rows ind widths rows; ()
+  pp_divider "╠═" "╬═" "╣" widths_lst;
+  pp_all_rows ind widths rows;
+  pp_divider "╚═" "╩═" "╝" widths_lst;()
 
 (* [invalid_command ()] is the printing of ""Invalid Command, Please try 
    again.\n"" *)
@@ -96,7 +106,8 @@ let rec process_queries () =
 (* [main ()] prompts the user to insert query, and then starts the engine to 
     process them *)
 let main () = 
-  ANSITerminal.(print_string [red] "\n\nWelcome to Ocaml DBMS\n");
+  ANSITerminal.(print_string [red] "
+  \n\nWelcome to Ocaml DBMS\n");
   print_endline "Please enter your query\n";
   process_queries ()
 
