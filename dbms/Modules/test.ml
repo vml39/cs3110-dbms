@@ -112,7 +112,7 @@ let malformed_fields_test name s =
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
 (* [table_from_txt_test name expected s] constructs an OUnit test named 
-   [name] that asserts the quality of [expected] of [s] applied to 
+   [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.table_from_text*)
 let table_from_txt_test name expected s = 
   "Table from Text test: " ^ name >:: (fun _ -> 
@@ -120,11 +120,25 @@ let table_from_txt_test name expected s =
         expected (table_from_txt s))
 
 (* [schema_from_txt_test name expected s] constructs an OUnit test named 
-   [name] that asserts the quality of [expected] of [s] applied to 
+   [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
 let schema_from_txt_test name expected s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_equal expected (schema_from_txt s))
+
+(* [str_equ_test name expected s] constructs an OUnit test named 
+   [name] that asserts the equality of [expected] of [s] 
+*)
+let str_lst_eq_test name expected s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
+      assert_equal ~printer:(pp_list pp_query) expected s)
+
+(* [func_raises_test name expected f s] constructs an OUnit test named 
+   [name] that asserts [f] applied to [s] raises [expected]
+*)
+let f_raises_test name exn f s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
+      assert_raises exn (fun _ -> (f s)))
 
 
 let qry = parse "SELECT netid FROM students" |> get_qry
@@ -144,6 +158,16 @@ let students = [
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
 ]
+
+let students1 = 
+  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"]
+
+let students2 = 
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"]
+
+let students3 = 
+  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
+
 
 let schema2 = [
   ("students", ["name"; "netid"; "class"; "major"; "home"]);
@@ -169,10 +193,23 @@ let computation_tests = [
 ]
 
 (* DATA READ WRITE TESTS ******************************************************)
+let fc = get_file_chan "students"
+let ln1 = next_line fc
+let ln2 = next_line fc
+let fc2 = get_file_chan "students"
 
 let data_read_write_tests = [
   table_from_txt_test "students" students "students";
-  schema_from_txt_test "example" schema2 ()
+  schema_from_txt_test "example" schema2 ();
+  str_lst_eq_test "ln1" students1 ln1;
+  str_lst_eq_test "ln2" students2 ln2;
+  str_lst_eq_test "ln3" students3 (next_line fc);
+  f_raises_test "no ln 4" (End_of_file) next_line fc;
+  (* Note Reverse Order *)
+  f_raises_test "no ln 4" (End_of_file) next_line fc2;
+  str_lst_eq_test "ln3 again" students3 (next_line fc2);
+  str_lst_eq_test "ln2 again" students2 (next_line fc2);
+  str_lst_eq_test "ln1 again" students1 (next_line fc2);
 ]
 
 (******************************************************************************)
