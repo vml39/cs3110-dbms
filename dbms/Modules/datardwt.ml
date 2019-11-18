@@ -65,5 +65,17 @@ let table_from_txt filename =
   (*read it, line by line*)
   read_file empty filename file_channel 
 
-let next_line filename =
-  failwith "unimplimented"
+
+let get_file_chan filename =
+  open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
+           "input" ^ Filename.dir_sep ^ 
+           "testdb" ^ Filename.dir_sep ^ 
+           "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
+
+let next_line fc =
+  let s = input_line fc in
+  let reg = Str.regexp "(\\|)" in
+  let s' = Str.global_replace reg "" s in 
+  (*Split on Commas and remove leading whitespace*)
+  (List.map String.trim (String.split_on_char ',' s'))
+

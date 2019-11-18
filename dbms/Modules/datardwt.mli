@@ -16,6 +16,10 @@ val schema_from_txt : unit -> s
     Requires: filename is a valid filename contained in the directory*)
 val table_from_txt : string -> t
 
-(** [next_line filename] is the next line from the table in file filename
+(** [get_file_chan filename] is the in_channel object for file filename
     Requires: filename is a valid filename contained in the directory*)
-val next_line : string -> l
+val get_file_chan : string -> in_channel
+
+(** [next_line fc] is the next line from the table in file filename
+    Requires: fc is a valid file channel of a file contained in the directory*)
+val next_line : in_channel -> l
