@@ -1,12 +1,12 @@
 open Query
 open Computation
 
-(* [repeat_str acc str width] is the string [str] concatenated with itself
-   [width] times concatednated with [acc] on the right*)
-let rec repeat_str acc str width = 
-  if width = 0 
+(* [repeat_str acc str n] is the string [str] concatenated with itself
+   [n] times concatednated with [acc] on the right*)
+let rec repeat_str acc str n = 
+  if n = 0 
   then acc
-  else repeat_str (str ^ acc) str (width - 1)
+  else repeat_str (str ^ acc) str (n - 1)
 
 (*[pp_divider left inter right widths] is the printing of (length [width]) 
   "═" segments. The first "═" segment is preceded by [left] and the last
@@ -36,14 +36,13 @@ let pp_word width word =
    [ind] is reset to 0 
    Required: [widths] and [row] must have same dimension greater than zero *)
 let rec pp_row ind widths = function
-  | [] -> failwith "Cannot print empty row"
+  | [] -> failwith "Row must have length greater than zero"
   | h::[] -> 
     pp_word widths.(!ind) h ; 
     ind := 0; 
     print_endline "║"
   | h::t ->  
     pp_word widths.(!ind) h; 
-    (* print_string "║";  *)
     ind := !ind + 1; 
     pp_row ind widths t 
 
@@ -67,17 +66,27 @@ let calc_widths fields rows =
   done; 
   max_widths |> Array.map (fun s -> s + 1)
 
+(*[are_rows_empty rows] is whether the lists inside list [row] are empty or if
+  list [row] is empty *)
+let are_rows_empty = function
+  | [] -> true
+  | []::t -> true
+  | _ -> false
+
 (*[pp_table schema output] is the printing of [schema] and [output]. The
   elements in [schema] are the  *)
 let rec pp_table (fields, rows) =
-  let widths = calc_widths fields rows in (* Calc width of each column *)
-  let ind = ref(0) in
-  let widths_lst = (Array.to_list widths) in
-  pp_divider "╔═" "╦═" "╗" widths_lst;
-  pp_row ind widths fields ;
-  pp_divider "╠═" "╬═" "╣" widths_lst;
-  pp_all_rows ind widths rows;
-  pp_divider "╚═" "╩═" "╝" widths_lst;()
+  if are_rows_empty rows 
+  then failwith "Empty Row"
+  else 
+    let widths = calc_widths fields rows in (* Calc width of each column *)
+    let ind = ref(0) in
+    let widths_lst = (Array.to_list widths) in
+    pp_divider "╔═" "╦═" "╗" widths_lst;
+    pp_row ind widths fields ; (* Print field names *)
+    pp_divider "╠═" "╬═" "╣" widths_lst;
+    pp_all_rows ind widths rows; (* Print all rows *)
+    pp_divider "╚═" "╩═" "╝" widths_lst;()
 
 (* [invalid_command ()] is the printing of ""Invalid Command, Please try 
    again.\n"" *)
@@ -96,11 +105,17 @@ let rec process_queries () =
       | Quit -> print_endline "Goodbye for now.\n";
         exit 0
       | Select obj ->  begin
-          try pp_table (select obj); process_queries ()
-          with _ ->  invalid_command (); process_queries () end
+          let (fields, rows) = select obj in
+          if List.length rows < 30
+          then (* Print to terminal *)
+            try pp_table (fields, rows); process_queries ()
+            with Failure _ ->  invalid_command (); process_queries ()
+          else (* Print to file *)
+            failwith "not implemented"
+        end
       | Insert obj -> process_queries ()
       | Delete obj -> process_queries ()
-      | Join obj -> process_queries ()
+      | Join obj   -> process_queries ()
     end
 
 (* [main ()] prompts the user to insert query, and then starts the engine to 
