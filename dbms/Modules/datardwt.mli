@@ -16,10 +16,20 @@ val schema_from_txt : unit -> s
     Requires: filename is a valid filename contained in the directory*)
 val table_from_txt : string -> t
 
-(** [get_file_chan filename] is the in_channel object for file filename
+(** [get_in_chan filename] is the in_channel object for file filename
     Requires: filename is a valid filename contained in the directory*)
-val get_file_chan : string -> in_channel
+val get_in_chan : string -> in_channel
+
+(** [get_out_chan filename] is the out_channel object for file filename
+    Requires: filename is a valid filename contained in the directory*)
+val get_out_chan : string -> out_channel
 
 (** [next_line fc] is the next line from the table in file filename
-    Requires: fc is a valid file channel of a file contained in the directory*)
-val next_line : in_channel -> l
+    Requires: fc is a valid file channel of a file contained in the directory
+    Raises: End_of_file if at the end of the file*)
+val read_next_line : in_channel -> l
+
+(** [write_line fc lst] writes the contents of lst as a line to the table in fc 
+    Requires: fc is a valid file channel of a file contained in the directory
+*)
+val write_line : out_channel -> string list -> string
