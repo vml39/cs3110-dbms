@@ -193,23 +193,23 @@ let computation_tests = [
 ]
 
 (* DATA READ WRITE TESTS ******************************************************)
-let fc = get_file_chan "students"
-let ln1 = next_line fc
-let ln2 = next_line fc
-let fc2 = get_file_chan "students"
+let fc = get_in_chan "students"
+let ln1 = read_next_line fc
+let ln2 = read_next_line fc
+let fc2 = get_in_chan "students"
 
 let data_read_write_tests = [
   table_from_txt_test "students" students "students";
   schema_from_txt_test "example" schema2 ();
   str_lst_eq_test "ln1" students1 ln1;
   str_lst_eq_test "ln2" students2 ln2;
-  str_lst_eq_test "ln3" students3 (next_line fc);
-  f_raises_test "no ln 4" (End_of_file) next_line fc;
+  str_lst_eq_test "ln3" students3 (read_next_line fc);
+  f_raises_test "no ln 4" (End_of_file) read_next_line fc;
   (* Note Reverse Order *)
-  f_raises_test "no ln 4" (End_of_file) next_line fc2;
-  str_lst_eq_test "ln3 again" students3 (next_line fc2);
-  str_lst_eq_test "ln2 again" students2 (next_line fc2);
-  str_lst_eq_test "ln1 again" students1 (next_line fc2);
+  f_raises_test "no ln 4" (End_of_file) read_next_line fc2;
+  str_lst_eq_test "ln3 again" students3 (read_next_line fc2);
+  str_lst_eq_test "ln2 again" students2 (read_next_line fc2);
+  str_lst_eq_test "ln1 again" students1 (read_next_line fc2);
 ]
 
 (******************************************************************************)

@@ -66,16 +66,29 @@ let table_from_txt filename =
   read_file empty filename file_channel 
 
 
-let get_file_chan filename =
+let get_in_chan filename =
   open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
            "input" ^ Filename.dir_sep ^ 
            "testdb" ^ Filename.dir_sep ^ 
            "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
-let next_line fc =
-  let s = input_line fc in
+let get_out_chan filename =
+  open_out (Filename.parent_dir_name ^ Filename.dir_sep ^
+            "input" ^ Filename.dir_sep ^ 
+            "testdb" ^ Filename.dir_sep ^ 
+            "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
+
+let read_next_line inc =
+  let s = input_line inc in
   let reg = Str.regexp "(\\|)" in
   let s' = Str.global_replace reg "" s in 
   (*Split on Commas and remove leading whitespace*)
   (List.map String.trim (String.split_on_char ',' s'))
+
+let write_line outc lst = 
+  let single_a = "\n(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
+  let single_b = String.sub single_a 0 (String.length single_a - 2) in
+  output_string outc single_b
+
+let delete_line fc lst = failwith "unimplimented"
 
