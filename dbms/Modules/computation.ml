@@ -1,15 +1,6 @@
 open Query
 open Datardwt
 
-<<<<<<< HEAD
-let like_equal fc schema acc (field, op, pattern) : string list list = 
-  let index = schema field in 
-  match op with
-  | s when s = "LIKE" -> 
-    let row = try read_next_line fc |> (* Check if pattern matches *)
-  | s when s = "=" -> filter_fields
-
-=======
 (** TODO: document *)
 let index field schema =
   let i = ref (-1) in 
@@ -18,7 +9,6 @@ let index field schema =
 
 let like param = 
   failwith "unimplemented"
->>>>>>> d837cbe0067258f37753752f4bb901fdd6f89071
 
 let rec select_fields acc = function 
   | [] -> 
@@ -72,13 +62,8 @@ let rec select_order = function
   | h::t -> select_order t
 
 let comp n x y = 
-<<<<<<< HEAD
-  let x' = List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
-let y' =
-=======
   let x' = List.nth x n in 
   let y' = List.nth y n in 
->>>>>>> d837cbe0067258f37753752f4bb901fdd6f89071
   match Stdlib.compare x' y' with
   | x when x'<0 -> -1
   | 0 -> 0
@@ -88,25 +73,14 @@ let order_helper field i = function
   | [] -> raise Malformed
   | h::t -> if h = field then 
 
-<<<<<<< HEAD
       (* need a compare function *)
       (** [order table qry] is [table] with rows sorted by the the field following the
           "ORDER BY" keyword in [qry]. *)
-      let order qry = 
+      let order schema qry = 
         match select_order qry with 
         | None -> fun lst -> lst 
-        | Some param -> 
-          fun lst -> List.sort (comp param) lst
-=======
-(* need a compare function *)
-(** [order table qry] is [table] with rows sorted by the the field following the
-    "ORDER BY" keyword in [qry]. *)
-let order schema qry = 
-  match select_order qry with 
-     | None -> fun lst -> lst 
-     | Some param ->  
-      fun lst -> List.sort (comp (index (fst param) schema)) lst
->>>>>>> d837cbe0067258f37753752f4bb901fdd6f89071
+        | Some param ->  
+          fun lst -> List.sort (comp (index (fst param) schema)) lst
 (* compare only the field with the param *)
 
 (** [where_helper acc qry] is [None] if the where [qry] is malformed and 
@@ -115,7 +89,7 @@ let order schema qry =
 (** TODO: update docs *)
 let rec where_helper schema = function 
   | field::op::pattern::t -> 
-    if List.mem field schema then (field, op, pattern)
+    if List.mem field schema then Some (field, op, pattern)
     else raise Malformed
   | _ -> raise Malformed
 
@@ -126,6 +100,13 @@ let rec select_where schema = function
   | [] -> None
   | h::t when h = "WHERE" -> where_helper schema t
   | h::t -> select_where schema t 
+
+let like_equal fc schema acc (field, op, pattern) : string list list = 
+  let index = field schema in 
+  match op with
+  | s when s = "LIKE" -> 
+    let row = try read_next_line fc |> (* Check if pattern matches *)
+  | s when s = "=" -> filter_fields
 
 (** [where qry schema row] is [row] filtered by the fields selected for in [qry] and where
     fields follow the condition specified after "WHERE" in [qry]. *)
@@ -143,27 +124,6 @@ let select qry =
   let schema = table_schema (schema_from_txt ()) tablename in 
   let fields = select_fields [] qry |> filter_fields schema [] in 
   (schema, where tablename qry fields)
-
-  <<<<<<< HEAD
-  (* need to modify table here *)
-
-  (* table_from_txt (select_table qry) |> filter_table fields [] in *)
-  (* let order_by = select_order qry in 
-     match order_by with 
-     | None -> table
-     | Some field -> order table order_by *)
-  (* let i = ref(-1) in
-     let fields = filter_row i fields [] schema in
-     (fields, table) *)
-  =======
-  (* let order_by = select_order qry in 
-     match order_by with 
-     | None -> table
-     | Some field -> order table order_by *)
-  (* let i = ref(-1) in
-     let fields = filter_row i fields [] schema in
-     (fields, table) *)
-  >>>>>>> 99b5275d6ad2928ab434d03fe9234e3216174e58
 
 (* inside fun that processes query, helper function that does it line by line (recursive)
    call get file channel w table name, pass into rec function that reads single lines 
