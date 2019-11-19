@@ -1,14 +1,11 @@
 open Query
 open Datardwt
 
-(** TODO: document *)
+(** [index field schema] is the index of [field] in list [schema]. *)
 let index field schema =
   let i = ref (-1) in 
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
-
-let like param = 
-  failwith "unimplemented"
 
 let rec select_fields acc = function 
   | [] -> 
@@ -177,4 +174,22 @@ let delete qry =
   failwith "unimplemented"
 
 let join qry = 
+  failwith "unimplemented"
+
+(** TODO: document *)
+let rec create_table_helper = function 
+  | [] -> raise Malformed
+  | h::[] -> raise Malformed
+  | h::t -> 
+    let schema = List.fold_left (fun acc x -> acc^x^", ") (h^": ") t in 
+    (h, String.sub schema 0 (String.length schema - 2))
+
+(** TODO: document *)
+let rec create_table qry = 
+  let schema = create_table_helper qry in 
+  (* @Robert 
+    schema is a string * string where the first string is the table name and the 
+    second string is the table schema in the same format as schema.txt 
+    create a file in tables with table name and add schema line to schema.txt
+   *)
   failwith "unimplemented"

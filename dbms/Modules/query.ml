@@ -8,6 +8,7 @@ type t =
      VALUES (value1, value2, value3, ...); *)
   | Delete of object_phrase
   | Join of object_phrase
+  | Create of object_phrase
   | Quit
 
 exception Empty
@@ -31,5 +32,7 @@ let parse str =
   | h::t when h = "INSERT" -> if t = [] then raise Malformed else Insert t
   | h::t when h = "DELETE" -> if t = [] then raise Malformed else Delete t
   | h::t when h = "JOIN" -> if t = [] then raise Malformed else Join t
+  | h::h'::t when h = "CREATE" && h' = "TABLE" -> 
+    if t = [] then raise Malformed else Create t
   | h::t when h = "QUIT" -> if t <> [] then raise Malformed else Quit
   | _ -> raise Malformed

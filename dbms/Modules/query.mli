@@ -21,6 +21,7 @@ type t =
   | Insert of object_phrase
   | Delete of object_phrase
   | Join of object_phrase
+  | Create of object_phrase
   | Quit
 
 (** Raised when an empty query is parsed. *)
@@ -42,8 +43,8 @@ exception Malformed
     Raises: [Empty] if [str] is the empty string or contains only spaces. 
 
     Raises: [Malformed] if the query is malformed. A query
-    is {i malformed} if the command is not "QUIT","SELECT","INSERT","DELETE",
-    or "JOIN", or if the command is "QUIT" and there is a non-empty object 
-    phrase, or if the command is any of the other option and there is an empty 
-    object phrase.*)
+    is {i malformed} if the command is not "QUIT","SELECT","INSERT","DELETE", 
+    "JOIN", or "CREATE", or if the command is "QUIT" and there is a non-empty 
+    object phrase, or if the command is any of the other option and there is an 
+    empty object phrase.*)
 val parse : string -> t
