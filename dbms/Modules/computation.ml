@@ -1,6 +1,7 @@
 open Query
 open Datardwt
 
+<<<<<<< HEAD
 let like_equal fc schema acc (field, op, pattern) : string list list = 
   let index = schema field in 
   match op with
@@ -8,6 +9,16 @@ let like_equal fc schema acc (field, op, pattern) : string list list =
     let row = try read_next_line fc |> (* Check if pattern matches *)
   | s when s = "=" -> filter_fields
 
+=======
+(** TODO: document *)
+let index field schema =
+  let i = ref (-1) in 
+  List.fold_left 
+    (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
+
+let like param = 
+  failwith "unimplemented"
+>>>>>>> d837cbe0067258f37753752f4bb901fdd6f89071
 
 let rec select_fields acc = function 
   | [] -> 
@@ -56,13 +67,18 @@ let rec filter_table fc schema acc =
     sorted by otherwise. *)
 let rec select_order = function 
   | [] -> None
-  | h::h'::t when h = "ORDER" && h' = "BY" -> Some (List.hd t)
+  | o::s::b::t when o = "ORDER" && s = " " && b = "BY" -> Some (List.hd t)
   (* what if there's a space? need to parse further *)
   | h::t -> select_order t
 
 let comp n x y = 
+<<<<<<< HEAD
   let x' = List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
 let y' =
+=======
+  let x' = List.nth x n in 
+  let y' = List.nth y n in 
+>>>>>>> d837cbe0067258f37753752f4bb901fdd6f89071
   match Stdlib.compare x' y' with
   | x when x'<0 -> -1
   | 0 -> 0
@@ -72,6 +88,7 @@ let order_helper field i = function
   | [] -> raise Malformed
   | h::t -> if h = field then 
 
+<<<<<<< HEAD
       (* need a compare function *)
       (** [order table qry] is [table] with rows sorted by the the field following the
           "ORDER BY" keyword in [qry]. *)
@@ -80,6 +97,16 @@ let order_helper field i = function
         | None -> fun lst -> lst 
         | Some param -> 
           fun lst -> List.sort (comp param) lst
+=======
+(* need a compare function *)
+(** [order table qry] is [table] with rows sorted by the the field following the
+    "ORDER BY" keyword in [qry]. *)
+let order schema qry = 
+  match select_order qry with 
+     | None -> fun lst -> lst 
+     | Some param ->  
+      fun lst -> List.sort (comp (index (fst param) schema)) lst
+>>>>>>> d837cbe0067258f37753752f4bb901fdd6f89071
 (* compare only the field with the param *)
 
 (** [where_helper acc qry] is [None] if the where [qry] is malformed and 
