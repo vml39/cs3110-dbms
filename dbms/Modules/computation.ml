@@ -38,11 +38,11 @@ let rec filter_fields fields acc schema =
 
 let rec convert_to_regex = function
   | [] -> ""
-  | h::t when h = "%" -> "[.+]" ^ convert_to_regex t
-  | h::t when h = "_" -> "[.]" ^ convert_to_regex t
+  | h::t when h = "%" -> ".+" ^ convert_to_regex t
+  | h::t when h = "_" -> "." ^ convert_to_regex t
   | h::t -> h ^ convert_to_regex t
 
-let parse_pattern pattern = 
+let parse_pattern pattern = print_string " In Parse Pattern ";
   let patternList = 
     pattern
     |> Str.global_replace (Str.regexp "_") " _ " 
@@ -209,8 +209,8 @@ let rec create_table_helper = function
 let rec create_table qry = 
   let schema = create_table_helper qry in 
   (* @Robert 
-    schema is a string * string where the first string is the table name and the 
-    second string is the table schema in the same format as schema.txt 
-    create a file in tables with table name and add schema line to schema.txt
-   *)
+     schema is a string * string where the first string is the table name and the 
+     second string is the table schema in the same format as schema.txt 
+     create a file in tables with table name and add schema line to schema.txt
+  *)
   failwith "unimplemented"
