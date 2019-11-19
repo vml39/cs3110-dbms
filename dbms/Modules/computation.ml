@@ -7,13 +7,14 @@ let index field schema =
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
-let rec select_fields acc = function 
+let rec select_fields schema acc = function 
   | [] -> 
     raise Malformed
   | h::t when h = "FROM" -> 
     if acc = [] then raise Malformed 
     else List.rev acc
-  | h::t -> select_fields (h::acc) t
+  | h::t when h = "*" -> schema
+  | h::t -> select_fields schema (h::acc) t
 
 let rec table_schema db_schema tablename = 
   match db_schema with 
@@ -33,8 +34,7 @@ let rec select_table = function
     corresponds to a field in [schema], where the elt is [true] if the field 
     is in [fields] and false otherwise. *)
 let rec filter_fields fields acc schema = 
-  if List.nth schema 0 = "*" then List.map (fun _ -> true) fields
-  else List.map (fun x -> if List.mem x schema then true else false) fields
+  List.map (fun x -> if List.mem x schema then true else false) fields
 
 let rec convert_to_regex = function
   | [] -> ""
@@ -70,6 +70,7 @@ let filter_row (schema:string list) fields where (field, op, pattern) row =
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
+(** TODO: document *)
 let rec filter_table fc schema fields where p acc = 
   let row = try read_next_line fc |> filter_row schema fields where p with 
     | exn -> Stdlib.close_in fc; Some []
@@ -118,6 +119,7 @@ let rec select_where schema = function
   | h::t when h = "WHERE" -> where_helper schema t
   | h::t -> select_where schema t 
 
+(** TODO: document *)
 let rec like_equal fc schema fields qry  : string list list = 
   match qry with
   | [] -> raise Malformed
@@ -131,16 +133,14 @@ let where tablename qry schema fields =
   match select_where schema qry with
   | None -> filter_table file_channel schema fields false ("", "", "") [] 
   | Some param -> like_equal file_channel schema fields qry 
-(* if the param matches the where cond, add this row else don't *)
-(* if fd = param then Some filter_row i schema acc h else None *)
-(* the field is equal to the param set *)
 
 let select qry =
   let tablename = select_table qry in 
   let schema = table_schema (schema_from_txt ()) tablename in 
-  let fields = select_fields [] qry |> filter_fields schema [] in 
-  let table = where tablename qry schema fields in 
-  (schema, order schema qry table)
+  let fields = select_fields schema [] qry in 
+  let bool_fields = filter_fields schema [] fields in 
+  let table = where tablename qry schema bool_fields in 
+  (fields, order schema qry table)
 
 (* Parses the table name form query*)
 let insert_table qry =
@@ -190,9 +190,6 @@ let insert qry =
     let outc = get_out_chan tablename in
     write_line outc writable; 
     close_out outc
-
-
-
 
 let delete qry = 
   failwith "unimplemented"
