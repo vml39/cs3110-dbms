@@ -94,20 +94,27 @@ let rec pp_table (fields, rows) =
 let invalid_command () = ANSITerminal.(
     print_string [red] "Invalid Command, Please try again.\n")
 
+(* [write_row row] is the concatenation of each string in [row] delimited by
+   a ",". The string is ended by a newline character *)
 let rec write_row = function
   | [] -> failwith "Row must be non empty"
   | h::[] -> h ^ "\n"
   | h::t -> h ^ ", " ^ write_row t
 
+(* [concate_all_rows rows] is the concatenation of each row in [rows] using
+   function write_row. Each row in [rows] is seperated by a newline character*)
 let rec write_all_rows = function
   | [] -> failwith "No rows to be printed"
   | h::[] -> write_row h
   | h::t -> write_row h ^ write_all_rows t
 
+(* [write_to_file fields rows] is the printing of fields and rows into text file
+   in output folder.  Each element in each row is delimited by "," and each
+   row is seperated by a newline character*)
 let write_to_file fields rows=
   let oc = open_out "../output/test.txt" in   (* create file, return channel *)
-  fprintf oc "%s" (write_row fields);       (* write fields *)  
-  fprintf oc "%s" (write_all_rows rows);    (* write all rows *)
+  fprintf oc "%s" (write_row fields);         (* write fields *)  
+  fprintf oc "%s" (write_all_rows rows);      (* write all rows *)
   close_out oc; ()                            (* flush and close the channel *)
 
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
@@ -123,7 +130,7 @@ let rec process_queries () =
         exit 0
       | Select obj ->  begin
           let (fields, rows) = select obj in
-          if List.length rows > 30
+          if List.length rows < 30
           then (* Print to terminal *)
             try pp_table (fields, rows); process_queries ()
             with Failure _ ->  invalid_command (); process_queries ()
