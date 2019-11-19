@@ -32,4 +32,4 @@ val read_next_line : in_channel -> l
 (** [write_line fc lst] writes the contents of lst as a line to the table in fc 
     Requires: fc is a valid file channel of a file contained in the directory
 *)
-val write_line : out_channel -> string list -> string
+val write_line : out_channel -> string list -> unit
