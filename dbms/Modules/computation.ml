@@ -2,9 +2,12 @@ open Query
 open Datardwt
 
 let like_equal fc schema acc (field, op, pattern) : string list list = 
+  let index = schema field in 
   match op with
-  | s when s = "LIKE" ->
+  | s when s = "LIKE" -> 
+    let row = try read_next_line fc |> (* Check if pattern matches *)
   | s when s = "=" -> filter_fields
+
 
 let rec select_fields acc = function 
   | [] -> 
@@ -103,7 +106,7 @@ let where tablename qry schema =
   let file_channel = get_in_chan tablename in 
   match select_where schema qry with
   | None -> filter_table file_channel schema []
-  | Some param -> like_equal file_channel param 
+  | Some param -> like_equal file_channel schema [] param 
 (* if the param matches the where cond, add this row else don't *)
 (* if fd = param then Some filter_row i schema acc h else None *)
 (* the field is equal to the param set *)
