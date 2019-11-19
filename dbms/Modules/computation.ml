@@ -39,21 +39,47 @@ let rec filter_fields fields acc schema =
   if List.nth schema 0 = "*" then List.map (fun _ -> true) fields
   else List.map (fun x -> if List.mem x schema then true else false) fields
 
+let rec convert_to_regex = function
+  | [] -> ""
+  | h::t when h = "%" -> "[.+]" ^ convert_to_regex t
+  | h::t when h = "_" -> "[.]" ^ convert_to_regex t
+  | h::t -> h ^ convert_to_regex t
+
+let parse_pattern pattern = 
+  let patternList = 
+    pattern
+    |> Str.global_replace (Str.regexp "_") " _ " 
+    |> Str.global_replace (Str.regexp "%") " % " 
+    |> String.split_on_char ' ' 
+    |> List.filter ( fun s -> s <> "") in 
+  convert_to_regex patternList
+
 (** TODO: document *)
-let filter_row schema where (op, pattern) row =
+let filter_row (schema:string list) fields where (field, op, pattern) row =
   let i = ref (-1) in 
-  if where then failwith "unimplemented where"
-  else Some (List.filter (fun _ -> i := !i + 1; List.nth schema !i) row)
+  if where then let ind = index field schema in
+    match op with
+    | s when s = "LIKE" ->
+      if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
+      then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+      else None
+    | s when s = "=" -> 
+      if (List.nth row ind) = pattern 
+      then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+      else None 
+    | s -> failwith "Expected LIKE or = after WHERE"
+
+  else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
-let rec filter_table fc schema where p acc = 
-  let row = try read_next_line fc |> filter_row schema where p with 
+let rec filter_table fc schema fields where p acc = 
+  let row = try read_next_line fc |> filter_row schema fields where p with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
-  | None -> filter_table fc schema where p acc
-  | Some e when e = [] -> List.rev acc 
-  | Some r -> filter_table fc schema where p (r::acc)
+  | None -> filter_table fc schema fields where p acc
+  | Some e when e = [] -> acc 
+  | Some r -> filter_table fc schema fields where p (r::acc)
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
     command and Some of [field name] indicating the field the table should be
@@ -95,21 +121,19 @@ let rec select_where schema = function
   | h::t when h = "WHERE" -> where_helper schema t
   | h::t -> select_where schema t 
 
-let like_equal fc schema acc (field, op, pattern) : string list list = 
-  (* let index = field schema in 
-     match op with
-     | s when s = "LIKE" -> 
-     let row = try read_next_line fc |> (* Check if pattern matches *)
-     | s when s = "=" -> filter_fields *)
-  failwith "unimplemented"
+let rec like_equal fc schema fields qry  : string list list = 
+  match qry with
+  | [] -> raise Malformed
+  | f::o::p::t when o = "=" || o = "LIKE" -> filter_table fc schema fields true (f,o,p) []
+  | h::t -> like_equal fc schema fields t
 
 (** [where qry schema row] is [row] filtered by the fields selected for in [qry] and where
     fields follow the condition specified after "WHERE" in [qry]. *)
 let where tablename qry schema fields = 
   let file_channel = get_in_chan tablename in 
   match select_where schema qry with
-  | None -> filter_table file_channel fields false (None, None) [] 
-  | Some param -> like_equal file_channel schema [] param 
+  | None -> filter_table file_channel schema fields false ("", "", "") [] 
+  | Some param -> like_equal file_channel schema fields qry 
 (* if the param matches the where cond, add this row else don't *)
 (* if fd = param then Some filter_row i schema acc h else None *)
 (* the field is equal to the param set *)
