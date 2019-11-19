@@ -13,7 +13,7 @@ val select_table : string list -> string
     from [dbs]. *)
 val table_schema : (string * string list) list -> string -> string list 
 
-(** [select_table qry] is the list of field name parsed out from [qry]
+(** [select_fields qry acc] is the list of field name parsed out from [qry]
     immediately following the "SELECT" keyword. 
     Raises [Malformed] if no field names provided in [qry] or if 
     illegal [qry]. *)
