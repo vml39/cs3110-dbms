@@ -44,21 +44,24 @@ let rec filter_fields fields acc schema =
 let filter_row schema where (op, pattern) row =
   let i = ref (-1) in 
   if where then failwith "unimplemented where"
-  else List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
+  else Some (List.filter (fun _ -> i := !i + 1; List.nth schema !i) row)
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
 let rec filter_table fc schema where p acc = 
   let row = try read_next_line fc |> filter_row schema where p with 
-    | exn -> Stdlib.close_in fc; []
-  in if row = [] then acc else filter_table fc schema where p (row::acc)
+    | exn -> Stdlib.close_in fc; Some []
+  in match row with 
+  | None -> filter_table fc schema where p acc
+  | Some e when e = [] -> acc 
+  | Some r -> filter_table fc schema where p (r::acc)
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
     command and Some of [field name] indicating the field the table should be
     sorted by otherwise. *)
 let rec select_order = function 
   | [] -> None
-  | o::s::b::t when o = "ORDER" && s = " " && b = "BY" -> Some (List.hd t)
+  | o::b::t when o = "ORDER" && b = "BY" -> Some (List.hd t)
   | h::t -> select_order t
 
 (** TODO: document *)
