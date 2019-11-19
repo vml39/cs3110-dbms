@@ -1,4 +1,0 @@
-name, netid, class, major, home
-Daniel Stabile, dis52, 2021, CS, Cascadilla Hall
-Robert Morgowicz, rjm448, 2020, ECE, Cascadilla Hall
-Vivian Li, vml39, 2020, IS, Collegetown
