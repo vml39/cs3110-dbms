@@ -1,3 +1,4 @@
+open Printf
 open Query
 open Computation
 
@@ -36,7 +37,7 @@ let pp_word width word =
    [ind] is reset to 0 
    Required: [widths] and [row] must have same dimension greater than zero *)
 let rec pp_row ind widths = function
-  | [] -> failwith "Row must have length greater than zero"
+  | [] -> failwith "Row must be non empty"
   | h::[] -> 
     pp_word widths.(!ind) h ; 
     ind := 0; 
@@ -77,7 +78,7 @@ let are_rows_empty = function
   elements in [schema] are the  *)
 let rec pp_table (fields, rows) =
   if are_rows_empty rows 
-  then failwith "Empty Row"
+  then failwith "Row must be non empty"
   else 
     let widths = calc_widths fields rows in (* Calc width of each column *)
     let ind = ref(0) in
@@ -93,6 +94,22 @@ let rec pp_table (fields, rows) =
 let invalid_command () = ANSITerminal.(
     print_string [red] "Invalid Command, Please try again.\n")
 
+let rec write_row = function
+  | [] -> failwith "Row must be non empty"
+  | h::[] -> h ^ "\n"
+  | h::t -> h ^ ", " ^ write_row t
+
+let rec write_all_rows = function
+  | [] -> failwith "No rows to be printed"
+  | h::[] -> write_row h
+  | h::t -> write_row h ^ write_all_rows t
+
+let write_to_file fields rows=
+  let oc = open_out "../output/test.txt" in   (* create file, return channel *)
+  fprintf oc "%s" (write_row fields);       (* write fields *)  
+  fprintf oc "%s" (write_all_rows rows);    (* write all rows *)
+  close_out oc; ()                            (* flush and close the channel *)
+
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
   user queries*)
 let rec process_queries () =
@@ -106,12 +123,12 @@ let rec process_queries () =
         exit 0
       | Select obj ->  begin
           let (fields, rows) = select obj in
-          if List.length rows < 30
+          if List.length rows > 30
           then (* Print to terminal *)
             try pp_table (fields, rows); process_queries ()
             with Failure _ ->  invalid_command (); process_queries ()
           else (* Print to file *)
-            failwith "not implemented"
+            write_to_file fields rows; process_queries ()
         end
       | Insert obj -> process_queries ()
       | Delete obj -> process_queries ()
