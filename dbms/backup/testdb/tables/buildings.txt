@@ -1,0 +1,5 @@
+(Duffield Hall, Eng Quad, true)
+(Upson Hall, Eng Quad, true)
+(Goldwin Smith Hall, Arts Quad, false)
+(Mann Library, Ag Quad, true)
+(Uris Hall, Central, false)

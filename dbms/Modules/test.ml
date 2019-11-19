@@ -86,6 +86,7 @@ let queries_tests = [
 
 let get_qry = function 
   | Select qry -> qry
+  | Insert qry -> qry
   | _ -> failwith "unimplemented"
 
 (* [select_test name expected s] constructs an OUnit test named 
@@ -95,26 +96,33 @@ let select_test name expected s =
   "Select test: " ^ name >:: (fun _ -> 
       assert_equal ~printer:(pp_list_list' pp_query) expected (select s))  
 
+(* [insert_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.insert*)
+let insert_test name expected s = 
+  "Select test: " ^ name >:: (fun _ -> 
+      assert_equal expected (select s)) 
+
 (* [select_table_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select_table*)
 let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select_table s))
+      assert_equal expected (select_table s))
 
 (* [select_fields_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select_fields [] s))
+      assert_equal expected (select_fields [] s))
 
 (* [malformed_table_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_table raises a 
    query.Malformed exception*)
 let malformed_table_test name s =
   "Malformed select table test: " ^ name >:: (fun _ -> 
-    assert_raises Malformed (fun () -> (select_table s)))
+      assert_raises Malformed (fun () -> (select_table s)))
 
 (* [malformed_fields_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_fields raises a 
@@ -149,7 +157,7 @@ let students_ordered = [
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
 ]
 
-let computation_tests = [
+let select_tests = [
   select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
   malformed_table_test "no FROM keyword" ["*"];
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
@@ -169,6 +177,23 @@ let computation_tests = [
     "SELECT * FROM students ORDER BY name" (schema, students_ordered) qry_order
 ]
 
+let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" |> get_qry
+let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
+let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" |> get_qry
+let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
+
+let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
+let students_up_2 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
+
+let insert_tests = [
+  select_test "INSERT full" (fields', students_up_1) post_ins1;
+  select_test "INSERT partial" (fields', students_up_2) post_ins2;
+]
+
+let delete_tests = [
+
+]
+
 (* DATA READ WRITE TESTS ******************************************************)
 
 (* [table_from_txt_test name expected s] constructs an OUnit test named 
@@ -176,29 +201,29 @@ let computation_tests = [
    DataRdWt.table_from_text*)
 let table_from_txt_test name expected s = 
   "Table from Text test: " ^ name >:: (fun _ -> 
-    assert_equal ~printer:(pp_list_list pp_query) 
-      expected (table_from_txt s))
+      assert_equal ~printer:(pp_list_list pp_query) 
+        expected (table_from_txt s))
 
 (* [schema_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
 let schema_from_txt_test name expected s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
-    assert_equal expected (schema_from_txt s))
+      assert_equal expected (schema_from_txt s))
 
 (* [str_equ_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] 
 *)
 let str_lst_eq_test name expected s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
-    assert_equal ~printer:(pp_list pp_query) expected s)
+      assert_equal ~printer:(pp_list pp_query) expected s)
 
 (* [func_raises_test name expected f s] constructs an OUnit test named 
    [name] that asserts [f] applied to [s] raises [expected]
 *)
 let f_raises_test name exn f s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
-    assert_raises exn (fun _ -> (f s)))
+      assert_raises exn (fun _ -> (f s)))
 
 let fc = get_in_chan "students"
 let ln1 = read_next_line fc
@@ -234,7 +259,9 @@ let suite =
   "test suite for dbms"  >::: List.flatten [
     data_read_write_tests;
     queries_tests;
-    computation_tests;
+    select_tests;
+    insert_tests;
+    delete_tests;
   ]
 
 let _ = run_test_tt_main suite

@@ -34,3 +34,8 @@ val read_next_line : in_channel -> l
     Requires: fc is a valid file channel of a file contained in the directory
 *)
 val write_line : out_channel -> string list -> unit
+
+(*
+val write_to_schema : out_channel -> string list -> unit
+
+val create_file : out_channel -> unit *)
