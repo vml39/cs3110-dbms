@@ -12,7 +12,6 @@ let like param =
 
 let rec select_fields acc = function 
   | [] -> 
-    print_string "select fields";
     raise Malformed
   | h::t when h = "FROM" -> 
     if acc = [] then raise Malformed 
@@ -146,8 +145,57 @@ let select qry =
   let table = where tablename qry schema fields in 
   (schema, order schema qry table)
 
+(* Parses the table name form query*)
+let insert_table qry =
+  match qry with
+  | [] -> raise Malformed
+  | "INTO" :: t -> List.hd t, List.tl t
+  | h :: t -> raise Malformed
+
+(* Parses the values from qry *)
+let rec insert_vals qry acc_col acc_val = 
+  match qry with
+  | [] -> acc_col, acc_val
+  | h :: t -> insert_vals t acc_col (h :: acc_val)
+
+(* Parses the columns and values from qry *)
+let rec insert_cols_and_vals qry acc_col acc_val =
+  match qry with 
+  | [] -> raise Malformed
+  | "VALUES" :: t -> insert_vals t acc_col acc_val
+  | h :: t -> insert_cols_and_vals t (h :: acc_col) acc_val
+
+let rec vals_update sch cols vals acc =
+  match sch, cols with
+  | [], [] -> acc
+  | [], h :: t -> raise Malformed
+  | h :: t, [] -> vals_update t cols vals ("" :: acc)
+  | h1 :: t1, h2 :: t2 -> if h1 = h2 
+    then vals_update t1 t2 (List.tl vals) (List.hd vals :: acc)
+    else vals_update t1 (h2 :: t2) vals ("" :: acc)
+
 let insert qry = 
-  failwith "unimplemented"
+  let tablename, rest = insert_table qry in
+  let (cols, vals) = insert_cols_and_vals rest [] [] in
+  let schema = table_schema (schema_from_txt ()) tablename in 
+  if vals = [] then 
+    if List.length vals <> List.length schema then raise Malformed
+    else 
+      (* you have all cols so insert them all*)
+      let outc = get_out_chan tablename in
+      write_line outc vals; 
+      close_out outc
+
+  else 
+    (* step through schema and vals, inserting empty strings where necessary,
+       then write that*)
+    let writable = vals_update schema cols vals [] in
+    let outc = get_out_chan tablename in
+    write_line outc writable; 
+    close_out outc
+
+
+
 
 let delete qry = 
   failwith "unimplemented"
