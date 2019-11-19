@@ -108,21 +108,21 @@ let insert_test name expected s =
    Computation.select_table*)
 let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select_table s))
+      assert_equal expected (select_table s))
 
 (* [select_fields_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select_fields [] s))
+      assert_equal expected (select_fields [] s))
 
 (* [malformed_table_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_table raises a 
    query.Malformed exception*)
 let malformed_table_test name s =
   "Malformed select table test: " ^ name >:: (fun _ -> 
-    assert_raises Malformed (fun () -> (select_table s)))
+      assert_raises Malformed (fun () -> (select_table s)))
 
 (* [malformed_fields_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_fields raises a 
@@ -178,16 +178,16 @@ let select_tests = [
 ]
 
 let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" |> get_qry
-let post_ins1 = parse "SELECT * FROM students" |> get_qry
+let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
 let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" |> get_qry
-let post_ins2 = parse "SELECT * FROM students" |> get_qry
+let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
 
 let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
 let students_up_2 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
 
 let insert_tests = [
-  insert_test "INSERT full" (fields'', students_up_1) post_ins1;
-  insert_test "INSERT partial" (fields'', students_up_2) post_ins2;
+  select_test "INSERT full" (fields', students_up_1) post_ins1;
+  select_test "INSERT partial" (fields', students_up_2) post_ins2;
 ]
 
 let delete_tests = [
@@ -201,29 +201,29 @@ let delete_tests = [
    DataRdWt.table_from_text*)
 let table_from_txt_test name expected s = 
   "Table from Text test: " ^ name >:: (fun _ -> 
-    assert_equal ~printer:(pp_list_list pp_query) 
-      expected (table_from_txt s))
+      assert_equal ~printer:(pp_list_list pp_query) 
+        expected (table_from_txt s))
 
 (* [schema_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
 let schema_from_txt_test name expected s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
-    assert_equal expected (schema_from_txt s))
+      assert_equal expected (schema_from_txt s))
 
 (* [str_equ_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] 
 *)
 let str_lst_eq_test name expected s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
-    assert_equal ~printer:(pp_list pp_query) expected s)
+      assert_equal ~printer:(pp_list pp_query) expected s)
 
 (* [func_raises_test name expected f s] constructs an OUnit test named 
    [name] that asserts [f] applied to [s] raises [expected]
 *)
 let f_raises_test name exn f s = 
   "Schema from Text test: " ^ name >:: (fun _ -> 
-    assert_raises exn (fun _ -> (f s)))
+      assert_raises exn (fun _ -> (f s)))
 
 let fc = get_in_chan "students"
 let ln1 = read_next_line fc
