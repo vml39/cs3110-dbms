@@ -117,39 +117,46 @@ let write_to_file fields rows=
   fprintf oc "%s" (write_all_rows rows);      (* write all rows *)
   close_out oc; ()                            (* flush and close the channel *)
 
-(*[process_queries ()] is the reading, parsing, computation, and printing of 
-  user queries*)
-
-let rec process_queries () =
+(*[start_dbms ()] asks user for database and processes queries using 
+  process_queries*)
+let start_dbms () =
   print_string "> ";
-  match parse (read_line ()) with 
-  | exception (Empty) -> process_queries ()
-  | exception (Malformed) -> invalid_command (); process_queries ()
-  | command -> begin
-      match command with
-      | Quit -> print_endline "Goodbye for now.\n";
-        exit 0
-      | Select obj ->  begin
-          let (fields, rows) = select obj in
-          if List.length rows < 30
-          then (* Print to terminal *)
-            try pp_table (fields, rows); process_queries ()
-            with Failure _ ->  invalid_command (); process_queries ()
-          else (* Print to file *)
-            write_to_file fields rows; process_queries ()
-        end
-      | Insert obj -> process_queries ()
-      | Delete obj -> process_queries ()
-      | Join obj   -> process_queries ()
-    end
+  let db = read_line() in
+  ANSITerminal.(print_string [red] ("
+  \n" ^ db ^ " selected. Please enter your query\n"));
+  (*[process_queries ()] is the reading, parsing, computation, and printing of 
+    user queries*)
+  let rec process_queries () =
+    print_string "> ";
+    match parse (read_line ()) with 
+    | exception (Empty) -> process_queries ()
+    | exception (Malformed) -> invalid_command (); process_queries ()
+    | command -> begin
+        match command with
+        | Quit -> print_endline "Goodbye for now.\n";
+          exit 0
+        | Select obj ->  begin
+            let (fields, rows) = select obj in
+            if List.length rows < 30
+            then (* Print to terminal *)
+              try pp_table (fields, rows); process_queries ()
+              with Failure _ ->  invalid_command (); process_queries ()
+            else (* Print to file *)
+              write_to_file fields rows; process_queries ()
+          end
+        | Insert obj -> process_queries ()
+        | Delete obj -> process_queries ()
+        | Join obj   -> process_queries ()
+        | _ -> failwith "Unimplemented"
+      end in process_queries ()
 
 (* [main ()] prompts the user to insert query, and then starts the engine to 
     process them *)
 let main () = 
   ANSITerminal.(print_string [red] "
   \n\nWelcome to Ocaml DBMS\n");
-  print_endline "Please enter your query\n";
-  process_queries ()
+  print_endline "Please select your database\n";
+  start_dbms ()
 
 (* Execute the dbms. *)
 let () = main ()

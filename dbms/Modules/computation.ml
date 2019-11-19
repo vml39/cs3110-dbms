@@ -38,11 +38,11 @@ let rec filter_fields fields acc schema =
 
 let rec convert_to_regex = function
   | [] -> ""
-  | h::t when h = "%" -> ".+" ^ convert_to_regex t
+  | h::t when h = "%" -> ".*" ^ convert_to_regex t
   | h::t when h = "_" -> "." ^ convert_to_regex t
   | h::t -> h ^ convert_to_regex t
 
-let parse_pattern pattern = print_string " In Parse Pattern ";
+let parse_pattern pattern = 
   let patternList = 
     pattern
     |> Str.global_replace (Str.regexp "_") " _ " 

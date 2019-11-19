@@ -7,6 +7,10 @@ type t = (string list) list
 (** The abstract type representa schema *)
 type s = (string * (string list)) list
 
+
+(* TODO: Specs *)
+val set_database : unit -> string
+
 (** [schema_from_txt] is as association list representing the schema for
     the current database
     Requires: filename is a valid filename contained in the directory*)

@@ -6,6 +6,8 @@ type s = (string * (string list)) list
 
 let empty = []
 
+let set_database () = read_line ()
+
 (*[parse_schema_line a s] is the line from the schema s parsed into a
   tuple fo string and string list for further computation*)
 let rec parse_schema_line acc_tbl s = 
