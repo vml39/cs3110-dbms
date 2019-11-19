@@ -29,7 +29,8 @@ val get_out_chan : string -> out_channel
     Raises: End_of_file if at the end of the file*)
 val read_next_line : in_channel -> l
 
-(** [write_line fc lst] writes the contents of lst as a line to the table in fc 
+(** [write_line fc lst] appends the contents of lst as a new line to the table 
+    in fc 
     Requires: fc is a valid file channel of a file contained in the directory
 *)
 val write_line : out_channel -> string list -> unit
