@@ -74,6 +74,7 @@ let queries_tests = [
 
 let get_qry = function 
   | Select qry -> qry
+  | Insert qry -> qry
   | _ -> failwith "unimplemented"
 
 (* [select_test name expected s] constructs an OUnit test named 
@@ -82,6 +83,13 @@ let get_qry = function
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
       assert_equal expected (select s))  
+
+(* [insert_test name expected s] constructs an OUnit test named 
+   [name] that asserts the quality of [expected] of [s] applied to 
+   Computation.insert*)
+let insert_test name expected s = 
+  "Select test: " ^ name >:: (fun _ -> 
+      assert_equal expected (select s)) 
 
 (* [select_table_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
@@ -174,7 +182,7 @@ let schema2 = [
   ("buildings", ["name"; "location"; "goodforstudying"])
 ]
 
-let computation_tests = [
+let select_tests = [
   select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
   malformed_table_test "no FROM keyword" ["*"];
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
@@ -190,6 +198,23 @@ let computation_tests = [
   select_test "SELECT netid, name FROM students" 
     (fields', namenetid) qry';
   select_test "SELECT * FROM students" (fields'', students) qry''
+]
+
+let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" |> get_qry
+let post_ins1 = parse "SELECT * FROM students" |> get_qry
+let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" |> get_qry
+let post_ins2 = parse "SELECT * FROM students" |> get_qry
+
+let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
+let students_up_2 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
+
+let insert_tests = [
+  insert_test "INSERT full" (fields'', students_up_1) post_ins1;
+  insert_test "INSERT partial" (fields'', students_up_2) post_ins2;
+]
+
+let delete_tests = [
+
 ]
 
 (* DATA READ WRITE TESTS ******************************************************)
@@ -220,7 +245,9 @@ let suite =
   "test suite for dbms"  >::: List.flatten [
     data_read_write_tests;
     queries_tests;
-    computation_tests;
+    select_tests;
+    insert_tests;
+    delete_tests;
   ]
 
 let _ = run_test_tt_main suite
