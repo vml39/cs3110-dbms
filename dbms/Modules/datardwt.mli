@@ -8,6 +8,8 @@ type t = (string list) list
 type s = (string * (string list)) list
 
 
+val database : string ref
+
 (* TODO: Specs *)
 val set_database : unit -> string
 

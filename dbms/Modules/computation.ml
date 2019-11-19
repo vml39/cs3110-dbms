@@ -60,7 +60,7 @@ let filter_row (schema:string list) fields where (field, op, pattern) row =
       if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
-    | s when s = "=" -> 
+    | s when s = "=" -> print_string (pattern);
       if (List.nth row ind) = pattern 
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None 

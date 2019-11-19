@@ -4,6 +4,8 @@ type t = string list list
 
 type s = (string * (string list)) list
 
+let database = ref ""
+
 let empty = []
 
 let set_database () = read_line ()
@@ -30,7 +32,7 @@ let schema_from_txt () =
   let file_channel = 
     open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
              "input" ^ Filename.dir_sep ^ 
-             "testdb" ^ Filename.dir_sep ^ 
+             !database ^ Filename.dir_sep ^ 
              "schema.txt") 
   in  
   let throw_out = input_line file_channel in
@@ -61,7 +63,7 @@ let table_from_txt filename =
   let file_channel = 
     open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
              "input" ^ Filename.dir_sep ^ 
-             "testdb" ^ Filename.dir_sep ^ 
+             !database ^ Filename.dir_sep ^ 
              "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
   in
   (*read it, line by line*)
@@ -71,14 +73,14 @@ let table_from_txt filename =
 let get_in_chan filename =
   open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
            "input" ^ Filename.dir_sep ^ 
-           "testdb" ^ Filename.dir_sep ^ 
+           !database ^ Filename.dir_sep ^ 
            "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let get_out_chan filename =
   open_out_gen [Open_append] 0o666
     (Filename.parent_dir_name ^ Filename.dir_sep ^
      "input" ^ Filename.dir_sep ^ 
-     "testdb" ^ Filename.dir_sep ^ 
+     !database ^ Filename.dir_sep ^ 
      "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let read_next_line inc =
