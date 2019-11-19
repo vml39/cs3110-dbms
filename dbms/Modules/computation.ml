@@ -58,29 +58,21 @@ let rec filter_table fc schema acc =
 let rec select_order = function 
   | [] -> None
   | o::s::b::t when o = "ORDER" && s = " " && b = "BY" -> Some (List.hd t)
-  (* what if there's a space? need to parse further *)
   | h::t -> select_order t
 
+(** TODO: document *)
 let comp n x y = 
   let x' = List.nth x n in 
   let y' = List.nth y n in 
-  match Stdlib.compare x' y' with
-  | x when x'<0 -> -1
-  | 0 -> 0
-  | _ -> 1
+  Stdlib.compare x' y'
 
-let order_helper field i = function 
-  | [] -> raise Malformed
-  | h::t -> if h = field then 
-
-      (* need a compare function *)
-      (** [order table qry] is [table] with rows sorted by the the field following the
-          "ORDER BY" keyword in [qry]. *)
-      let order schema qry = 
-        match select_order qry with 
-        | None -> fun lst -> lst 
-        | Some param ->  
-          fun lst -> List.sort (comp (index (fst param) schema)) lst
+(** [order table qry] is [table] with rows sorted by the the field following the
+    "ORDER BY" keyword in [qry]. *)
+let order schema qry = 
+  match select_order qry with 
+  | None -> fun lst -> lst 
+  | Some param ->  
+    fun lst -> List.sort (comp (index param schema)) lst
 (* compare only the field with the param *)
 
 (** [where_helper acc qry] is [None] if the where [qry] is malformed and 
@@ -110,10 +102,10 @@ let like_equal fc schema acc (field, op, pattern) : string list list =
 
 (** [where qry schema row] is [row] filtered by the fields selected for in [qry] and where
     fields follow the condition specified after "WHERE" in [qry]. *)
-let where tablename qry schema = 
+let where tablename qry schema fields = 
   let file_channel = get_in_chan tablename in 
   match select_where schema qry with
-  | None -> filter_table file_channel schema []
+  | None -> filter_table file_channel fields []
   | Some param -> like_equal file_channel schema [] param 
 (* if the param matches the where cond, add this row else don't *)
 (* if fd = param then Some filter_row i schema acc h else None *)
@@ -123,11 +115,8 @@ let select qry =
   let tablename = select_table qry in 
   let schema = table_schema (schema_from_txt ()) tablename in 
   let fields = select_fields [] qry |> filter_fields schema [] in 
-  (schema, where tablename qry fields)
-
-(* inside fun that processes query, helper function that does it line by line (recursive)
-   call get file channel w table name, pass into rec function that reads single lines 
-   try next_line with..., then return accumulator *)
+  let table = where tablename qry schema fields in 
+  (schema, order schema qry table)
 
 let insert qry = 
   failwith "unimplemented"
