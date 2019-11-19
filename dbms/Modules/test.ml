@@ -29,6 +29,18 @@ let pp_list_list pp_elt lst =
     in loop 0 "" lst
   in "[" ^ pp_elts (List.flatten lst) ^ "]"
 
+let pp_list_list' pp_elt lst =
+  let lst' = snd lst in 
+  let pp_elts lst' =
+    let rec loop n acc = function
+      | [] -> acc
+      | [h] -> acc ^ pp_elt h
+      | h1::(h2::t as t') ->
+        if n=100 then acc ^ "..."  (* stop printing long list *)
+        else loop (n+1) (acc ^ (pp_elt h1) ^ "; ") t'
+    in loop 0 "" lst'
+  in "[" ^ pp_elts (List.flatten lst') ^ "]"
+
 (** [pp_string s] pretty-prints string [s]. *)
 let pp_query s = "\"" ^ s ^ "\""
 
@@ -82,7 +94,7 @@ let get_qry = function
    Computation.select*)
 let select_test name expected s = 
   "Select test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select s))  
+      assert_equal ~printer:(pp_list_list' pp_query) expected (select s))  
 
 (* [insert_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
@@ -96,21 +108,21 @@ let insert_test name expected s =
    Computation.select_table*)
 let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select_table s))
+    assert_equal expected (select_table s))
 
 (* [select_fields_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select_fields*)
 let select_fields_test name expected s =
   "Select fields test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select_fields [] s))
+    assert_equal expected (select_fields [] s))
 
 (* [malformed_table_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_table raises a 
    query.Malformed exception*)
 let malformed_table_test name s =
   "Malformed select table test: " ^ name >:: (fun _ -> 
-      assert_raises Malformed (fun () -> (select_table s)))
+    assert_raises Malformed (fun () -> (select_table s)))
 
 (* [malformed_fields_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_fields raises a 
@@ -119,67 +131,30 @@ let malformed_fields_test name s =
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
-(* [table_from_txt_test name expected s] constructs an OUnit test named 
-   [name] that asserts the equality of [expected] of [s] applied to 
-   DataRdWt.table_from_text*)
-let table_from_txt_test name expected s = 
-  "Table from Text test: " ^ name >:: (fun _ -> 
-      assert_equal  ~printer:(pp_list_list pp_query) 
-        expected (table_from_txt s))
-
-(* [schema_from_txt_test name expected s] constructs an OUnit test named 
-   [name] that asserts the equality of [expected] of [s] applied to 
-   DataRdWt.schema_from_text*)
-let schema_from_txt_test name expected s = 
-  "Schema from Text test: " ^ name >:: (fun _ -> 
-      assert_equal expected (schema_from_txt s))
-
-(* [str_equ_test name expected s] constructs an OUnit test named 
-   [name] that asserts the equality of [expected] of [s] 
-*)
-let str_lst_eq_test name expected s = 
-  "Schema from Text test: " ^ name >:: (fun _ -> 
-      assert_equal ~printer:(pp_list pp_query) expected s)
-
-(* [func_raises_test name expected f s] constructs an OUnit test named 
-   [name] that asserts [f] applied to [s] raises [expected]
-*)
-let f_raises_test name exn f s = 
-  "Schema from Text test: " ^ name >:: (fun _ -> 
-      assert_raises exn (fun _ -> (f s)))
-
-
 let qry = parse "SELECT netid FROM students" |> get_qry
 let qry' = parse "SELECT netid, name FROM students" |> get_qry
 let qry'' = parse "SELECT * FROM students" |> get_qry
+let qry_order = parse "SELECT * FROM students ORDER BY name" |> get_qry
 let schema = ["name"; "netid"; "class"; "major"; "home"]
 let fields = ["netid"]
 let fields' = ["name"; "netid"]
-let fields'' = ["name"; "netid"; "class"; "major"; "home"]
 let namenetid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
-  ["Vivian Li"; "vml39"]
+  ["Vivian Li"; "vml39"];
+  ["Test"; "t123"]
 ]
 let students = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
-  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
+  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"];
+  ["Test"; "t123"; "2022"; "Government"; "North"]
 ]
-
-let students1 = 
-  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"]
-
-let students2 = 
-  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"]
-
-let students3 = 
+let students_ordered = [
+  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
+  ["Test"; "t123"; "2022"; "Government"; "North"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
-
-
-let schema2 = [
-  ("students", ["name"; "netid"; "class"; "major"; "home"]);
-  ("buildings", ["name"; "location"; "goodforstudying"])
 ]
 
 let select_tests = [
@@ -194,10 +169,12 @@ let select_tests = [
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
   select_test "SELECT netid FROM students" 
-    (fields, [["dis52"]; ["rjm448"]; ["vml39"]]) qry;
+    (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;
   select_test "SELECT netid, name FROM students" 
     (fields', namenetid) qry';
-  select_test "SELECT * FROM students" (fields'', students) qry''
+  select_test "SELECT * FROM students" (schema, students) qry'';
+  select_test 
+    "SELECT * FROM students ORDER BY name" (schema, students_ordered) qry_order
 ]
 
 let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" |> get_qry
@@ -218,23 +195,60 @@ let delete_tests = [
 ]
 
 (* DATA READ WRITE TESTS ******************************************************)
+
+(* [table_from_txt_test name expected s] constructs an OUnit test named 
+   [name] that asserts the equality of [expected] of [s] applied to 
+   DataRdWt.table_from_text*)
+let table_from_txt_test name expected s = 
+  "Table from Text test: " ^ name >:: (fun _ -> 
+    assert_equal ~printer:(pp_list_list pp_query) 
+      expected (table_from_txt s))
+
+(* [schema_from_txt_test name expected s] constructs an OUnit test named 
+   [name] that asserts the equality of [expected] of [s] applied to 
+   DataRdWt.schema_from_text*)
+let schema_from_txt_test name expected s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
+    assert_equal expected (schema_from_txt s))
+
+(* [str_equ_test name expected s] constructs an OUnit test named 
+   [name] that asserts the equality of [expected] of [s] 
+*)
+let str_lst_eq_test name expected s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
+    assert_equal ~printer:(pp_list pp_query) expected s)
+
+(* [func_raises_test name expected f s] constructs an OUnit test named 
+   [name] that asserts [f] applied to [s] raises [expected]
+*)
+let f_raises_test name exn f s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
+    assert_raises exn (fun _ -> (f s)))
+
 let fc = get_in_chan "students"
 let ln1 = read_next_line fc
 let ln2 = read_next_line fc
 let fc2 = get_in_chan "students"
 
+let schema2 = [
+  ("students", ["name"; "netid"; "class"; "major"; "home"]);
+  ("buildings", ["name"; "location"; "goodforstudying"])
+]
+
 let data_read_write_tests = [
   table_from_txt_test "students" students "students";
   schema_from_txt_test "example" schema2 ();
-  str_lst_eq_test "ln1" students1 ln1;
-  str_lst_eq_test "ln2" students2 ln2;
-  str_lst_eq_test "ln3" students3 (read_next_line fc);
-  f_raises_test "no ln 4" (End_of_file) read_next_line fc;
+  str_lst_eq_test "ln1" (List.nth students_ordered 0) ln1;
+  str_lst_eq_test "ln2" (List.nth students_ordered 1) ln2;
+  str_lst_eq_test "ln3" (List.nth students_ordered 2) (read_next_line fc);
+  str_lst_eq_test "ln4" (List.nth students_ordered 3) (read_next_line fc);
+  f_raises_test "no ln 5" (End_of_file) read_next_line fc;
   (* Note Reverse Order *)
-  f_raises_test "no ln 4" (End_of_file) read_next_line fc2;
-  str_lst_eq_test "ln3 again" students3 (read_next_line fc2);
-  str_lst_eq_test "ln2 again" students2 (read_next_line fc2);
-  str_lst_eq_test "ln1 again" students1 (read_next_line fc2);
+  f_raises_test "no ln 5" (End_of_file) read_next_line fc2;
+  str_lst_eq_test "ln4 again" (List.nth students 3) (read_next_line fc2);
+  str_lst_eq_test "ln3 again" (List.nth students 2) (read_next_line fc2);
+  str_lst_eq_test "ln2 again" (List.nth students 1) (read_next_line fc2);
+  str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
 ]
 
 

@@ -12,7 +12,6 @@ let like param =
 
 let rec select_fields acc = function 
   | [] -> 
-    print_string "select fields";
     raise Malformed
   | h::t when h = "FROM" -> 
     if acc = [] then raise Malformed 
@@ -53,7 +52,7 @@ let rec filter_table fc schema where p acc =
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> filter_table fc schema where p acc
-  | Some e when e = [] -> acc 
+  | Some e when e = [] -> List.rev acc 
   | Some r -> filter_table fc schema where p (r::acc)
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
