@@ -1,8 +1,10 @@
 open Query
 open Datardwt
 
-let like param = 
-  failwith "unimplemented"
+let like_equal fc schema acc (field, op, pattern) = 
+  match op with
+  | s when s = "LIKE" ->
+  | s when s = "=" -> filter_fields
 
 let rec select_fields acc = function 
   | [] -> raise Malformed
@@ -39,7 +41,7 @@ let filter_row schema row =
     only the fields in [schema]. *)
 let rec filter_table fc schema acc = 
   let row = try next_line fc |> filter_row schema with 
-  | exn -> Stdlib.close_in fc; []
+    | exn -> Stdlib.close_in fc; []
   in if row = [] then acc else filter_table fc schema (row::acc)
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
@@ -54,11 +56,11 @@ let rec select_order = function
 let comp param x y = 
   (* get the field from x, y*)
   (* let x' = List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
-  let y' =
-  match Stdlib.compare x' y' with
-  | x when x'<0 -> -1
-  | 0 -> 0
-  | _ -> 1 *)
+     let y' =
+     match Stdlib.compare x' y' with
+     | x when x'<0 -> -1
+     | 0 -> 0
+     | _ -> 1 *)
   failwith "unimplemented"
 
 (* need a compare function *)
@@ -66,9 +68,9 @@ let comp param x y =
     "ORDER BY" keyword in [qry]. *)
 let order qry = 
   match select_order qry with 
-     | None -> fun lst -> lst 
-     | Some param -> 
-      fun lst -> List.sort (comp param) lst
+  | None -> fun lst -> lst 
+  | Some param -> 
+    fun lst -> List.sort (comp param) lst
 (* compare only the field with the param *)
 
 (** [where_helper acc qry] is [None] if the where [qry] is malformed and 
@@ -109,20 +111,20 @@ let select qry =
   let fields = select_fields [] qry |> filter_fields schema [] in 
   (schema, where tablename qry fields)
 
-  (* need to modify table here *)
+(* need to modify table here *)
 
-    (* table_from_txt (select_table qry) |> filter_table fields [] in *)
-  (* let order_by = select_order qry in 
-     match order_by with 
-     | None -> table
-     | Some field -> order table order_by *)
-  (* let i = ref(-1) in
-  let fields = filter_row i fields [] schema in
-  (fields, table) *)
+(* table_from_txt (select_table qry) |> filter_table fields [] in *)
+(* let order_by = select_order qry in 
+   match order_by with 
+   | None -> table
+   | Some field -> order table order_by *)
+(* let i = ref(-1) in
+   let fields = filter_row i fields [] schema in
+   (fields, table) *)
 
 (* inside fun that processes query, helper function that does it line by line (recursive)
-  call get file channel w table name, pass into rec function that reads single lines 
-  try next_line with..., then return accumulator *)
+   call get file channel w table name, pass into rec function that reads single lines 
+   try next_line with..., then return accumulator *)
 
 let insert qry = 
   failwith "unimplemented"
