@@ -130,7 +130,7 @@ let rec process_queries () =
         exit 0
       | Select obj ->  begin
           let (fields, rows) = select obj in
-          if List.length rows < 30
+          if List.length rows > 30
           then (* Print to terminal *)
             try pp_table (fields, rows); process_queries ()
             with Failure _ ->  invalid_command (); process_queries ()

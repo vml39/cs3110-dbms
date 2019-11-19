@@ -41,16 +41,17 @@ let rec filter_fields fields acc schema =
   else List.map (fun x -> if List.mem x schema then true else false) fields
 
 (** TODO: document *)
-let filter_row schema row =
+let filter_row schema where (op, pattern) row =
   let i = ref (-1) in 
-  List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
+  if where then failwith "unimplemented where"
+  else List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
 
 (** [filter_table schema acc table] is [table] with each row filtered to contain
     only the fields in [schema]. *)
-let rec filter_table fc schema acc = 
-  let row = try read_next_line fc |> filter_row schema with 
+let rec filter_table fc schema where p acc = 
+  let row = try read_next_line fc |> filter_row schema where p with 
     | exn -> Stdlib.close_in fc; []
-  in if row = [] then acc else filter_table fc schema (row::acc)
+  in if row = [] then acc else filter_table fc schema where p (row::acc)
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
     command and Some of [field name] indicating the field the table should be
@@ -68,11 +69,10 @@ let comp n x y =
 
 (** [order table qry] is [table] with rows sorted by the the field following the
     "ORDER BY" keyword in [qry]. *)
-let order schema qry = 
+let order schema qry table = 
   match select_order qry with 
-  | None -> fun lst -> lst 
-  | Some param ->  
-    fun lst -> List.sort (comp (index param schema)) lst
+  | None -> table
+  | Some param -> List.sort (comp (index param schema)) table
 (* compare only the field with the param *)
 
 (** [where_helper acc qry] is [None] if the where [qry] is malformed and 
@@ -94,18 +94,19 @@ let rec select_where schema = function
   | h::t -> select_where schema t 
 
 let like_equal fc schema acc (field, op, pattern) : string list list = 
-  let index = field schema in 
+  (* let index = field schema in 
   match op with
   | s when s = "LIKE" -> 
     let row = try read_next_line fc |> (* Check if pattern matches *)
-  | s when s = "=" -> filter_fields
+  | s when s = "=" -> filter_fields *)
+  failwith "unimplemented"
 
 (** [where qry schema row] is [row] filtered by the fields selected for in [qry] and where
     fields follow the condition specified after "WHERE" in [qry]. *)
 let where tablename qry schema fields = 
   let file_channel = get_in_chan tablename in 
   match select_where schema qry with
-  | None -> filter_table file_channel fields []
+  | None -> filter_table file_channel fields false (None, None) [] 
   | Some param -> like_equal file_channel schema [] param 
 (* if the param matches the where cond, add this row else don't *)
 (* if fd = param then Some filter_row i schema acc h else None *)
