@@ -1,6 +1,12 @@
 open Query
 open Datardwt
 
+(** TODO: document *)
+let index field schema =
+  let i = ref (-1) in 
+  List.fold_left 
+    (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
+
 let like param = 
   failwith "unimplemented"
 
@@ -51,13 +57,13 @@ let rec filter_table fc schema acc =
     sorted by otherwise. *)
 let rec select_order = function 
   | [] -> None
-  | h::h'::t when h = "ORDER" && h' = "BY" -> Some (List.hd t)
+  | o::s::b::t when o = "ORDER" && s = " " && b = "BY" -> Some (List.hd t)
   (* what if there's a space? need to parse further *)
   | h::t -> select_order t
 
 let comp n x y = 
-  let x' = List.filter (fun _ -> i := !i + 1; List.nth schema !i) row
-  let y' =
+  let x' = List.nth x n in 
+  let y' = List.nth y n in 
   match Stdlib.compare x' y' with
   | x when x'<0 -> -1
   | 0 -> 0
@@ -70,11 +76,11 @@ let order_helper field i = function
 (* need a compare function *)
 (** [order table qry] is [table] with rows sorted by the the field following the
     "ORDER BY" keyword in [qry]. *)
-let order qry = 
+let order schema qry = 
   match select_order qry with 
      | None -> fun lst -> lst 
-     | Some param -> 
-      fun lst -> List.sort (comp param) lst
+     | Some param ->  
+      fun lst -> List.sort (comp (index (fst param) schema)) lst
 (* compare only the field with the param *)
 
 (** [where_helper acc qry] is [None] if the where [qry] is malformed and 
