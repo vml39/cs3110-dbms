@@ -73,10 +73,11 @@ let get_in_chan filename =
            "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let get_out_chan filename =
-  open_out (Filename.parent_dir_name ^ Filename.dir_sep ^
-            "input" ^ Filename.dir_sep ^ 
-            "testdb" ^ Filename.dir_sep ^ 
-            "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
+  open_out_gen [Open_append] 0o666
+    (Filename.parent_dir_name ^ Filename.dir_sep ^
+     "input" ^ Filename.dir_sep ^ 
+     "testdb" ^ Filename.dir_sep ^ 
+     "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let read_next_line inc =
   let s = input_line inc in
@@ -87,7 +88,7 @@ let read_next_line inc =
 
 let write_line outc lst = 
   let single_a = "\n(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
-  let single_b = String.sub single_a 0 (String.length single_a - 2) in
+  let single_b = String.sub single_a 0 (String.length single_a - 2) ^ ")" in
   output_string outc single_b
 
 let delete_line fc lst = failwith "unimplimented"
