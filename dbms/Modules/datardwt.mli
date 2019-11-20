@@ -22,6 +22,11 @@ val schema_from_txt : unit -> s
     Requires: filename is a valid filename contained in the directory*)
 val table_from_txt : string -> t
 
+
+(** [get_path filename] is the the string rep of the path to file filename
+    Requires: filename is a valid filename contained in the directory*)
+val get_path : string -> string
+
 (** [get_in_chan filename] is the in_channel object for file filename
     Requires: filename is a valid filename contained in the directory*)
 val get_in_chan : string -> in_channel
