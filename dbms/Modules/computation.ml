@@ -122,7 +122,7 @@ let rec where_helper schema = function
     (field name, operator, pattern) and the operator is either "=" or "LIKE". *)
 let rec select_where schema = function 
   | [] -> None
-  | h::h'::t when h = "WHERE" && h' <> "LIKE" || h' <> "=" -> 
+  | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
     Some (where_helper schema t)
   | h::t -> select_where schema t 
 
@@ -231,9 +231,8 @@ let rec create_table_helper = function
 
 let rec create_table qry = 
   let schema = create_table_helper qry in 
-  (* @Robert 
-     schema is a string * string where the first string is the table name and the 
-     second string is the table schema in the same format as schema.txt 
-     create a file in tables with table name and add schema line to schema.txt
-  *)
-  failwith "unimplemented"
+  let outc_schema = get_out_chan_schema in
+    write_line outc_schema ([snd schema]); 
+    close_out outc_schema;
+  let outc_tables = get_out_chan (fst schema) in 
+    close_out outc_tables;

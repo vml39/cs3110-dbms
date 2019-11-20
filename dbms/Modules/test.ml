@@ -169,7 +169,6 @@ let select_tests = [
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
   malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"];
   malformed_fields_test "no fields" ["FROM"; "tablename"];
-  malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
   select_test "SELECT netid FROM students" 
     (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;

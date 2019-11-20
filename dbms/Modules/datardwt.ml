@@ -83,6 +83,12 @@ let get_out_chan filename =
      !database ^ Filename.dir_sep ^ 
      "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
+let get_out_chan_schema = 
+  open_out_gen [Open_append] 0o666
+    (Filename.parent_dir_name ^ Filename.dir_sep ^
+     "input" ^ Filename.dir_sep ^ 
+     !database ^ Filename.dir_sep ^ "schema.txt")
+
 let read_next_line inc =
   let s = input_line inc in
   let reg = Str.regexp "(\\|)" in
