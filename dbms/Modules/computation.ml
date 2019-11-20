@@ -38,7 +38,7 @@ let rec filter_fields fields acc schema =
 
 (** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
     regex pattern. *)
-let rec convert_to_regex = function
+let rec convert_to_regex = function (* TODO: Remove this function and consolidate below *)
   | [] -> ""
   | h::t when h = "%" -> ".*" ^ convert_to_regex t
   | h::t when h = "_" -> "." ^ convert_to_regex t
@@ -112,10 +112,15 @@ let order schema qry table =
     the keyword "WHERE" in [qry].
     Raises [Malformed] if [qry] is invalid. *)
 let rec where_helper schema = function 
-  | field::op::pattern::t when op = "=" || op = "LIKE" -> 
+  | field::op::pattern::t when op = "=" || op = "LIKE" -> print_string " HERE 1 ";
     if List.mem field schema then field, op, pattern
     else raise Malformed
-  | _ -> raise Malformed
+  | _ -> 
+    print_string "[ ";
+    print_string (" " ^ List.nth schema 1);
+    print_string (" " ^ List.nth schema 2);
+    print_string (" " ^ List.nth schema 3);
+    raise Malformed
 
 (** [select_where schema qry] is [None] if there is no "WHERE" keyword in [qry] 
     followed by a valid pattern and [Some param] where [param] is the 
@@ -124,7 +129,7 @@ let rec select_where schema = function
   | [] -> None
   | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
     Some (where_helper schema t)
-  | h::t -> select_where schema t 
+  | h::t -> print_string " HERE 2 ";select_where schema t 
 
 (** [like_equal fc schema fields qry] is the OCaml table constructed from the
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains

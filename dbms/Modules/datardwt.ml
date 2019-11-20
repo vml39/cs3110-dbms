@@ -72,7 +72,7 @@ let table_from_txt filename =
 let get_path filename =
   (Filename.parent_dir_name ^ Filename.dir_sep ^
    "input" ^ Filename.dir_sep ^ 
-   "testdb" ^ Filename.dir_sep ^ 
+   !database ^ Filename.dir_sep ^ 
    "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let get_in_chan filename =

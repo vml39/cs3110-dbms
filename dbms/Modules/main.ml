@@ -111,8 +111,9 @@ let rec write_all_rows = function
 (* [write_to_file fields rows] is the printing of fields and rows into text file
    in output folder.  Each element in each row is delimited by "," and each
    row is seperated by a newline character*)
-let write_to_file fields rows=
-  let oc = open_out "../output/test.txt" in   (* create file, return channel *)
+let write_to_file fields rows num=
+  let oc = open_out ("../output/query" ^ (string_of_int !num) ^ ".txt") in   (* create file, return channel *)
+  num := !num +1;
   fprintf oc "%s" (write_row fields);         (* write fields *)  
   fprintf oc "%s" (write_all_rows rows);      (* write all rows *)
   close_out oc; ()                            (* flush and close the channel *)
@@ -120,11 +121,11 @@ let write_to_file fields rows=
 
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
   user queries*)
-let rec process_queries () =
+let rec process_queries num () =
   print_string "> ";
   match parse (read_line ()) with 
-  | exception (Empty) -> process_queries ()
-  | exception (Malformed) -> invalid_command (); process_queries ()
+  | exception (Empty) -> process_queries num ()
+  | exception (Malformed) -> invalid_command (); process_queries num ()
   | command -> begin
       match command with
       | Quit -> print_endline "Goodbye for now.\n";
@@ -133,14 +134,14 @@ let rec process_queries () =
           let (fields, rows) = select obj in
           if List.length rows < 30
           then (* Print to terminal *)
-            try pp_table (fields, rows); process_queries ()
-            with Failure _ ->  invalid_command (); process_queries ()
+            try pp_table (fields, rows); process_queries num ()
+            with Failure _ ->  invalid_command (); process_queries num ()
           else (* Print to file *)
-            write_to_file fields rows; process_queries ()
+            write_to_file fields rows num; process_queries num ()
         end
       | Insert obj -> insert obj
-      | Delete obj -> process_queries ()
-      | Join obj -> process_queries ()
+      | Delete obj -> process_queries num ()
+      | Join obj -> process_queries num ()
       | Create obj -> create_table obj
       | _ -> failwith "Unimplemented"
     end 
@@ -157,7 +158,8 @@ let main () =
   | db -> Datardwt.database := db;
     ANSITerminal.(print_string [blue] (
         "\n" ^ db ^ " selected. Please enter your query\n\n"));
-    process_queries ()
+    let num = ref 1 in
+    process_queries num ()
 
 (* Execute the dbms. *)
 let () = main ()
