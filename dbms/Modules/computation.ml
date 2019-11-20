@@ -256,9 +256,8 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
     then delete_helper inc outc col_no cond v
     else write_line outc line; 
     delete_helper inc outc col_no cond v
-  with | End_of_file -> 
-    close_in inc;
-    close_out outc
+  with | End_of_file -> ()
+
 
 
 let delete qry = 
@@ -274,6 +273,8 @@ let delete qry =
     let col_no = find_col 0 col schema in
     if col_no = -1 then raise Malformed else begin
       delete_helper inc outc col_no cond v;
+      close_in inc;
+      close_out outc;
       Sys.remove (get_path tablename);
       Sys.rename (get_path temp_file) (get_path tablename)
     end
@@ -294,7 +295,7 @@ let rec create_table_helper = function
 let rec create_table qry = 
   let schema = create_table_helper qry in 
   let outc_schema = get_out_chan_schema in
-    write_line outc_schema ([snd schema]); 
-    close_out outc_schema;
+  write_line outc_schema ([snd schema]); 
+  close_out outc_schema;
   let outc_tables = get_out_chan (fst schema) in 
-    close_out outc_tables;
+  close_out outc_tables;

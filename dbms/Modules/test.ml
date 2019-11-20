@@ -45,7 +45,7 @@ let pp_list_list' pp_elt lst =
 let pp_query s = "\"" ^ s ^ "\""
 
 (* QUERY TESTS ****************************************************************)
-let init = database := "testdb"
+let init = Datardwt.database := "testdb"
 
 (* [make_query_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
@@ -88,6 +88,7 @@ let queries_tests = [
 let get_qry = function 
   | Select qry -> qry
   | Insert qry -> qry
+  | Delete qry -> qry
   | _ -> failwith "unimplemented"
 
 (* [select_test name expected s] constructs an OUnit test named 

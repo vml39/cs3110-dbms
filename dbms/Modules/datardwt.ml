@@ -72,27 +72,21 @@ let table_from_txt filename =
 let get_path filename =
   (Filename.parent_dir_name ^ Filename.dir_sep ^
    "input" ^ Filename.dir_sep ^ 
-   !database ^ Filename.dir_sep ^ 
+   "testdb" ^ Filename.dir_sep ^ 
    "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let get_in_chan filename =
-  open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
-           "input" ^ Filename.dir_sep ^ 
-           !database ^ Filename.dir_sep ^ 
-           "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
+  open_in (get_path filename) 
 
 let get_out_chan filename =
   open_out_gen [Open_append; Open_creat] 0o666
-    (Filename.parent_dir_name ^ Filename.dir_sep ^
-     "input" ^ Filename.dir_sep ^ 
-     !database ^ Filename.dir_sep ^ 
-     "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
+    (get_path filename) 
 
 let get_out_chan_schema = 
   open_out_gen [Open_append] 0o666
     (Filename.parent_dir_name ^ Filename.dir_sep ^
      "input" ^ Filename.dir_sep ^ 
-     !database ^ Filename.dir_sep ^ "schema.txt")
+     "testdb" ^ Filename.dir_sep ^ "schema.txt")
 
 let read_next_line inc =
   let s = input_line inc in
