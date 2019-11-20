@@ -159,7 +159,8 @@ let select qry =
 let insert_table qry =
   match qry with
   | [] -> raise Malformed
-  | "INTO" :: t -> List.hd t, List.tl t
+  | "INTO" :: t -> if List.length t < 2 then raise Malformed
+    else List.hd t, List.tl t
   | h :: t -> raise Malformed
 
 (** TODO: document *)

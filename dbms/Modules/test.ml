@@ -45,6 +45,7 @@ let pp_list_list' pp_elt lst =
 let pp_query s = "\"" ^ s ^ "\""
 
 (* QUERY TESTS ****************************************************************)
+let init = database := "testdb"
 
 (* [make_query_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
