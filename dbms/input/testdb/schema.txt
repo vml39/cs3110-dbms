@@ -1,3 +1,4 @@
 cornell
 students: name, netid, class, major, home
 buildings: name, location, goodforstudying
+test: field1, field2, field3
