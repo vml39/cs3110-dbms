@@ -19,7 +19,6 @@ let rec select_fields schema acc = function
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
-    print_string "table schema";
     raise Malformed
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
@@ -67,7 +66,7 @@ let filter_row schema fields where (field, op, pattern) row =
       if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
-    | s when s = "=" -> print_string (pattern);
+    | s when s = "=" -> 
       if (List.nth row ind) = pattern 
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None 
@@ -131,7 +130,7 @@ let rec select_where schema = function
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields qry = 
   match qry with
-  | [] -> print_string "failing at like equal"; raise Malformed
+  | [] -> raise Malformed
   | f::o::p::t when o = "=" || o = "LIKE" -> 
     filter_table fc schema fields true (f,o,p) []
   | h::t -> like_equal fc schema fields t
@@ -294,7 +293,7 @@ let rec create_table_helper = function
 let rec create_table qry = 
   let schema = create_table_helper qry in 
   let outc_schema = get_out_chan_schema in
-  write_line outc_schema ([snd schema]); 
+  write_line_schema outc_schema ([snd schema]); 
   close_out outc_schema;
   let outc_tables = get_out_chan (fst schema) in 
   close_out outc_tables;
