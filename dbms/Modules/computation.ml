@@ -253,12 +253,9 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
 
 let delete qry = 
   let tablename, rest = delete_table qry in
-  print_endline tablename;
-  List.iter print_endline rest;
   (* Delete entire table *)
   if rest = [] then 
     let outc = open_out (get_path tablename) in
-    print_endline "HERE 1";
     output_string outc "";
     close_out outc
   else 

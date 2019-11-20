@@ -97,8 +97,8 @@ let read_next_line inc =
 
 let write_line outc lst = 
   let single_a = 
-    "\n(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
-  let single_b = String.sub single_a 0 (String.length single_a - 2) ^ ")" in
+    "(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
+  let single_b = String.sub single_a 0 (String.length single_a - 2) ^ ")\n" in
   output_string outc single_b
 
 let write_line_schema outc lst = 
