@@ -30,18 +30,22 @@ let rec select_table = function
     else List.hd t
   | h::t -> select_table t
 
-(** [filter_fields schema acc fields] is a bool list [acc] where each elt 
+(** [filter_fields fields acc schema] is a bool list [acc] where each elt 
     corresponds to a field in [schema], where the elt is [true] if the field 
     is in [fields] and false otherwise. *)
 let rec filter_fields fields acc schema = 
   List.map (fun x -> if List.mem x schema then true else false) fields
 
+(** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
+    regex pattern. *)
 let rec convert_to_regex = function
   | [] -> ""
   | h::t when h = "%" -> ".*" ^ convert_to_regex t
   | h::t when h = "_" -> "." ^ convert_to_regex t
   | h::t -> h ^ convert_to_regex t
 
+(** [parse_pattern pattern] is the SQL [pattern] following the "LIKE" operator 
+    in the query and coverted to an OCaml regex pattern. *)
 let parse_pattern pattern = 
   let patternList = 
     pattern
@@ -51,8 +55,11 @@ let parse_pattern pattern =
     |> List.filter ( fun s -> s <> "") in 
   convert_to_regex patternList
 
-(** TODO: document *)
-let filter_row (schema:string list) fields where (field, op, pattern) row =
+(** [filter_row schema fields where pattern row] is [Some row] with only the 
+    fields specified in [fields]. Returns the row if [where] is [false] or if 
+    [where] is [true] and the row follows the SQL [pattern]. Returns [None] if
+    [where] is [true] and the row does not follow the SQL [pattern]. *)
+let filter_row schema fields where (field, op, pattern) row =
   let i = ref (-1) in 
   if where then let ind = index field schema in
     match op with
@@ -68,15 +75,14 @@ let filter_row (schema:string list) fields where (field, op, pattern) row =
 
   else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
 
-(** [filter_table schema acc table] is [table] with each row filtered to contain
-    only the fields in [schema]. *)
-(** TODO: document *)
+(** [filter_table fc schema fields where pattern acc] is the table constructed
+    from filtering the [fields] from each row of [fc]. *)
 let rec filter_table fc schema fields where p acc = 
   let row = try read_next_line fc |> filter_row schema fields where p with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> filter_table fc schema fields where p acc
-  | Some e when e = [] -> acc 
+  | Some e when e = [] -> List.rev acc 
   | Some r -> filter_table fc schema fields where p (r::acc)
 
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
@@ -87,52 +93,58 @@ let rec select_order = function
   | o::b::t when o = "ORDER" && b = "BY" -> Some (List.hd t)
   | h::t -> select_order t
 
-(** TODO: document *)
+(** [comp n x y] is [-1] if the [n]th element of [x] is less than the [n]th value 
+    of [y] using the Stdlib compare function; [0] if they are equal; and [1] if 
+    the [n]th value of [x] is greater than the [n]th value of [y]. *)
 let comp n x y = 
   let x' = List.nth x n in 
   let y' = List.nth y n in 
   Stdlib.compare x' y'
 
-(** [order table qry] is [table] with rows sorted by the the field following the
-    "ORDER BY" keyword in [qry]. *)
+(** [order table schema qry table] is [table] with rows sorted by the the field
+    following the "ORDER BY" keyword in [qry]. *)
 let order schema qry table = 
   match select_order qry with 
   | None -> table
   | Some param -> List.sort (comp (index param schema)) table
-(* compare only the field with the param *)
 
-(** [where_helper acc qry] is [None] if the where [qry] is malformed and 
-    [Some param] where [param] is the condition to filter the rows in the
-    table by otherwise. *)
-(** TODO: update docs *)
+(** [where_helper acc qry] is the (field name, operator, pattern) following 
+    the keyword "WHERE" in [qry].
+    Raises [Malformed] if [qry] is invalid. *)
 let rec where_helper schema = function 
-  | field::op::pattern::t -> 
-    if List.mem field schema then Some (field, op, pattern)
+  | field::op::pattern::t when op = "=" || op = "LIKE" -> 
+    if List.mem field schema then field, op, pattern
     else raise Malformed
   | _ -> raise Malformed
 
-(** [select_where acc qry] is [None] if there is no where keyword in [qry] 
-    and [Some param] where [param] is the condition to filter the rows in the
-    table by otherwise. *)
+(** [select_where schema qry] is [None] if there is no "WHERE" keyword in [qry] 
+    followed by a valid pattern and [Some param] where [param] is the 
+    (field name, operator, pattern) and the operator is either "=" or "LIKE". *)
 let rec select_where schema = function 
   | [] -> None
-  | h::t when h = "WHERE" -> where_helper schema t
+  | h::h'::t when h = "WHERE" && h' <> "LIKE" || h' <> "=" -> 
+    Some (where_helper schema t)
   | h::t -> select_where schema t 
 
-(** TODO: document *)
-let rec like_equal fc schema fields qry  : string list list = 
+(** [like_equal fc schema fields qry] is the OCaml table constructed from the
+    rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
+    the fields specified in [fields] from the table [schema]. *)
+let rec like_equal fc schema fields qry = 
   match qry with
   | [] -> raise Malformed
-  | f::o::p::t when o = "=" || o = "LIKE" -> filter_table fc schema fields true (f,o,p) []
+  | f::o::p::t when o = "=" || o = "LIKE" -> 
+    filter_table fc schema fields true (f,o,p) []
   | h::t -> like_equal fc schema fields t
 
-(** [where qry schema row] is [row] filtered by the fields selected for in [qry] and where
-    fields follow the condition specified after "WHERE" in [qry]. *)
+(** [where tablename qry schema fields] is the OCaml table created from parsing 
+    each row in the database table with [tablename]. Table results are filtered
+    if there is a "WHERE" keyword in [qry]. Table only contains the fields
+    specified in [fields] from the table [schema]. *)
 let where tablename qry schema fields = 
-  let file_channel = get_in_chan tablename in 
+  let fc = get_in_chan tablename in 
   match select_where schema qry with
-  | None -> filter_table file_channel schema fields false ("", "", "") [] 
-  | Some param -> like_equal file_channel schema fields qry 
+  | None -> filter_table fc schema fields false ("", "", "") [] 
+  | Some param -> like_equal fc schema fields qry 
 
 let select qry =
   let tablename = select_table qry in 
@@ -142,6 +154,7 @@ let select qry =
   let table = where tablename qry schema bool_fields in 
   (fields, order schema qry table)
 
+(** TODO: document *)
 (* Parses the table name form query*)
 let insert_table qry =
   match qry with
@@ -149,12 +162,14 @@ let insert_table qry =
   | "INTO" :: t -> List.hd t, List.tl t
   | h :: t -> raise Malformed
 
+(** TODO: document *)
 (* Parses the values from qry *)
 let rec insert_vals qry acc_col acc_val = 
   match qry with
   | [] -> acc_col, acc_val
   | h :: t -> insert_vals t acc_col (h :: acc_val)
 
+(** TODO: document *)
 (* Parses the columns and values from qry *)
 let rec insert_cols_and_vals qry acc_col acc_val =
   match qry with 
@@ -162,6 +177,7 @@ let rec insert_cols_and_vals qry acc_col acc_val =
   | "VALUES" :: t -> insert_vals t acc_col acc_val
   | h :: t -> insert_cols_and_vals t (h :: acc_col) acc_val
 
+(** TODO: document *)
 let rec vals_update sch cols vals acc =
   match sch, cols with
   | [], [] -> acc
@@ -197,7 +213,9 @@ let delete qry =
 let join qry = 
   failwith "unimplemented"
 
-(** TODO: document *)
+(** [create_table_helper qry] is the table name and the string representation
+    of the list of parameters specified in [qry].
+    Raises [Malformed] if [qry] is invalid. *)
 let rec create_table_helper = function 
   | [] -> raise Malformed
   | h::[] -> raise Malformed
@@ -205,7 +223,6 @@ let rec create_table_helper = function
     let schema = List.fold_left (fun acc x -> acc^x^", ") (h^": ") t in 
     (h, String.sub schema 0 (String.length schema - 2))
 
-(** TODO: document *)
 let rec create_table qry = 
   let schema = create_table_helper qry in 
   (* @Robert 

@@ -20,8 +20,15 @@ val table_schema : (string * string list) list -> string -> string list
     illegal [qry]. *)
 val select_fields : string list -> string list -> string list -> string list
 
+(** TODO: document *)
 val insert : string list -> unit
 
 val delete : string list -> unit
 
 val join: string list -> string list list 
+
+(** [create_table qry] creates a file in the database's tables folder with the 
+    parameters specified in [qry]. The table schema is also added to the 
+    schema.txt file for the database. 
+    Raises [Malformed] if no table name or fields provided in [qry]. *)
+val create_table: string list -> unit
