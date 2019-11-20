@@ -35,6 +35,9 @@ val get_in_chan : string -> in_channel
     Requires: filename is a valid filename contained in the directory*)
 val get_out_chan : string -> out_channel
 
+(** [get_out_chan filename] is the out_channel object for database schema. *)
+val get_out_chan_schema: out_channel
+
 (** [next_line fc] is the next line from the table in file filename
     Requires: fc is a valid file channel of a file contained in the directory
     Raises: End_of_file if at the end of the file*)
