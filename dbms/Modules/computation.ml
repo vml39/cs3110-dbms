@@ -220,7 +220,8 @@ let delete_table qry =
 let delete_table qry =
   match qry with
   | [] -> raise Malformed
-  | "FROM" :: t -> if List.length t < 1 then raise Malformed
+  | "FROM" :: t -> if List.length t = 0 then raise Malformed
+    else if List.length t < 2 then List.hd t, []
     else List.hd t, List.tl t
   | h :: t -> raise Malformed
 
