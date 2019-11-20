@@ -217,16 +217,8 @@ let insert qry =
 let delete_table qry =
   match qry with
   | [] -> raise Malformed
-  | "FROM" :: t -> if List.length t < 2 then raise Malformed
-    else List.hd t, List.tl t
-  | h :: t -> raise Malformed
-
-(* Parses the table name form delete query*)
-let delete_table qry =
-  match qry with
-  | [] -> raise Malformed
   | "FROM" :: t -> if List.length t = 0 then raise Malformed
-    else if List.length t < 2 then List.hd t, []
+    else if List.length t = 1 then List.hd t, []
     else List.hd t, List.tl t
   | h :: t -> raise Malformed
 
@@ -268,8 +260,14 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
 
 let delete qry = 
   let tablename, rest = delete_table qry in
+  print_endline tablename;
+  List.iter print_endline rest;
   (* Delete entire table *)
-  if rest = [] then Sys.remove (get_path tablename)
+  if rest = [] then 
+    let outc = open_out (get_path tablename) in
+    print_endline "HERE 1";
+    output_string outc "";
+    close_out outc
   else 
     let temp_file = tablename ^ ".tmp" in
     let outc = get_out_chan temp_file in
