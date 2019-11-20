@@ -112,15 +112,10 @@ let order schema qry table =
     the keyword "WHERE" in [qry].
     Raises [Malformed] if [qry] is invalid. *)
 let rec where_helper schema = function 
-  | field::op::pattern::t when op = "=" || op = "LIKE" -> print_string " HERE 1 ";
+  | field::op::pattern::t when op = "=" || op = "LIKE" ->
     if List.mem field schema then field, op, pattern
     else raise Malformed
-  | _ -> 
-    print_string "[ ";
-    print_string (" " ^ List.nth schema 1);
-    print_string (" " ^ List.nth schema 2);
-    print_string (" " ^ List.nth schema 3);
-    raise Malformed
+  | _ -> raise Malformed
 
 (** [select_where schema qry] is [None] if there is no "WHERE" keyword in [qry] 
     followed by a valid pattern and [Some param] where [param] is the 
@@ -128,15 +123,15 @@ let rec where_helper schema = function
 let rec select_where schema = function 
   | [] -> None
   | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
-    Some (where_helper schema t)
-  | h::t -> print_string " HERE 2 ";select_where schema t 
+    Some (where_helper schema (h'::t))
+  | h::t -> select_where schema t 
 
 (** [like_equal fc schema fields qry] is the OCaml table constructed from the
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields qry = 
   match qry with
-  | [] -> raise Malformed
+  | [] -> print_string "failing at like equal"; raise Malformed
   | f::o::p::t when o = "=" || o = "LIKE" -> 
     filter_table fc schema fields true (f,o,p) []
   | h::t -> like_equal fc schema fields t
@@ -194,7 +189,6 @@ let rec vals_update sch cols vals acc =
     else vals_update t1 (h2 :: t2) vals ("" :: acc)
 
 let insert qry = 
-
   let tablename, rest = insert_table qry in
   let (cols, vals) = insert_cols_and_vals rest [] [] in
   let schema = table_schema (schema_from_txt ()) tablename in 
