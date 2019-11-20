@@ -110,13 +110,6 @@ let select_table_test name expected s =
   "Select table test: " ^ name >:: (fun _ -> 
       assert_equal expected (select_table s))
 
-(* [select_fields_test name expected s] constructs an OUnit test named 
-   [name] that asserts the quality of [expected] of [s] applied to 
-   Computation.select_fields*)
-let select_fields_test name expected s =
-  "Select fields test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select_fields [] s))
-
 (* [malformed_table_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select_table raises a 
    query.Malformed exception*)
@@ -131,10 +124,22 @@ let malformed_fields_test name s =
   "Malformed select fields test: " ^ name >:: (fun _ ->
       assert_raises Malformed (fun () -> (select_fields [] s)))
 
+(* [malformed_select_test name s] constructs an OUnit test named 
+   [name] that asserts [s] applied to Computation.select raises a 
+   query.Malformed exception*)
+let malformed_select_test name s = 
+  "Malformed select test: " ^ name >:: (fun _ ->
+      assert_raises Malformed (fun () -> (select s)))
+
 let qry = parse "SELECT netid FROM students" |> get_qry
 let qry' = parse "SELECT netid, name FROM students" |> get_qry
 let qry'' = parse "SELECT * FROM students" |> get_qry
 let qry_order = parse "SELECT * FROM students ORDER BY name" |> get_qry
+let qry_where_eq = parse "SELECT * FROM students WHERE name = Test" |> get_qry
+let qry_where_eq_malformed = 
+  parse "SELECT * FROM students WHERE name = test" |> get_qry
+let qry_where_like = 
+  parse "SELECT * FROM students WHERE name LIEK %i%" |> get_qry
 let schema = ["name"; "netid"; "class"; "major"; "home"]
 let fields = ["netid"]
 let fields' = ["name"; "netid"]
@@ -162,9 +167,6 @@ let select_tests = [
   malformed_table_test "no FROM keyword" ["*"];
   malformed_table_test "no table called after FROM" ["*"; "FROM"];
   malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"];
-  select_fields_test "select all" ["*"] ["*"; "FROM"; "animals"];
-  select_fields_test "get multiple fields" ["dogs"; "cat"; "fish"]
-    ["dogs"; "cat"; "fish"; "FROM"; "animals"];
   malformed_fields_test "no fields" ["FROM"; "tablename"];
   malformed_fields_test "no FROM keyword" ["*"];
   malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"];
@@ -173,8 +175,14 @@ let select_tests = [
   select_test "SELECT netid, name FROM students" 
     (fields', namenetid) qry';
   select_test "SELECT * FROM students" (schema, students) qry'';
-  select_test 
-    "SELECT * FROM students ORDER BY name" (schema, students_ordered) qry_order
+  select_test "SELECT * FROM students ORDER BY name" 
+    (schema, students_ordered) qry_order;
+  select_test "SELECT * FROM students WHERE name = Test" 
+    (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq;
+  select_test "SELECT * FROM students WHERE name LIKE %i%" 
+    (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_like;
+  malformed_select_test "SELECT * FROM students WHERE name = test" 
+    qry_where_eq_malformed;
 ]
 
 let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" |> get_qry
