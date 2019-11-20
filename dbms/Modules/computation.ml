@@ -16,6 +16,15 @@ let rec select_fields schema acc = function
   | h::t when h = "*" -> schema
   | h::t -> select_fields schema (h::acc) t
 
+(** TODO: document *)
+let rec print_fields schema bfields acc = 
+  match schema, bfields with 
+  | [], [] -> List.rev acc
+  | h::t, h'::t' -> 
+    if h' then print_fields t t' (h::acc) 
+    else print_fields t t' acc
+  | _ -> failwith "inequal num of fields"
+
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
@@ -148,9 +157,10 @@ let where tablename qry schema fields =
 let select qry =
   let tablename = select_table qry in 
   let schema = table_schema (schema_from_txt ()) tablename in 
-  let fields = select_fields schema [] qry in 
-  let bool_fields = filter_fields schema [] fields in 
+  let bool_fields = filter_fields schema [] (select_fields schema [] qry) in 
+  let fields = print_fields schema bool_fields [] in 
   let table = where tablename qry schema bool_fields in 
+  (* fix order of fields *)
   (fields, order schema qry table)
 
 (** TODO: document *)
@@ -249,8 +259,6 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
     delete_helper inc outc col_no cond v
   with | End_of_file -> ()
 
-
-
 let delete qry = 
   let tablename, rest = delete_table qry in
   (* Delete entire table *)
@@ -285,6 +293,8 @@ let rec create_table_helper = function
   | h::t -> 
     let schema = List.fold_left (fun acc x -> acc^x^", ") (h^": ") t in 
     (h, String.sub schema 0 (String.length schema - 2))
+    (* check if table already exists *)
+    (* select * from newtable is failing *)
 
 let rec create_table qry = 
   let schema = create_table_helper qry in 
