@@ -129,7 +129,7 @@ let rec process_queries () =
       match command with
       | Quit -> print_endline "Goodbye for now.\n";
         exit 0
-      | Select obj ->  begin
+      | Select obj -> begin
           let (fields, rows) = select obj in
           if List.length rows < 30
           then (* Print to terminal *)
@@ -138,9 +138,10 @@ let rec process_queries () =
           else (* Print to file *)
             write_to_file fields rows; process_queries ()
         end
-      | Insert obj -> process_queries ()
+      | Insert obj -> insert obj
       | Delete obj -> process_queries ()
-      | Join obj   -> process_queries ()
+      | Join obj -> process_queries ()
+      | Create obj -> create_table obj
       | _ -> failwith "Unimplemented"
     end 
 
