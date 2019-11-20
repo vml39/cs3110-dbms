@@ -96,9 +96,16 @@ let read_next_line inc =
   (List.map String.trim (String.split_on_char ',' s'))
 
 let write_line outc lst = 
-  let single_a = "\n(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
+  let single_a = 
+    "\n(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
   let single_b = String.sub single_a 0 (String.length single_a - 2) ^ ")" in
   output_string outc single_b
 
-let delete_line fc lst = failwith "unimplimented"
+let write_line_schema outc lst = 
+  let single_a = 
+    "\n" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
+  let single_b = String.sub single_a 0 (String.length single_a - 2) in
+  output_string outc single_b
+
+let delete_line fc lst = failwith "unimplemented"
 

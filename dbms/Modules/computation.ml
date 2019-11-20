@@ -19,7 +19,6 @@ let rec select_fields schema acc = function
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
-    print_string "table schema";
     raise Malformed
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
@@ -67,7 +66,7 @@ let filter_row schema fields where (field, op, pattern) row =
       if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
-    | s when s = "=" -> print_string (pattern);
+    | s when s = "=" -> 
       if (List.nth row ind) = pattern 
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None 
@@ -112,15 +111,10 @@ let order schema qry table =
     the keyword "WHERE" in [qry].
     Raises [Malformed] if [qry] is invalid. *)
 let rec where_helper schema = function 
-  | field::op::pattern::t when op = "=" || op = "LIKE" -> print_string " HERE 1 ";
+  | field::op::pattern::t when op = "=" || op = "LIKE" ->
     if List.mem field schema then field, op, pattern
     else raise Malformed
-  | _ -> 
-    print_string "[ ";
-    print_string (" " ^ List.nth schema 1);
-    print_string (" " ^ List.nth schema 2);
-    print_string (" " ^ List.nth schema 3);
-    raise Malformed
+  | _ -> raise Malformed
 
 (** [select_where schema qry] is [None] if there is no "WHERE" keyword in [qry] 
     followed by a valid pattern and [Some param] where [param] is the 
@@ -128,8 +122,8 @@ let rec where_helper schema = function
 let rec select_where schema = function 
   | [] -> None
   | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
-    Some (where_helper schema t)
-  | h::t -> print_string " HERE 2 ";select_where schema t 
+    Some (where_helper schema (h'::t))
+  | h::t -> select_where schema t 
 
 (** [like_equal fc schema fields qry] is the OCaml table constructed from the
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
@@ -194,7 +188,6 @@ let rec vals_update sch cols vals acc =
     else vals_update t1 (h2 :: t2) vals ("" :: acc)
 
 let insert qry = 
-
   let tablename, rest = insert_table qry in
   let (cols, vals) = insert_cols_and_vals rest [] [] in
   let schema = table_schema (schema_from_txt ()) tablename in 
@@ -299,7 +292,7 @@ let rec create_table_helper = function
 let rec create_table qry = 
   let schema = create_table_helper qry in 
   let outc_schema = get_out_chan_schema in
-  write_line outc_schema ([snd schema]); 
+  write_line_schema outc_schema ([snd schema]); 
   close_out outc_schema;
   let outc_tables = get_out_chan (fst schema) in 
   close_out outc_tables;
