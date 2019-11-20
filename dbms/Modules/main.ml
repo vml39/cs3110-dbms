@@ -140,7 +140,7 @@ let rec process_queries num () =
             write_to_file fields rows num; process_queries num ()
         end
       | Insert obj -> insert obj; process_queries num ()
-      | Delete obj -> process_queries num ()
+      | Delete obj -> delete obj; process_queries num ()
       | Join obj -> process_queries num ()
       | Create obj -> create_table obj; process_queries num ()
       | _ -> failwith "Unimplemented"
