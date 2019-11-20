@@ -167,7 +167,7 @@ let insert_table qry =
 (* Parses the values from qry *)
 let rec insert_vals qry acc_col acc_val = 
   match qry with
-  | [] -> acc_col, acc_val
+  | [] -> List.rev acc_col, List.rev acc_val
   | h :: t -> insert_vals t acc_col (h :: acc_val)
 
 (** TODO: document *)
@@ -181,7 +181,7 @@ let rec insert_cols_and_vals qry acc_col acc_val =
 (** TODO: document *)
 let rec vals_update sch cols vals acc =
   match sch, cols with
-  | [], [] -> acc
+  | [], [] -> List.rev acc
   | [], h :: t -> raise Malformed
   | h :: t, [] -> vals_update t cols vals ("" :: acc)
   | h1 :: t1, h2 :: t2 -> if h1 = h2 
@@ -189,10 +189,15 @@ let rec vals_update sch cols vals acc =
     else vals_update t1 (h2 :: t2) vals ("" :: acc)
 
 let insert qry = 
+
   let tablename, rest = insert_table qry in
+  print_endline tablename;
   let (cols, vals) = insert_cols_and_vals rest [] [] in
+  List.iter print_endline cols;
+  List.iter print_endline vals;
   let schema = table_schema (schema_from_txt ()) tablename in 
-  if vals = [] then 
+  List.iter print_endline schema;
+  if cols = [] then 
     if List.length vals <> List.length schema then raise Malformed
     else 
       (* you have all cols so insert them all*)
