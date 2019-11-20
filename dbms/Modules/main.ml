@@ -139,10 +139,10 @@ let rec process_queries num () =
           else (* Print to file *)
             write_to_file fields rows num; process_queries num ()
         end
-      | Insert obj -> insert obj
+      | Insert obj -> insert obj; process_queries num ()
       | Delete obj -> process_queries num ()
       | Join obj -> process_queries num ()
-      | Create obj -> create_table obj
+      | Create obj -> create_table obj; process_queries num ()
       | _ -> failwith "Unimplemented"
     end 
 
