@@ -191,12 +191,8 @@ let rec vals_update sch cols vals acc =
 let insert qry = 
 
   let tablename, rest = insert_table qry in
-  print_endline tablename;
   let (cols, vals) = insert_cols_and_vals rest [] [] in
-  List.iter print_endline cols;
-  List.iter print_endline vals;
   let schema = table_schema (schema_from_txt ()) tablename in 
-  List.iter print_endline schema;
   if cols = [] then 
     if List.length vals <> List.length schema then raise Malformed
     else 
@@ -204,7 +200,6 @@ let insert qry =
       let outc = get_out_chan tablename in
       write_line outc vals; 
       close_out outc
-
   else 
     (* step through schema and vals, inserting empty strings where necessary,
        then write that*)
@@ -213,8 +208,75 @@ let insert qry =
     write_line outc writable; 
     close_out outc
 
+(* Parses the table name form delete query*)
+let delete_table qry =
+  match qry with
+  | [] -> raise Malformed
+  | "FROM" :: t -> if List.length t < 2 then raise Malformed
+    else List.hd t, List.tl t
+  | h :: t -> raise Malformed
+
+(* Parses the table name form delete query*)
+let delete_table qry =
+  match qry with
+  | [] -> raise Malformed
+  | "FROM" :: t -> if List.length t < 2 then raise Malformed
+    else List.hd t, List.tl t
+  | h :: t -> raise Malformed
+
+let where_conditional lst =
+  match List.tl lst with
+  | col :: cond :: v :: [] -> begin
+      match cond with
+      | "=" -> col, (=), v
+      | "!=" -> col, (<>), v
+      | ">" -> col, (>), v
+      | "<" -> col, (<), v
+      | ">=" -> col, (>=), v
+      | "<=" -> col, (<=), v
+      | _ -> raise Malformed
+    end
+  | h :: t -> raise Malformed
+  | [] -> raise Malformed
+
+let rec find_col acc (col: string) sch : int =
+  match sch with
+  | [] -> -1
+  | h :: t -> if h = col then acc
+    else find_col (acc+1) col t
+
+let rec get_col n lst : string =
+  match lst with 
+  | [] -> failwith "column not found"
+  | h :: t -> if n = 0 then h else get_col (n-1) t
+
+let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
+  try let line = read_next_line inc in
+    if cond (get_col col_no line) v
+    then delete_helper inc outc col_no cond v
+    else write_line outc line; 
+    delete_helper inc outc col_no cond v
+  with | End_of_file -> 
+    close_in inc;
+    close_out outc
+
+
 let delete qry = 
-  failwith "unimplemented"
+  let tablename, rest = delete_table qry in
+  (* Delete entire table *)
+  if rest = [] then Sys.remove (get_path tablename)
+  else 
+    let temp_file = tablename ^ ".tmp" in
+    let outc = get_out_chan temp_file in
+    let inc = get_in_chan tablename in
+    let col, cond, v = where_conditional rest in
+    let schema = table_schema (schema_from_txt ()) tablename in 
+    let col_no = find_col 0 col schema in
+    if col_no = -1 then raise Malformed else begin
+      delete_helper inc outc col_no cond v;
+      Sys.remove (get_path tablename);
+      Sys.rename (get_path temp_file) (get_path tablename)
+    end
 
 let join qry = 
   failwith "unimplemented"

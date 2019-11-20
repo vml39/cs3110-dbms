@@ -69,6 +69,11 @@ let table_from_txt filename =
   (*read it, line by line*)
   read_file empty filename file_channel 
 
+let get_path filename =
+  (Filename.parent_dir_name ^ Filename.dir_sep ^
+   "input" ^ Filename.dir_sep ^ 
+   !database ^ Filename.dir_sep ^ 
+   "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let get_in_chan filename =
   open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
@@ -77,7 +82,7 @@ let get_in_chan filename =
            "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
 let get_out_chan filename =
-  open_out_gen [Open_append] 0o666
+  open_out_gen [Open_append; Open_creat] 0o666
     (Filename.parent_dir_name ^ Filename.dir_sep ^
      "input" ^ Filename.dir_sep ^ 
      !database ^ Filename.dir_sep ^ 

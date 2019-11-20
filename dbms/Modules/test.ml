@@ -97,13 +97,6 @@ let select_test name expected s =
   "Select test: " ^ name >:: (fun _ -> 
       assert_equal ~printer:(pp_list_list' pp_query) expected (select s))  
 
-(* [insert_test name expected s] constructs an OUnit test named 
-   [name] that asserts the quality of [expected] of [s] applied to 
-   Computation.insert*)
-let insert_test name expected s = 
-  "Select test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select s)) 
-
 (* [select_table_test name expected s] constructs an OUnit test named 
    [name] that asserts the quality of [expected] of [s] applied to 
    Computation.select_table*)
@@ -192,15 +185,25 @@ let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs
 let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
 
 let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
-let students_up_2 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
+let students_up_2 = students_up_1 @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
+
 
 let insert_tests = [
   select_test "INSERT full" (fields', students_up_1) post_ins1;
   select_test "INSERT partial" (fields', students_up_2) post_ins2;
 ]
 
-let delete_tests = [
 
+let del_qry1 = parse "DELETE FROM students WHERE class = 1969" |> get_qry
+let post_del1 = (*delete del_qry1;*) parse "SELECT * FROM students" |> get_qry
+let del_qry2 = parse "DELETE FROM students WHERE name = Joe" |> get_qry
+let post_del2 = (*delete del_qry2;*) parse "SELECT * FROM students" |> get_qry
+
+let students_up_3 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
+
+let delete_tests = [
+  select_test "DELETE partial1" (fields', students_up_3) post_del1;
+  select_test "DELETE partial2" (fields', students) post_del2;
 ]
 
 (* DATA READ WRITE TESTS ******************************************************)
