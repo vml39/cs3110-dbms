@@ -30,7 +30,7 @@ type select_obj = {
   table: tablename; 
   fields: fieldname list; 
   where: where_obj option; 
-  order_by: fieldname option
+  order: fieldname option
   (* join:  *)
 }
 

@@ -37,11 +37,11 @@ let rec table_schema db_schema tablename =
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
 (* let rec select_table = function
-  | [] -> raise Malformed
-  | h::t when h = "FROM" -> 
+   | [] -> raise Malformed
+   | h::t when h = "FROM" -> 
     if t = [] then raise Malformed
     else List.hd t
-  | h::t -> select_table t *)
+   | h::t -> select_table t *)
 
 (** [filter_fields fields acc schema] is a bool list [acc] where each elt 
     corresponds to a field in [schema], where the elt is [true] if the field 
