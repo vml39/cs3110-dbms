@@ -36,12 +36,12 @@ let rec table_schema db_schema tablename =
     raise Malformed
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
-let rec select_table = function
+(* let rec select_table = function
   | [] -> raise Malformed
   | h::t when h = "FROM" -> 
     if t = [] then raise Malformed
     else List.hd t
-  | h::t -> select_table t
+  | h::t -> select_table t *)
 
 (** [filter_fields fields acc schema] is a bool list [acc] where each elt 
     corresponds to a field in [schema], where the elt is [true] if the field 
@@ -116,7 +116,7 @@ let comp n x y =
 
 (** [order table schema qry table] is [table] with rows sorted by the the field
     following the "ORDER BY" keyword in [qry]. *)
-let order schema qry_order table = 
+let order schema (qry_order: Query.fieldname option) table = 
   match qry_order with 
   | None -> table
   | Some field -> List.sort (comp (index field schema)) table
@@ -155,10 +155,10 @@ let rec like_equal fc schema fields (qry_where : Query.where_obj) =
     each row in the database table with [tablename]. Table results are filtered
     if there is a "WHERE" keyword in [qry]. Table only contains the fields
     specified in [fields] from the table [schema]. *)
-let where tablename (qry_where : Query.where_obj) schema fields = 
+let where tablename (qry_where : Query.where_obj option) schema fields = 
   let fc = get_in_chan tablename in 
   match qry_where with
-  | None -> filter_table fc schema fields false ("", "", "") [] 
+  | None -> filter_table fc schema fields false ("", None, "") [] 
   | Some w -> like_equal fc schema fields w
 
 let select (qry : Query.select_obj) =
@@ -166,7 +166,7 @@ let select (qry : Query.select_obj) =
   let schema = table_schema (schema_from_txt ()) tablename in 
   let fields = select_fields schema qry.fields in 
   let bool_fields = filter_fields schema [] fields in 
-  let table = where tablename qry schema bool_fields in 
+  let table = where tablename qry.where schema bool_fields in 
   (fields, order schema qry.order table)
 
 (** TODO: document *)

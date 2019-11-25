@@ -2,12 +2,12 @@ open Query
 
 (** [select qry] is the result of performing the select [qry] on the 
     database. *)
-val select : string list -> (string list * string list list)
+val select : Query.select_obj -> (string list * string list list)
 
 (** [select_table qry] is the table name parsed out from [qry]. 
     Raises [Malformed] if no table name provided in [qry] or if 
     illegal [qry] . *)
-val select_table : string list -> string
+(* val select_table : string list -> string *)
 
 (** [table_schema dbs tb] is the list of fields in [tb] extracted
     from [dbs]. *)
@@ -21,9 +21,9 @@ val table_schema : (string * string list) list -> string -> string list
 val select_fields : string list -> string list -> string list -> string list
 
 (** TODO: document *)
-val insert : string list -> unit
+val insert : Query.insert_obj -> unit
 
-val delete : string list -> unit
+val delete : Query.delete_obj -> unit
 
 val join: string list -> string list list 
 
@@ -31,4 +31,4 @@ val join: string list -> string list list
     parameters specified in [qry]. The table schema is also added to the 
     schema.txt file for the database. 
     Raises [Malformed] if no table name or fields provided in [qry]. *)
-val create_table: string list -> unit
+val create_table: Query.create_obj -> unit
