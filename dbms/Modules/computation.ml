@@ -8,13 +8,13 @@ let index field schema =
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
 (* let rec select_fields schema acc = function 
-  | [] -> 
+   | [] -> 
     raise Malformed
-  | h::t when h = "FROM" -> 
+   | h::t when h = "FROM" -> 
     if acc = [] then raise Malformed 
     else List.rev acc
-  | h::t when h = "*" -> schema
-  | h::t -> select_fields schema (h::acc) t *)
+   | h::t when h = "*" -> schema
+   | h::t -> select_fields schema (h::acc) t *)
 
 let select_fields schema fields = 
   if fields = ["*"]
@@ -102,9 +102,9 @@ let rec filter_table fc schema fields where p acc =
     command and Some of [field name] indicating the field the table should be
     sorted by otherwise. *)
 (* let rec select_order = function 
-  | [] -> None
-  | o::b::t when o = "ORDER" && b = "BY" -> Some (List.hd t)
-  | h::t -> select_order t *)
+   | [] -> None
+   | o::b::t when o = "ORDER" && b = "BY" -> Some (List.hd t)
+   | h::t -> select_order t *)
 
 (** [comp n x y] is [-1] if the [n]th element of [x] is less than the [n]th value 
     of [y] using the Stdlib compare function; [0] if they are equal; and [1] if 
@@ -125,31 +125,31 @@ let order schema qry_order table =
     the keyword "WHERE" in [qry].
     Raises [Malformed] if [qry] is invalid. *)
 (* let rec where_helper schema = function 
-  | field::op::pattern::t when op = "=" || op = "LIKE" ->
+   | field::op::pattern::t when op = "=" || op = "LIKE" ->
     if List.mem field schema then field, op, pattern
     else raise Malformed
-  | _ -> raise Malformed *)
+   | _ -> raise Malformed *)
 
 (** [select_where schema qry] is [None] if there is no "WHERE" keyword in [qry] 
     followed by a valid pattern and [Some param] where [param] is the 
     (field name, operator, pattern) and the operator is either "=" or "LIKE". *)
 (* let rec select_where schema = function 
-  | [] -> None
-  | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
+   | [] -> None
+   | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
     Some (where_helper schema (h'::t))
-  | h::t -> select_where schema t  *)
+   | h::t -> select_where schema t  *)
 
 (** [like_equal fc schema fields qry] is the OCaml table constructed from the
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
   filter_table fc schema fields true 
-  (qry_where.fields, qry_where.op, qry_where.ptn) []
-  (* match qry_where with
-  | [] -> raise Malformed
-  | f::o::p::t when o = "=" || o = "LIKE" -> 
-    filter_table fc schema fields true (f,o,p) []
-  | h::t -> like_equal fc schema fields t *)
+    (qry_where.fields, qry_where.op, qry_where.ptn) []
+(* match qry_where with
+   | [] -> raise Malformed
+   | f::o::p::t when o = "=" || o = "LIKE" -> 
+   filter_table fc schema fields true (f,o,p) []
+   | h::t -> like_equal fc schema fields t *)
 
 (** [where tablename qry schema fields] is the OCaml table created from parsing 
     each row in the database table with [tablename]. Table results are filtered
@@ -168,7 +168,7 @@ let select (qry : Query.select_obj) =
   let bool_fields = filter_fields schema [] fields in 
   let table = where tablename qry schema bool_fields in 
   (fields, order schema qry.order table)
-
+(*
 (** TODO: document *)
 (* Parses the table name form query*)
 let insert_table (qry : Query.insert_obj) =
@@ -192,7 +192,7 @@ let rec insert_cols_and_vals qry acc_col acc_val =
   | [] -> raise Malformed
   | "VALUES" :: t -> insert_vals t acc_col acc_val
   | h :: t -> insert_cols_and_vals t (h :: acc_col) acc_val
-
+*)
 (** TODO: document *)
 let rec vals_update sch cols vals acc =
   match sch, cols with
@@ -204,24 +204,24 @@ let rec vals_update sch cols vals acc =
     else vals_update t1 (h2 :: t2) vals ("" :: acc)
 
 let insert qry = 
-  let tablename, rest = insert_table qry in
-  let (cols, vals) = insert_cols_and_vals rest [] [] in
-  let schema = table_schema (schema_from_txt ()) tablename in 
-  if cols = [] then 
-    if List.length vals <> List.length schema then raise Malformed
-    else 
+  let schema = table_schema (schema_from_txt ()) qry.tablename in 
+  match qry.fields with 
+  | None -> if List.length qry.values <> List.length schema 
+    then raise Malformed "Values given do not match Schema"
+    else begin
       (* you have all cols so insert them all*)
-      let outc = get_out_chan tablename in
-      write_line outc vals; 
+      let outc = get_out_chan qry.tablename in
+      write_line outc qry.values; 
       close_out outc
-  else 
+    end
+  | Some lst -> 
     (* step through schema and vals, inserting empty strings where necessary,
        then write that*)
-    let writable = vals_update schema cols vals [] in
-    let outc = get_out_chan tablename in
+    let writable = vals_update schema lst qry.values [] in
+    let outc = get_out_chan qry.tablename in
     write_line outc writable; 
     close_out outc
-
+(*
 (* Parses the table name form delete query*)
 let delete_table qry =
   match qry with
@@ -264,7 +264,7 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
     else write_line outc line; 
     delete_helper inc outc col_no cond v
   with | End_of_file -> ()
-
+*)
 let delete qry = 
   match qry.where with
   | None -> begin 
@@ -276,8 +276,8 @@ let delete qry =
       let temp_file = qry.tablename ^ ".tmp" in
       let outc = get_out_chan temp_file in
       let inc = get_in_chan qry.tablename in
-      let schema = table_schema (schema_from_txt ()) qry.tablename in
-
+      let schema = table_schema (schema_from_txt ()) qry.tablename in ()
+(*
       match where_rec.ptn with
       | EQ -> 
       | GT ->
@@ -297,7 +297,7 @@ let delete qry =
           close_out outc;
           Sys.remove (get_path tablename);
           Sys.rename (get_path temp_file) (get_path tablename)
-        end
+          *)
     end
 
 let join qry = 
