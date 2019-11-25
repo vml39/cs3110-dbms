@@ -1,10 +1,9 @@
 (* Parsing of user queries. *)
 
-type object_phrase 
-type fieldname
-type tablename
-type pattern
-type operator 
+type fieldname = string
+type tablename = string
+type pattern = string
+type operator = | EQ | GT | LT | GEQ | LEQ | Like | NEQ | None
 
 type where_obj = {
   field: fieldname;
