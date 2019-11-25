@@ -1,9 +1,40 @@
 (* Parsing of user queries. *)
 
-type select_obj
-type insert_obj
-type delete_obj
-type create_obj
+type object_phrase 
+type fieldname
+type tablename
+type pattern
+type operator 
+
+type where_obj = {
+  field: fieldname;
+  op: operator;
+  ptn: pattern
+}
+
+type select_obj = {
+  table: tablename; 
+  fields: fieldname list; 
+  where: where_obj option; 
+  order_by: fieldname option
+  (* join:  *)
+}
+
+type insert_obj = {
+  table: tablename;
+  fields: fieldname list;
+  values: string list
+}
+
+type delete_obj = {
+  table: tablename;
+  where: where_obj option
+}
+
+type create_obj = {
+  table: tablename;
+  fields: fieldname list;
+}
 
 (** The type [query] represents a use query that is decomposed
     into a command and possibly an object phrase. *)
