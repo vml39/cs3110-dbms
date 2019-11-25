@@ -144,7 +144,7 @@ let order schema (qry_order: Query.fieldname option) table =
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
   filter_table fc schema fields true 
-    (qry_where.fields, qry_where.op, qry_where.ptn) []
+    (fields, qry_where.op, qry_where.ptn) []
 (* match qry_where with
    | [] -> raise Malformed
    | f::o::p::t when o = "=" || o = "LIKE" -> 
@@ -197,20 +197,20 @@ let rec insert_cols_and_vals qry acc_col acc_val =
 let rec vals_update sch cols vals acc =
   match sch, cols with
   | [], [] -> List.rev acc
-  | [], h :: t -> raise Malformed
+  | [], h :: t -> raise (Malformed "scoop")
   | h :: t, [] -> vals_update t cols vals ("" :: acc)
   | h1 :: t1, h2 :: t2 -> if h1 = h2 
     then vals_update t1 t2 (List.tl vals) (List.hd vals :: acc)
     else vals_update t1 (h2 :: t2) vals ("" :: acc)
 
 let insert qry = 
-  let schema = table_schema (schema_from_txt ()) qry.tablename in 
+  let schema = table_schema (schema_from_txt ()) qry.table in 
   match qry.fields with 
   | None -> if List.length qry.values <> List.length schema 
     then raise Malformed "Values given do not match Schema"
     else begin
       (* you have all cols so insert them all*)
-      let outc = get_out_chan qry.tablename in
+      let outc = get_out_chan qry.table in
       write_line outc qry.values; 
       close_out outc
     end
@@ -218,7 +218,7 @@ let insert qry =
     (* step through schema and vals, inserting empty strings where necessary,
        then write that*)
     let writable = vals_update schema lst qry.values [] in
-    let outc = get_out_chan qry.tablename in
+    let outc = get_out_chan qry.table in
     write_line outc writable; 
     close_out outc
 (*
@@ -268,15 +268,15 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
 let delete qry = 
   match qry.where with
   | None -> begin 
-      let outc = open_out (get_path qry.tablename) in
+      let outc = open_out (get_path qry.table) in
       output_string outc "";
       close_out outc
     end
   | Some where_rec -> begin
-      let temp_file = qry.tablename ^ ".tmp" in
+      let temp_file = qry.table ^ ".tmp" in
       let outc = get_out_chan temp_file in
-      let inc = get_in_chan qry.tablename in
-      let schema = table_schema (schema_from_txt ()) qry.tablename in ()
+      let inc = get_in_chan qry.table in
+      let schema = table_schema (schema_from_txt ()) qry.table in ()
 (*
       match where_rec.ptn with
       | EQ -> 
