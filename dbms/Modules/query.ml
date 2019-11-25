@@ -108,7 +108,7 @@ let rec select_fields acc fieldname (record : select_obj) = function
   | [] ->  raise (Malformed "No 'FROM' keyword")
   | h::i::t when i = "FROM" -> 
     let new_record = {record with 
-    fields = List.rev ((new_field fieldname h)::acc)} in 
+                      fields = List.rev ((new_field fieldname h)::acc)} in 
     select_table new_record t
   | h::i::t when i = "," -> 
     select_fields ((new_field fieldname h)::acc) "" record t
@@ -137,7 +137,7 @@ let rec insert_fields acc fieldname (record: insert_obj) = function
   | [] -> raise (Malformed "You must specify a valid list of field names")
   | h::i::j::k::t when i = ")" && j = "VALUES" && k = "(" -> 
     let new_record = {record with 
-    fields = List.rev ((new_field fieldname h)::acc)} in
+                      fields = List.rev ((new_field fieldname h)::acc)} in
     insert_values [] "" new_record t
   | h::i::t when i = "," -> 
     insert_fields ((new_field fieldname h)::acc) "" record t
@@ -175,9 +175,9 @@ let rec delete_where fieldname where_rec (record : delete_obj) = function
 let delete_parse = function 
   | [] -> raise (Malformed "You must specify a table name")
   | h::t when t = [] -> {
-    table = h;
-    where = None
-  }
+      table = h;
+      where = None
+    }
   | h::i::t when i = "WHERE" -> 
     let new_record = {
       table = h;
@@ -200,9 +200,9 @@ let rec create_fields acc fieldname = function
 let create_table_parse = function 
   | [] -> raise (Malformed "Must specify fields for the new table")
   | h::i::t when i = "(" -> {
-    table = h;
-    fields = create_fields [] "" t
-  }
+      table = h;
+      fields = create_fields [] "" t
+    }
   | _ -> raise (Malformed "Invalid CREATE TABLE query")
 
 let parse str =
@@ -219,7 +219,7 @@ let parse str =
     else Select (select_parse t)
   | h::i::t when h = "INSERT" && i = "INTO" -> 
     if t = [] then raise (Malformed "No query following INSERT INTO") else 
-    Insert (insert_parse t)
+      Insert (insert_parse t)
   | h::i::t when h = "DELETE" && i = "FROM" -> 
     if t = [] then raise (Malformed "No query following DELETE FROM") 
     else Delete (delete_parse t)
