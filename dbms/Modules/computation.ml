@@ -266,20 +266,32 @@ let delete qry =
       output_string outc "";
       close_out outc
     end
-  | Some lst -> begin
-      let temp_file = tablename ^ ".tmp" in
+  | Some where_rec -> begin
+      let temp_file = qry.tablename ^ ".tmp" in
       let outc = get_out_chan temp_file in
-      let inc = get_in_chan tablename in
-      let col, cond, v = where_conditional rest in
-      let schema = table_schema (schema_from_txt ()) tablename in 
-      let col_no = find_col 0 col schema in
-      if col_no = -1 then raise Malformed else begin
-        delete_helper inc outc col_no cond v;
-        close_in inc;
-        close_out outc;
-        Sys.remove (get_path tablename);
-        Sys.rename (get_path temp_file) (get_path tablename)
-      end
+      let inc = get_in_chan qry.tablename in
+      let schema = table_schema (schema_from_txt ()) qry.tablename in
+
+      match where_rec.ptn with
+      | EQ -> 
+      | GT ->
+      | LT ->
+      | GEQ ->
+      | LEQ ->
+      | Like ->
+      | NEQ ->
+      | None ->
+
+        let col, cond, v = where_conditional rest in
+
+        let col_no = find_col 0 col schema in
+        if col_no = -1 then raise Malformed else begin
+          delete_helper inc outc col_no cond v;
+          close_in inc;
+          close_out outc;
+          Sys.remove (get_path tablename);
+          Sys.rename (get_path temp_file) (get_path tablename)
+        end
     end
 
 let join qry = 
