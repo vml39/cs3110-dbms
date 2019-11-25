@@ -198,7 +198,7 @@ let rec create_fields acc fieldname = function
   | h::t -> create_fields acc (new_field fieldname h) t 
 
 let create_table_parse = function 
-  | [] -> 
+  | [] -> raise (Malformed "Must specify fields for the new table")
   | h::i::t when i = "(" -> {
     table = h;
     fields = create_fields [] "" t
@@ -223,7 +223,7 @@ let parse str =
   | h::i::t when h = "DELETE" && i = "FROM" -> 
     if t = [] then raise (Malformed "No query following DELETE FROM") 
     else Delete (delete_parse t)
-  | h::h'::t when h = "CREATE" && h' = "TABLE" -> 
+  | h:i::t when h = "CREATE" && i = "TABLE" -> 
     if t = [] then raise (Malformed "No query following CREATE TABLE") 
     else Create (create_table_parse t)
   | h::t when h = "QUIT" -> if t <> [] then raise Malformed else Quit
