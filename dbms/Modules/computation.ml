@@ -90,7 +90,7 @@ let filter_row schema fields where (field, op, pattern) row =
 
 (** [filter_table fc schema fields where pattern acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
-let rec filter_table fc schema fields where p acc = 
+let rec filter_table fc (schema: string list) fields where p acc = 
   let row = try read_next_line fc |> filter_row schema fields where p with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
@@ -144,7 +144,7 @@ let order schema (qry_order: Query.fieldname option) table =
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
   filter_table fc schema fields true 
-    (fields, qry_where.op, qry_where.ptn) []
+    (qry_where.field, qry_where.op, qry_where.ptn) []
 (* match qry_where with
    | [] -> raise Malformed
    | f::o::p::t when o = "=" || o = "LIKE" -> 
@@ -160,6 +160,8 @@ let where tablename (qry_where : Query.where_obj option) schema fields =
   match qry_where with
   | None -> filter_table fc schema fields false ("", None, "") [] 
   | Some w -> like_equal fc schema fields w
+
+(* check if fields in schema *)
 
 let select (qry : Query.select_obj) =
   let tablename = qry.table in 
