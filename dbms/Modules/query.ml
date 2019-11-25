@@ -136,16 +136,16 @@ let select_parse = function
 let rec insert_values acc value (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify a valid list of values")
   | h::i::t when i = ")" && t = [] -> 
-    {record with fields = List.rev ((new_field value h)::acc)}
+    {record with fields = Some (List.rev ((new_field value h)::acc))}
   | h::i::t when i = "," -> 
     insert_values ((new_field value h)::acc) "" record t
   | h::t -> insert_values acc (new_field value h) record t
 
 let rec insert_fields acc fieldname (record: insert_obj) = function 
-  | [] -> raise (Malformed "You must specify a valid list of field names")
+  | [] -> raise (Malformed "You must specify values")
   | h::i::j::k::t when i = ")" && j = "VALUES" && k = "(" -> 
     let new_record = {record with 
-                      fields = List.rev ((new_field fieldname h)::acc)} in
+                      fields = Some (List.rev ((new_field fieldname h)::acc))} in
     insert_values [] "" new_record t
   | h::i::t when i = "," -> 
     insert_fields ((new_field fieldname h)::acc) "" record t
@@ -156,7 +156,7 @@ let insert_parse = function
   | h::i::t when i = "(" -> 
     let init_record = {
       table = h;
-      fields = [];
+      fields = None;
       values = []
     } in 
     insert_fields [] "" init_record t
