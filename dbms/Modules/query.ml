@@ -223,8 +223,10 @@ let parse str =
   | h::i::t when h = "DELETE" && i = "FROM" -> 
     if t = [] then raise (Malformed "No query following DELETE FROM") 
     else Delete (delete_parse t)
-  | h:i::t when h = "CREATE" && i = "TABLE" -> 
+  | h::i::t when h = "CREATE" && i = "TABLE" -> 
     if t = [] then raise (Malformed "No query following CREATE TABLE") 
     else Create (create_table_parse t)
-  | h::t when h = "QUIT" -> if t <> [] then raise Malformed else Quit
-  | _ -> raise Malformed
+  | h::t when h = "QUIT" -> 
+    if t <> [] then raise (Malformed "If you would like to quit, please type QUIT") 
+    else Quit
+  | _ -> raise (Malformed "Illegal query")
