@@ -33,7 +33,7 @@ let rec print_fields schema bfields acc =
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
-    raise Malformed
+    raise (Malformed "Table schema is empty")
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
 (* let rec select_table = function
