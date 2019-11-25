@@ -205,11 +205,11 @@ let rec vals_update sch cols vals acc =
     then vals_update t1 t2 (List.tl vals) (List.hd vals :: acc)
     else vals_update t1 (h2 :: t2) vals ("" :: acc)
 
-let insert qry = 
+let insert (qry: insert_obj) = 
   let schema = table_schema (schema_from_txt ()) qry.table in 
   match qry.fields with 
   | None -> if List.length qry.values <> List.length schema 
-    then raise Malformed "Values given do not match Schema"
+    then raise (Malformed "Values given do not match Schema")
     else begin
       (* you have all cols so insert them all*)
       let outc = get_out_chan qry.table in
