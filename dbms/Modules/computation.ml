@@ -260,25 +260,26 @@ let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
   with | End_of_file -> ()
 
 let delete qry = 
-  let tablename, rest = delete_table qry in
-  (* Delete entire table *)
-  if rest = [] then 
-    let outc = open_out (get_path tablename) in
-    output_string outc "";
-    close_out outc
-  else 
-    let temp_file = tablename ^ ".tmp" in
-    let outc = get_out_chan temp_file in
-    let inc = get_in_chan tablename in
-    let col, cond, v = where_conditional rest in
-    let schema = table_schema (schema_from_txt ()) tablename in 
-    let col_no = find_col 0 col schema in
-    if col_no = -1 then raise Malformed else begin
-      delete_helper inc outc col_no cond v;
-      close_in inc;
-      close_out outc;
-      Sys.remove (get_path tablename);
-      Sys.rename (get_path temp_file) (get_path tablename)
+  match qry.where with
+  | None -> begin 
+      let outc = open_out (get_path qry.tablename) in
+      output_string outc "";
+      close_out outc
+    end
+  | Some lst -> begin
+      let temp_file = tablename ^ ".tmp" in
+      let outc = get_out_chan temp_file in
+      let inc = get_in_chan tablename in
+      let col, cond, v = where_conditional rest in
+      let schema = table_schema (schema_from_txt ()) tablename in 
+      let col_no = find_col 0 col schema in
+      if col_no = -1 then raise Malformed else begin
+        delete_helper inc outc col_no cond v;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path tablename);
+        Sys.rename (get_path temp_file) (get_path tablename)
+      end
     end
 
 let join qry = 
@@ -293,8 +294,8 @@ let rec create_table_helper = function
   | h::t -> 
     let schema = List.fold_left (fun acc x -> acc^x^", ") (h^": ") t in 
     (h, String.sub schema 0 (String.length schema - 2))
-    (* check if table already exists *)
-    (* select * from newtable is failing *)
+(* check if table already exists *)
+(* select * from newtable is failing *)
 
 let rec create_table qry = 
   let schema = create_table_helper qry in 

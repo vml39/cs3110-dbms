@@ -33,7 +33,7 @@ type delete_obj = {
 
 type insert_obj = {
   table: tablename;
-  fields: fieldname list;
+  fields: fieldname list option;
   values: string list
 }
 
