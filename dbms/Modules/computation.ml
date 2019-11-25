@@ -303,22 +303,9 @@ let delete qry =
 let join qry = 
   failwith "unimplemented"
 
-(** [create_table_helper qry] is the table name and the string representation
-    of the list of parameters specified in [qry].
-    Raises [Malformed] if [qry] is invalid. *)
-let rec create_table_helper = function 
-  | [] -> raise Malformed
-  | h::[] -> raise Malformed
-  | h::t -> 
-    let schema = List.fold_left (fun acc x -> acc^x^", ") (h^": ") t in 
-    (h, String.sub schema 0 (String.length schema - 2))
-(* check if table already exists *)
-(* select * from newtable is failing *)
-
-let rec create_table qry = 
-  let schema = create_table_helper qry in 
+let rec create_table (qry: Query.create_obj) = 
   let outc_schema = get_out_chan_schema in
-  write_line_schema outc_schema ([snd schema]); 
+  write_line_schema outc_schema qry.fields; 
   close_out outc_schema;
-  let outc_tables = get_out_chan (fst schema) in 
+  let outc_tables = get_out_chan qry.table in 
   close_out outc_tables;
