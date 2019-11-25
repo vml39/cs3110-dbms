@@ -125,7 +125,7 @@ let rec process_queries num () =
   print_string "> ";
   match parse (read_line ()) with 
   | exception (Empty) -> process_queries num ()
-  | exception (Malformed) -> invalid_command (); process_queries num ()
+  | exception (Malformed "") -> invalid_command (); process_queries num ()
   | command -> begin
       match command with
       | Quit -> print_endline "Goodbye for now.\n";
@@ -141,7 +141,6 @@ let rec process_queries num () =
         end
       | Insert obj -> insert obj; process_queries num ()
       | Delete obj -> delete obj; process_queries num ()
-      | Join obj -> process_queries num ()
       | Create obj -> create_table obj; process_queries num ()
       | _ -> failwith "Unimplemented"
     end 

@@ -310,4 +310,7 @@ let rec create_table (qry: Query.create_obj) =
   write_line_schema outc_schema qry.fields; 
   close_out outc_schema;
   let outc_tables = get_out_chan qry.table in 
-  close_out outc_tables;
+  close_out outc_tables
+
+let delete_table qry = 
+  failwith "unimplemented" 
