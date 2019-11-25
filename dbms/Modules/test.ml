@@ -82,13 +82,13 @@ let queries_tests = [
      (Select ["Im";"Hungry";"rite";"now"])
      "SELECT Im (Hungry rite,now); Dawg"; *)
   (* query_test "SELECT * FROM students"
-     {table = "students"; fields = ["*"]; where = None; order_by = None}
+     {table = "students"; fields = ["*"]; where = None; order = None}
      "SELECT * FROM students";
      query_test "SELECT name, netid FROM students"
-     {table = "students"; fields = ["name";"netid"]; where = None; order_by = None}
+     {table = "students"; fields = ["name";"netid"]; where = None; order = None}
      "SELECT name, netid FROM students";
      query_test "SELECT name netid FROM students"
-     {table = "students"; fields = ["name netid"]; where = None; order_by = None}
+     {table = "students"; fields = ["name netid"]; where = None; order = None}
      "SELECT name netid FROM students"; *)
   malformed_test "Select * FROM students" "Select * FROM students" "abc";
   malformed_test "SELECT name fRom students" "SELECT name fRom students" "abc";
@@ -107,38 +107,8 @@ let queries_tests = [
 (* COMPUTATION TESTS **********************************************************)
 
 let get_qry = function 
-  (* | Select qry -> qry
-     | Insert qry -> qry
-     | Delete qry -> qry *)
+  | Select qry -> qry
   | _ -> failwith "unimplemented"
-
-(* [select_test name expected s] constructs an OUnit test named 
-   [name] that asserts the quality of [expected] of [s] applied to 
-   Computation.select*)
-let select_test name expected s = 
-  "Select test: " ^ name >:: (fun _ -> 
-      assert_equal ~printer:(pp_list_list' pp_query) expected (select s))  
-
-(* [select_table_test name expected s] constructs an OUnit test named 
-   [name] that asserts the quality of [expected] of [s] applied to 
-   Computation.select_table*)
-let select_table_test name expected s =
-  "Select table test: " ^ name >:: (fun _ -> 
-      assert_equal expected (select_table s))
-
-(* [malformed_table_test name s] constructs an OUnit test named 
-   [name] that asserts [s] applied to Computation.select_table raises a 
-   query.Malformed exception*)
-let malformed_table_test name s m =
-  "Malformed select table test: " ^ name >:: (fun _ -> 
-      assert_raises (Malformed m) (fun () -> (select_table s)))
-
-(* [malformed_fields_test name s] constructs an OUnit test named 
-   [name] that asserts [s] applied to Computation.select_fields raises a 
-   query.Malformed exception*)
-let malformed_fields_test name s m = 
-  "Malformed select fields test: " ^ name >:: (fun _ ->
-      assert_raises (Malformed m) (fun () -> (select_fields [] s)))
 
 (* [malformed_select_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select raises a 
@@ -179,19 +149,19 @@ let students_ordered = [
 ]
 
 let select_tests = [
-  select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"];
+  (* select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"]; *)
   (* malformed_table_test "no FROM keyword" ["*"];
      malformed_table_test "no table called after FROM" ["*"; "FROM"];
      malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"]; *)
   (* malformed_fields_test "no fields" ["FROM"; "tablename"]; *)
   (* malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"]; *)
-  select_test "SELECT netid FROM students" 
-    (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;
-  select_test "SELECT netid, name FROM students" 
-    (fields', namenetid) qry';
-  select_test "SELECT * FROM students" (schema, students) qry'';
-  select_test "SELECT * FROM students ORDER BY name" 
-    (schema, students_ordered) qry_order;
+  (* select_test "SELECT netid FROM students" 
+     (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;
+     select_test "SELECT netid, name FROM students" 
+     (fields', namenetid) qry';
+     select_test "SELECT * FROM students" (schema, students) qry'';
+     select_test "SELECT * FROM students ORDER BY name" 
+     (schema, students_ordered) qry_order; *)
   (* select_test "SELECT * FROM students WHERE name = Test" 
      (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq; *)
   (* select_test "SELECT * FROM students WHERE name LIKE %i%" 
@@ -200,9 +170,9 @@ let select_tests = [
      qry_where_eq_malformed; *)
 ]
 
-let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" |> get_qry
+let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
 let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
-let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" |> get_qry
+let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" 
 let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
 
 let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
@@ -215,9 +185,9 @@ let insert_tests = [
 ]
 
 
-let del_qry1 = parse "DELETE FROM students WHERE class = 1969" |> get_qry
+let del_qry1 = parse "DELETE FROM students WHERE class = 1969" 
 let post_del1 = (*delete del_qry1;*) parse "SELECT * FROM students" |> get_qry
-let del_qry2 = parse "DELETE FROM students WHERE name = Joe" |> get_qry
+let del_qry2 = parse "DELETE FROM students WHERE name = Joe" 
 let post_del2 = (*delete del_qry2;*) parse "SELECT * FROM students" |> get_qry
 
 let students_up_3 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]

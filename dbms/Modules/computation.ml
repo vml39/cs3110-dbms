@@ -36,7 +36,7 @@ let rec table_schema db_schema tablename =
     raise (Malformed "Table schema is empty")
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
-(* let rec select_table = function
+(* let rec Failure("unimplemented") = function
    | [] -> raise Malformed
    | h::t when h = "FROM" -> 
     if t = [] then raise Malformed

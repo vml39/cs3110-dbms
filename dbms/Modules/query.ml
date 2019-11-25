@@ -136,7 +136,7 @@ let select_parse = function
 let rec insert_values acc value (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify a valid list of values")
   | h::i::t when i = ")" && t = [] -> 
-    {record with fields = Some (List.rev ((new_field value h)::acc))}
+    {record with values = (List.rev ((new_field value h)::acc))}
   | h::i::t when i = "," -> 
     insert_values ((new_field value h)::acc) "" record t
   | h::t -> insert_values acc (new_field value h) record t
@@ -151,15 +151,17 @@ let rec insert_fields acc fieldname (record: insert_obj) = function
     insert_fields ((new_field fieldname h)::acc) "" record t
   | h::t -> insert_fields acc (new_field fieldname h) record t
 
-let insert_parse = function 
+let insert_parse t =
+  let init_record = {
+    table = List.hd t;
+    fields = None;
+    values = []
+  } in 
+  match t with   
   | [] -> raise (Malformed "You must specify a table name")
   | h::i::t when i = "(" -> 
-    let init_record = {
-      table = h;
-      fields = None;
-      values = []
-    } in 
     insert_fields [] "" init_record t
+  | h::i::j::t when i = "VALUES" && j = "(" -> insert_values [] "" init_record t
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
 
 let rec delete_where fieldname where_rec (record : delete_obj) = function
@@ -218,7 +220,7 @@ let parse str =
         |> Str.global_replace (Str.regexp "[ ]+") " " 
         |> Str.global_replace (Str.regexp ",") " , " 
         |> Str.global_replace (Str.regexp "(") " ( " 
-        |> Str.global_replace (Str.regexp "(") " ( " 
+        |> Str.global_replace (Str.regexp ")") " ) " 
         |> String.split_on_char ' ' 
         |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty
