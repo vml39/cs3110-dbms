@@ -30,7 +30,7 @@ type select_obj = {
   table: tablename; 
   fields: fieldname list; 
   where: where_obj option; 
-  order_by: fieldname option
+  order: fieldname option
   (* join:  *)
 }
 
@@ -66,7 +66,7 @@ let new_field s1 s2 =
   else s1 ^ " " ^ s2
 
 let rec order_by fieldname (record : select_obj) = function
-  | [] -> {record with order_by = Some fieldname}
+  | [] -> {record with order = Some fieldname}
   | h::t -> order_by (new_field fieldname h) record t
 
 let create_where_record fieldname h op ptn = 
@@ -129,7 +129,7 @@ let select_parse = function
       table = ""; 
       fields = []; 
       where = None; 
-      order_by = None
+      order = None
     } in
     select_fields [] "" init_rec lst
 
