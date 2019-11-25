@@ -7,14 +7,19 @@ let index field schema =
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
-let rec select_fields schema acc = function 
+(* let rec select_fields schema acc = function 
   | [] -> 
     raise Malformed
   | h::t when h = "FROM" -> 
     if acc = [] then raise Malformed 
     else List.rev acc
   | h::t when h = "*" -> schema
-  | h::t -> select_fields schema (h::acc) t
+  | h::t -> select_fields schema (h::acc) t *)
+
+let select_fields schema fields = 
+  if fields = ["*"]
+  then schema
+  else fields 
 
 (** TODO: document *)
 let rec print_fields schema bfields acc = 
@@ -71,11 +76,11 @@ let filter_row schema fields where (field, op, pattern) row =
   let i = ref (-1) in 
   if where then let ind = index field schema in
     match op with
-    | s when s = "LIKE" ->
+    | Like ->
       if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
-    | s when s = "=" -> 
+    | EQ -> 
       if (List.nth row ind) = pattern 
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None 
@@ -96,10 +101,10 @@ let rec filter_table fc schema fields where p acc =
 (** [select_order qry] is None if the [qry] does not contain an "ORDER BY"
     command and Some of [field name] indicating the field the table should be
     sorted by otherwise. *)
-let rec select_order = function 
+(* let rec select_order = function 
   | [] -> None
   | o::b::t when o = "ORDER" && b = "BY" -> Some (List.hd t)
-  | h::t -> select_order t
+  | h::t -> select_order t *)
 
 (** [comp n x y] is [-1] if the [n]th element of [x] is less than the [n]th value 
     of [y] using the Stdlib compare function; [0] if they are equal; and [1] if 
@@ -111,61 +116,62 @@ let comp n x y =
 
 (** [order table schema qry table] is [table] with rows sorted by the the field
     following the "ORDER BY" keyword in [qry]. *)
-let order schema qry table = 
-  match select_order qry with 
+let order schema qry_order table = 
+  match qry_order with 
   | None -> table
-  | Some param -> List.sort (comp (index param schema)) table
+  | Some field -> List.sort (comp (index field schema)) table
 
 (** [where_helper acc qry] is the (field name, operator, pattern) following 
     the keyword "WHERE" in [qry].
     Raises [Malformed] if [qry] is invalid. *)
-let rec where_helper schema = function 
+(* let rec where_helper schema = function 
   | field::op::pattern::t when op = "=" || op = "LIKE" ->
     if List.mem field schema then field, op, pattern
     else raise Malformed
-  | _ -> raise Malformed
+  | _ -> raise Malformed *)
 
 (** [select_where schema qry] is [None] if there is no "WHERE" keyword in [qry] 
     followed by a valid pattern and [Some param] where [param] is the 
     (field name, operator, pattern) and the operator is either "=" or "LIKE". *)
-let rec select_where schema = function 
+(* let rec select_where schema = function 
   | [] -> None
   | h::h'::t when h = "WHERE" && (h' <> "LIKE" && h' <> "=") -> 
     Some (where_helper schema (h'::t))
-  | h::t -> select_where schema t 
+  | h::t -> select_where schema t  *)
 
 (** [like_equal fc schema fields qry] is the OCaml table constructed from the
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
     the fields specified in [fields] from the table [schema]. *)
-let rec like_equal fc schema fields qry = 
-  match qry with
+let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
+  filter_table fc schema fields true 
+  (qry_where.fields, qry_where.op, qry_where.ptn) []
+  (* match qry_where with
   | [] -> raise Malformed
   | f::o::p::t when o = "=" || o = "LIKE" -> 
     filter_table fc schema fields true (f,o,p) []
-  | h::t -> like_equal fc schema fields t
+  | h::t -> like_equal fc schema fields t *)
 
 (** [where tablename qry schema fields] is the OCaml table created from parsing 
     each row in the database table with [tablename]. Table results are filtered
     if there is a "WHERE" keyword in [qry]. Table only contains the fields
     specified in [fields] from the table [schema]. *)
-let where tablename qry schema fields = 
+let where tablename (qry_where : Query.where_obj) schema fields = 
   let fc = get_in_chan tablename in 
-  match select_where schema qry with
+  match qry_where with
   | None -> filter_table fc schema fields false ("", "", "") [] 
-  | Some param -> like_equal fc schema fields qry 
+  | Some w -> like_equal fc schema fields w
 
-let select qry =
-  let tablename = select_table qry in 
+let select (qry : Query.select_obj) =
+  let tablename = qry.table in 
   let schema = table_schema (schema_from_txt ()) tablename in 
-  let bool_fields = filter_fields schema [] (select_fields schema [] qry) in 
-  let fields = print_fields schema bool_fields [] in 
+  let fields = select_fields schema qry.fields in 
+  let bool_fields = filter_fields schema [] fields in 
   let table = where tablename qry schema bool_fields in 
-  (* fix order of fields *)
-  (fields, order schema qry table)
+  (fields, order schema qry.order table)
 
 (** TODO: document *)
 (* Parses the table name form query*)
-let insert_table qry =
+let insert_table (qry : Query.insert_obj) =
   match qry with
   | [] -> raise Malformed
   | "INTO" :: t -> if List.length t < 2 then raise Malformed
