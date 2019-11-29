@@ -81,16 +81,12 @@ let selectobj1 = {
 }
 let selectobj2 = {selectobj1 with fields = ["name"; "netid"]}
 let selectobj3 = {selectobj1 with fields = ["name netid"]}
-let whereobj = {field = "name";op = Like;ptn = "%i%"}
+let whereobj = {field = "name";op = Like; ptn = "%i%"}
 let selectobj4 = {selectobj1 with where = Some whereobj}
 let whereobj1 = {field = "year"; op = LEQ; ptn = "2021"}
 let selectobj5 = {selectobj1 with where = Some whereobj1}
 let selectobj6 = {selectobj1 with order = Some "name"}
 let selectobj7 = {selectobj4 with order = Some "name"}
-let deleteobj = {
-  table = "students";
-  where = None
-}
 let insertobj = {
   table = "students";
   fields = None;
@@ -101,6 +97,9 @@ let insertobj1 = {
   fields = Some ["name"; "netid"];
   values = ["Roger Williams"; "rw1"]
 }
+let deleteobj = {table = "students"; where = None}
+let deleteobj1 = {deleteobj with where = Some whereobj}
+let createobj = {table = "dorms";fields = ["name"; "location"]}
 
 let queries_tests = [
   query_test "SELECT a FROM alpha" (Select selectobj) "SELECT a FROM alpha";
@@ -123,7 +122,6 @@ let queries_tests = [
   query_test "SELECT * FROM students WHERE name LIKE %i% ORDER BY name" 
     (Select selectobj7) 
     "SELECT * FROM students WHERE name LIKE %i% ORDER BY name";
-  query_test "DELETE FROM students" (Delete deleteobj) "DELETE FROM students";
   query_test 
     "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)" 
     (Insert insertobj)
@@ -132,6 +130,11 @@ let queries_tests = [
     "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)" 
     (Insert insertobj1)
     "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)";
+  query_test "DELETE FROM students" (Delete deleteobj) "DELETE FROM students";
+  query_test "DELETE FROM students WHERE name LIKE %i%" (Delete deleteobj1) 
+    "DELETE FROM students WHERE name LIKE %i%";
+  query_test "CREATE TABLE dorms (name, location)" (Create createobj) 
+    "CREATE TABLE dorms (name, location)";
   malformed_test "Select * FROMm students" "Illegal query" 
     "Select * FROM students";
   malformed_test "SELECT name fRom students" 
@@ -178,6 +181,21 @@ let queries_tests = [
   "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" ;
   malformed_test "DELETE" "Illegal query" "DELETE";
   malformed_test "DELETE FROM" "You must specify a table name" "DELETE FROM";
+  malformed_test "DELETE FROM students table" 
+    "You can delete all values from a table or specify a WHERE condition" 
+    "DELETE FROM students table";
+  malformed_test "CREATE TABLE" "Must specify fields for the new table" 
+    "CREATE TABLE";
+  malformed_test "CREATE TABLE dorms" "Invalid CREATE TABLE query" 
+    "CREATE TABLE dorms";
+  malformed_test "CREATE TABLE dorms (" "Invalid field names" 
+    "CREATE TABLE dorms (";
+  malformed_test "CREATE TABLE dorms name, location)" 
+    "Invalid CREATE TABLE query" "CREATE TABLE dorms name, location)";
+  malformed_test "CREATE TABLE dorms (name, location" "Invalid field names" 
+    "CREATE TABLE dorms (name, location";
+  malformed_test "CREATE TABLE dorms (name, location, " "Invalid field names" 
+    "CREATE TABLE dorms (name, location, ";
 ]
 
 (* COMPUTATION TESTS **********************************************************)

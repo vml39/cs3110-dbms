@@ -147,16 +147,10 @@ let select_parse = function
     } in
     select_fields [] "" init_rec lst
 
-let rec print_list = function 
-  | [] -> ()
-  | h::t -> print_string (h ^ " ")
-
 (** TODO: document *)
 let rec insert_values acc value (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify a valid list of values")
   | h::i::t when i = ")" && t = [] -> 
-    let values = (List.rev ((new_field value h)::acc)) in 
-    print_list values;
     {record with values = (List.rev ((new_field value h)::acc))}
   | h::i::t when i = "," -> 
     insert_values ((new_field value h)::acc) "" record t
@@ -225,11 +219,12 @@ let delete_parse = function
       ptn = ""
     } in
     delete_where "" init_where new_record t
-  | _ -> raise (Malformed "deletttt") 
+  | _ -> raise (Malformed 
+    "You can delete all values from a table or specify a WHERE condition") 
 
 (** TODO: document *)
 let rec create_fields acc fieldname = function
-  | [] -> raise (Malformed "Invalid CREATE TABLE query")
+  | [] -> raise (Malformed "Invalid field names")
   | h::i::t when i = ")" && t = [] -> List.rev ((new_field fieldname h)::acc)
   | h::i::t when i = "," -> create_fields ((new_field fieldname h)::acc) "" t
   | h::t -> create_fields acc (new_field fieldname h) t 
