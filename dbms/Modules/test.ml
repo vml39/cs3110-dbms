@@ -56,7 +56,7 @@ let query_test name expected s =
 
 (* [malformed_query_test name s] constructs an OUnit test named [name] that 
    asserts [s] applied to [parse] raises a query.Malformed exception*)
-let malformed_test name s m =
+let malformed_test name m s =
   "Malformed query Test: " ^ name >:: (fun _ -> 
       assert_raises (Malformed m)(fun () ->  (parse s)))
 
@@ -90,23 +90,49 @@ let queries_tests = [
      query_test "SELECT name netid FROM students"
      {table = "students"; fields = ["name netid"]; where = None; order = None}
      "SELECT name netid FROM students"; *)
-  malformed_test "Select * FROM students" "Select * FROM students" "abc";
-  malformed_test "SELECT name fRom students" "SELECT name fRom students" "abc";
-  malformed_test "SELECT * FROM students table" "SELECT * FROM students table" "abc";
-  malformed_test "SELECT name, netid, FROM students" "Select name, netid, FROM students" "abc";
-  malformed_test "SELECT name, net id, FROM students" "SELECT name, net id, FROM students" "abc";
-  malformed_test "SELECT (name, netid) FROM students" "SELECT (name, netid) FROM students" "abc";
-  malformed_test "SELECT (name, netid FROM students" "SELECT (name, netid FROM students" "abc" ;
-  malformed_test "SELECT name, netid) FROM students" "SELECT name, netid) FROM students" "abc";
-  malformed_test "SELECT name, netid FROM students," "SELECT name, netid FROM students," "abc";
-  malformed_test "SELECT name, netid FROM (students)" "SELECT name, netid FROM (students)" "abc";
-  malformed_test "SELECT name, netid FROM (students" "SELECT name, netid FROM (students" "abc";
-  malformed_test "SELECT name, netid FROM students)" "SELECT name, netid FROM students)" "abc";
+  malformed_test "Select * FROMm students" "Illegal query" 
+    "Select * FROM students";
+  malformed_test "SELECT name fRom students" 
+    "Field names malformed or no 'FROM' keyword" 
+    "SELECT name fRom students";
+  malformed_test "SELECT * FROM students table" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'"
+    "SELECT * FROM students table";
+  malformed_test "SELECT name, netid, FROM students" 
+    "Field names malformed or no 'FROM' keyword"
+    "SELECT name, netid, FROM students";
+  malformed_test "SELECT name, net id, FROM students" 
+    "Field names malformed or no 'FROM' keyword"
+    "SELECT name, net id, FROM students";
+  malformed_test "SELECT name, netid FROM (students)" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'"
+    "SELECT name, netid FROM (students)";
+  malformed_test "SELECT name, netid FROM (students" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'"
+    "SELECT name, netid FROM (students";
+  malformed_test "SELECT name, netid FROM students)" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'"
+    "SELECT name, netid FROM students)";
+  malformed_test "SELECT name, netid FROM students WHERE"
+    "Must provide a field, operator and pattern after 'WHERE'"
+    "SELECT name, netid FROM students WHERE";
+  malformed_test "SELECT name, netid FROM students WHERE name"
+    "Must provide a field, operator and pattern after 'WHERE'"
+    "SELECT name, netid FROM students WHERE name";
+  malformed_test "SELECT name, netid FROM students WHERE name oops %i%"
+    "Must provide a field, operator and pattern after 'WHERE'"
+    "SELECT name, netid FROM students WHERE name oops %i%";
+  malformed_test "SELECT name, netid FROM students WHERE name <="
+    "Must provide a field, operator and pattern after 'WHERE'"
+    "SELECT name, netid FROM students WHERE name <=";
+  malformed_test "SELECT name, netid FROM students ORDER BY"
+    "Must provide a field to order by"
+    "SELECT name, netid FROM students ORDER BY";
 ]
 
 (* COMPUTATION TESTS **********************************************************)
 
-let get_qry = function 
+(* let get_qry = function 
   | Select qry -> qry
   | _ -> failwith "unimplemented"
 
@@ -253,7 +279,7 @@ let data_read_write_tests = [
   str_lst_eq_test "ln3 again" (List.nth students 2) (read_next_line fc2);
   str_lst_eq_test "ln2 again" (List.nth students 1) (read_next_line fc2);
   str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
-]
+] *)
 
 
 

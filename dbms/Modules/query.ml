@@ -66,6 +66,8 @@ let new_field s1 s2 =
   else s1 ^ " " ^ s2
 
 let rec order_by fieldname (record : select_obj) = function
+  | [] when fieldname = "" -> 
+    raise (Malformed "Must provide a field to order by")
   | [] -> {record with order = Some fieldname}
   | h::t -> order_by (new_field fieldname h) record t
 
@@ -77,6 +79,8 @@ let create_where_record fieldname h op ptn =
   }
 
 let rec select_where fieldname where_rec (record : select_obj) = function
+  | [] when where_rec.field = "" || where_rec.op = None || where_rec.ptn = "" ->
+    raise (Malformed "Must provide a field, operator and pattern after 'WHERE'")
   | [] -> {record with where = Some where_rec}
   | h::i::t when h = "ORDER" && i = "BY" -> 
     order_by "" {record with where = Some where_rec} t
@@ -107,14 +111,16 @@ let select_table (record : select_obj) = function
       ptn = ""
     } in
     select_where "" init_where new_record t
-  | h::i::j::t when i = "ORDER" && j = "BY" && t <> [] -> 
+  | h::i::j::t when i = "ORDER" && j = "BY" -> 
     let new_record = {record with table = h} in 
     order_by "" new_record t
-  | _ -> raise (Malformed "Scoopity oops woops")
+  | _ -> raise 
+    (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
 
-let rec select_fields acc fieldname (record : select_obj) = function
-  | [] ->  raise (Malformed "No 'FROM' keyword")
-  | h::i::t when i = "FROM" -> 
+let rec select_fields acc fieldname (record : select_obj) q = 
+  match q with 
+  | [] -> raise (Malformed "Field names malformed or no 'FROM' keyword")
+  | h::i::t when h <> "," && i = "FROM" -> 
     let new_record = {record with 
                       fields = List.rev ((new_field fieldname h)::acc)} in 
     select_table new_record t
@@ -123,7 +129,8 @@ let rec select_fields acc fieldname (record : select_obj) = function
   | h::t -> select_fields acc (new_field fieldname h) record t
 
 let select_parse = function
-  | [] -> raise (Malformed "You must include the field names and tables to be selected")
+  | [] -> raise 
+    (Malformed "You must include the field names and tables to be selected")
   | lst -> 
     let init_rec = {
       table = ""; 
