@@ -96,6 +96,11 @@ let insertobj = {
   fields = None;
   values = ["Roger Williams"; "rw1"; "2023"; "Film"; "West"]
 }
+let insertobj1 = {
+  insertobj with 
+  fields = Some ["name"; "netid"];
+  values = ["Roger Williams"; "rw1"]
+}
 
 let queries_tests = [
   query_test "SELECT a FROM alpha" (Select selectobj) "SELECT a FROM alpha";
@@ -119,11 +124,14 @@ let queries_tests = [
     (Select selectobj7) 
     "SELECT * FROM students WHERE name LIKE %i% ORDER BY name";
   query_test "DELETE FROM students" (Delete deleteobj) "DELETE FROM students";
-  (* query_test 
-    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" 
+  query_test 
+    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)" 
     (Insert insertobj)
-    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" ; *)
-
+    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)";
+  query_test 
+    "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)" 
+    (Insert insertobj1)
+    "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)";
   malformed_test "Select * FROMm students" "Illegal query" 
     "Select * FROM students";
   malformed_test "SELECT name fRom students" 
@@ -164,6 +172,10 @@ let queries_tests = [
     "SELECT name, netid FROM students ORDER BY";
   malformed_test "INSERT" "Illegal query" "INSERT";
   malformed_test "INSERT INTO" "You must specify a table name" "INSERT INTO";
+  malformed_test 
+  "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" 
+  "You must specify a valid list of values"
+  "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" ;
   malformed_test "DELETE" "Illegal query" "DELETE";
   malformed_test "DELETE FROM" "You must specify a table name" "DELETE FROM";
 ]

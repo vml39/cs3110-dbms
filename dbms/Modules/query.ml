@@ -147,10 +147,16 @@ let select_parse = function
     } in
     select_fields [] "" init_rec lst
 
+let rec print_list = function 
+  | [] -> ()
+  | h::t -> print_string (h ^ " ")
+
 (** TODO: document *)
 let rec insert_values acc value (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify a valid list of values")
   | h::i::t when i = ")" && t = [] -> 
+    let values = (List.rev ((new_field value h)::acc)) in 
+    print_list values;
     {record with values = (List.rev ((new_field value h)::acc))}
   | h::i::t when i = "," -> 
     insert_values ((new_field value h)::acc) "" record t
@@ -176,10 +182,10 @@ let insert_parse t =
   } in 
   match t with   
   | [] -> raise (Malformed "You must specify a table name")
-  | h::i::t when i = "(" -> 
-    insert_fields [] "" {init_record with table = List.hd t} t
   | h::i::j::t when i = "VALUES" && j = "(" -> insert_values [] "" 
-    {init_record with table = List.hd t} t
+    {init_record with table = h} t
+  | h::i::t when i = "(" -> 
+    insert_fields [] "" {init_record with table = h} t
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
 
 (** TODO: document *)
