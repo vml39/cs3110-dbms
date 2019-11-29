@@ -49,6 +49,12 @@ val read_next_line : in_channel -> l
 *)
 val write_line : out_channel -> string list -> unit
 
+(** [write_line_table_schema fc table lst] appends the table name to the 
+    contents of lst as a new line to the table in fc 
+    Requires: fc is a valid file channel of a file contained in the directory
+*)
+val write_line_table_schema : out_channel -> string -> string list -> unit
+
 (** [write_line_schema fc lst] appends the contents of lst as a new line to the 
     table in fc 
     Requires: fc is a valid file channel of a file contained in the directory

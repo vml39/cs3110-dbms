@@ -7,26 +7,29 @@ let index field schema =
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
-(** TODO: document *)
-let rec check_fields schema fields = function 
-  | [] -> fields 
+(** [check_fields schema fields] is [unit] if field in [fields] is in [schema]. 
+    Raises [Malformed] otherwise. *)
+let rec check_fields schema = function 
+  | [] -> () 
   | h::t -> 
-    if List.mem h schema then check_fields schema fields t 
+    if List.mem h schema then check_fields schema t 
     else raise (Malformed "Field selected not in schema")
 
-(** TODO: document *)
+(** [select_fields schema fields] is [schema] if [fields] is [[*]] and [fields]
+    otherwise. 
+    Raises [Malformed] if not all [fields] are in [schema]. *)
 let select_fields schema fields = 
   if fields = ["*"] then schema
-  else check_fields schema fields fields 
+  else (check_fields schema fields; fields)
 
 (** TODO: document *)
-let rec print_fields schema bfields acc = 
+(* let rec print_fields schema bfields acc = 
   match schema, bfields with 
   | [], [] -> List.rev acc
   | h::t, h'::t' -> 
     if h' then print_fields t t' (h::acc) 
     else print_fields t t' acc
-  | _ -> failwith "inequal num of fields"
+  | _ -> failwith "inequal num of fields" *)
 
 let rec table_schema db_schema tablename = 
   match db_schema with 
@@ -40,7 +43,7 @@ let rec table_schema db_schema tablename =
 let rec filter_fields fields acc schema = 
   List.map (fun x -> if List.mem x schema then true else false) fields
 
-(** TODO: document *)
+(** [order_fields schema fields] is [fields] ordered according to [schema]. *)
 let rec order_fields schema fields = 
   let i = ref (-1) in
   List.filter(fun x -> i := !i + 1; List.nth fields !i) schema
@@ -125,8 +128,6 @@ let where tablename (qry_where : Query.where_obj option) schema fields =
   match qry_where with
   | None -> filter_table fc schema fields false ("", None, "") [] 
   | Some w -> like_equal fc schema fields w
-
-(* check if fields in schema *)
 
 let select (qry : Query.select_obj) =
   let tablename = qry.table in 
@@ -273,7 +274,7 @@ let join qry =
 
 let rec create_table (qry: Query.create_obj) = 
   let outc_schema = get_out_chan_schema in
-  write_line_schema outc_schema qry.fields; 
+  write_line_table_schema outc_schema qry.table qry.fields; 
   close_out outc_schema;
   let outc_tables = get_out_chan qry.table in 
   close_out outc_tables
