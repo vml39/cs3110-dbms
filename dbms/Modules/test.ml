@@ -201,26 +201,31 @@ let queries_tests = [
 (* COMPUTATION TESTS **********************************************************)
 
 (** TODO: document *)
-let get_qry = function 
+let get_qry qry = 
+  match parse qry with 
   | Select qry -> qry
   | _ -> failwith "unimplemented"
+
+let select_test name expected s = 
+  "Select table test: " ^ name >:: (fun _ -> 
+    assert_equal expected (select s))
 
 (* [malformed_select_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select raises a 
    query.Malformed exception*)
-let malformed_select_test name s m = 
+let malformed_select_test name m s = 
   "Malformed select test: " ^ name >:: (fun _ ->
       assert_raises (Malformed m) (fun () -> (select s)))
 
-let qry = parse "SELECT netid FROM students" |> get_qry
-(* let qry' = parse "SELECT netid, name FROM students" |> get_qry
-let qry'' = parse "SELECT * FROM students" |> get_qry
-let qry_order = parse "SELECT * FROM students ORDER BY name" |> get_qry
-(* let qry_where_eq = parse "SELECT * FROM students WHERE name = Test" |> get_qry *)
-let qry_where_eq_malformed = 
-  parse "SELECT * FROM students WHERE name = test" |> get_qry
+let qry = get_qry "SELECT netid FROM students"
+let qry' = get_qry "SELECT netid, name FROM students"
+let qry'' = get_qry "SELECT * FROM students"
+let qry_order = get_qry "SELECT * FROM students ORDER BY name"
+let qry_where_eq = get_qry "SELECT * FROM students WHERE name = Test"
 let qry_where_like = 
-  parse "SELECT * FROM students WHERE name LIEK %i%" |> get_qry
+  get_qry "SELECT * FROM students WHERE name LIKE %i%"
+let qry_where_eq_malformed = 
+  get_qry "SELECT * FROM students WHERE name = test"
 let schema = ["name"; "netid"; "class"; "major"; "home"]
 let fields = ["netid"]
 let fields' = ["name"; "netid"]
@@ -236,33 +241,32 @@ let students = [
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"];
   ["Test"; "t123"; "2022"; "Government"; "North"]
 ]
+let students_where = [
+  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
+  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"];
+]
 let students_ordered = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
   ["Test"; "t123"; "2022"; "Government"; "North"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
-] *)
+]
 
 let select_tests = [
-  (* select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"]; *)
-  (* malformed_table_test "no FROM keyword" ["*"];
-     malformed_table_test "no table called after FROM" ["*"; "FROM"];
-     malformed_table_test "lowercase keyword from" ["*"; "from"; "animals"]; *)
-  (* malformed_fields_test "no fields" ["FROM"; "tablename"]; *)
-  (* malformed_fields_test "lowercase keyword from" ["dogs"; "from"; "animals"]; *)
-  (* select_test "SELECT netid FROM students" 
-     (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;
-     select_test "SELECT netid, name FROM students" 
-     (fields', namenetid) qry';
-     select_test "SELECT * FROM students" (schema, students) qry'';
-     select_test "SELECT * FROM students ORDER BY name" 
-     (schema, students_ordered) qry_order; *)
-  (* select_test "SELECT * FROM students WHERE name = Test" 
-     (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq; *)
-  (* select_test "SELECT * FROM students WHERE name LIKE %i%" 
-     (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_like; *)
+  select_test "SELECT netid FROM students" 
+    (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;
+  select_test "SELECT netid, name FROM students" (fields', namenetid) qry';
+  select_test "SELECT * FROM students" (schema, students) qry'';
+  select_test "SELECT * FROM students ORDER BY name" 
+   (schema, students_ordered) qry_order;
+  select_test "SELECT * FROM students WHERE name = Test" 
+     (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq;
+  select_test "SELECT * FROM students WHERE name LIKE %i%" 
+     (schema, students_where) qry_where_like;
   (* malformed_select_test "SELECT * FROM students WHERE name = test" 
-     qry_where_eq_malformed; *)
+    ""
+    qry_where_eq_malformed; *)
 ]
 
 (* let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
