@@ -66,30 +66,64 @@ let empty_test name s =
   "Empty query Test: " ^ name >:: (fun _ -> 
       assert_raises Empty (fun () ->  (parse s)))
 
+let selectobj = {
+  table = "alpha"; 
+  fields = ["a"]; 
+  where = None; 
+  order = None
+}
+let selectobj' = {selectobj with fields = ["a"; "b"; "c"]}
+let selectobj1 = {
+  table = "students";
+  fields = ["*"];
+  where = None;
+  order = None;
+}
+let selectobj2 = {selectobj1 with fields = ["name"; "netid"]}
+let selectobj3 = {selectobj1 with fields = ["name netid"]}
+let whereobj = {field = "name";op = Like;ptn = "%i%"}
+let selectobj4 = {selectobj1 with where = Some whereobj}
+let whereobj1 = {field = "year"; op = LEQ; ptn = "2021"}
+let selectobj5 = {selectobj1 with where = Some whereobj1}
+let selectobj6 = {selectobj1 with order = Some "name"}
+let selectobj7 = {selectobj4 with order = Some "name"}
+let deleteobj = {
+  table = "students";
+  where = None
+}
+let insertobj = {
+  table = "students";
+  fields = None;
+  values = ["Roger Williams"; "rw1"; "2023"; "Film"; "West"]
+}
+
 let queries_tests = [
-  (* query_test "'SELECT a FROM alpha' is Select ['a';'FROM';'alpha']"
-     (Select ["a";"FROM";"alpha"]) "SELECT a FROM alpha";
-     query_test 
-     "'SELECT (a,b,c) FROM (alpha)' is Select ['a';'b';'c';'FROM';'alpha']"
-     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
-     "SELECT (a,b,c) FROM (alpha)";
-     query_test 
-     "'SELECT ( a,   b,c) FROM (alpha  )' is Select ['a';'b';'c';'FROM';'alpha']"
-     (Select ["a";"b";"c"; "FROM"; "alpha"]) 
-     "SELECT (a,b,c) FROM (alpha)";
-     query_test
-     "'SELECT Im (Hungry  rite,now); Dawg' is Select ['Im';'Hungry;'rite';'now']"
-     (Select ["Im";"Hungry";"rite";"now"])
-     "SELECT Im (Hungry rite,now); Dawg"; *)
-  (* query_test "SELECT * FROM students"
-     {table = "students"; fields = ["*"]; where = None; order = None}
-     "SELECT * FROM students";
-     query_test "SELECT name, netid FROM students"
-     {table = "students"; fields = ["name";"netid"]; where = None; order = None}
-     "SELECT name, netid FROM students";
-     query_test "SELECT name netid FROM students"
-     {table = "students"; fields = ["name netid"]; where = None; order = None}
-     "SELECT name netid FROM students"; *)
+  query_test "SELECT a FROM alpha" (Select selectobj) "SELECT a FROM alpha";
+  query_test "SELECT a,b,c FROM alpha" (Select selectobj') 
+    "SELECT a,b,c FROM alpha";
+  query_test "SELECT  a,   b,c FROM alpha        " (Select selectobj') 
+    "SELECT  a,   b,c FROM alpha        ";
+  query_test "SELECT * FROM students" (Select selectobj1)
+    "SELECT * FROM students";
+  query_test "SELECT name, netid FROM students" (Select selectobj2)
+    "SELECT name, netid FROM students";
+  query_test "SELECT name netid FROM students" (Select selectobj3)
+    "SELECT name netid FROM students";
+  query_test "SELECT * FROM students WHERE name LIKE %i%" (Select selectobj4)
+    "SELECT * FROM students WHERE name LIKE %i%";
+  query_test "SELECT * FROM students WHERE year <= 2021" (Select selectobj5)
+    "SELECT * FROM students WHERE year <= 2021";
+  query_test "SELECT * FROM students ORDER BY name" (Select selectobj6)
+    "SELECT * FROM students ORDER BY name";
+  query_test "SELECT * FROM students WHERE name LIKE %i% ORDER BY name" 
+    (Select selectobj7) 
+    "SELECT * FROM students WHERE name LIKE %i% ORDER BY name";
+  query_test "DELETE FROM students" (Delete deleteobj) "DELETE FROM students";
+  (* query_test 
+    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" 
+    (Insert insertobj)
+    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" ; *)
+
   malformed_test "Select * FROMm students" "Illegal query" 
     "Select * FROM students";
   malformed_test "SELECT name fRom students" 
@@ -128,11 +162,16 @@ let queries_tests = [
   malformed_test "SELECT name, netid FROM students ORDER BY"
     "Must provide a field to order by"
     "SELECT name, netid FROM students ORDER BY";
+  malformed_test "INSERT" "Illegal query" "INSERT";
+  malformed_test "INSERT INTO" "You must specify a table name" "INSERT INTO";
+  malformed_test "DELETE" "Illegal query" "DELETE";
+  malformed_test "DELETE FROM" "You must specify a table name" "DELETE FROM";
 ]
 
 (* COMPUTATION TESTS **********************************************************)
 
-(* let get_qry = function 
+(** TODO: document *)
+let get_qry = function 
   | Select qry -> qry
   | _ -> failwith "unimplemented"
 
@@ -144,7 +183,7 @@ let malformed_select_test name s m =
       assert_raises (Malformed m) (fun () -> (select s)))
 
 let qry = parse "SELECT netid FROM students" |> get_qry
-let qry' = parse "SELECT netid, name FROM students" |> get_qry
+(* let qry' = parse "SELECT netid, name FROM students" |> get_qry
 let qry'' = parse "SELECT * FROM students" |> get_qry
 let qry_order = parse "SELECT * FROM students ORDER BY name" |> get_qry
 (* let qry_where_eq = parse "SELECT * FROM students WHERE name = Test" |> get_qry *)
@@ -172,7 +211,7 @@ let students_ordered = [
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
   ["Test"; "t123"; "2022"; "Government"; "North"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
-]
+] *)
 
 let select_tests = [
   (* select_table_test "get tablename" "animals" ["*"; "FROM"; "animals"]; *)
@@ -196,7 +235,7 @@ let select_tests = [
      qry_where_eq_malformed; *)
 ]
 
-let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
+(* let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
 let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
 let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" 
 let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
@@ -281,15 +320,13 @@ let data_read_write_tests = [
   str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
 ] *)
 
-
-
 (******************************************************************************)
 
 let suite =
   "test suite for dbms"  >::: List.flatten [
     (* data_read_write_tests; *)
     queries_tests;
-    (* select_tests; *)
+    select_tests;
     (* insert_tests; *)
     (* delete_tests; *)
   ]
