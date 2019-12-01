@@ -66,74 +66,68 @@ let empty_test name s =
   "Empty query Test: " ^ name >:: (fun _ -> 
       assert_raises Empty (fun () ->  (parse s)))
 
-let selectobj = {
-  table = "alpha"; 
-  fields = ["a"]; 
-  where = None; 
-  order = None
-}
-let selectobj' = {selectobj with fields = ["a"; "b"; "c"]}
-let selectobj1 = {
-  table = "students";
-  fields = ["*"];
-  where = None;
-  order = None;
-}
-let selectobj2 = {selectobj1 with fields = ["name"; "netid"]}
-let selectobj3 = {selectobj1 with fields = ["name netid"]}
-let whereobj = {field = "name";op = Like; ptn = "%i%"}
-let selectobj4 = {selectobj1 with where = Some whereobj}
-let whereobj1 = {field = "year"; op = LEQ; ptn = "2021"}
-let selectobj5 = {selectobj1 with where = Some whereobj1}
-let selectobj6 = {selectobj1 with order = Some "name"}
-let selectobj7 = {selectobj4 with order = Some "name"}
-let insertobj = {
+let whereobj1 = {field = "name";op = Like; ptn = "%i%"}
+let whereobj2 = {field = "year"; op = LEQ; ptn = "2021"}
+
+let selectobj1 = {table = "alpha"; fields = ["a"]; where = None; order = None}
+let selectobj2 = {selectobj1 with fields = ["a"; "b"; "c"]}
+let selectobj3 = {table = "students"; fields = ["*"]; where = None; order = None}
+let selectobj4 = {selectobj3 with fields = ["name"; "netid"]}
+let selectobj5 = {selectobj3 with fields = ["name netid"]}
+let selectobj6 = {selectobj3 with where = Some whereobj1}
+let selectobj7 = {selectobj3 with where = Some whereobj2}
+let selectobj8 = {selectobj3 with order = Some "name"}
+let selectobj9 = {selectobj6 with order = Some "name"}
+
+let insertobj1 = {
   table = "students";
   fields = None;
   values = ["Roger Williams"; "rw1"; "2023"; "Film"; "West"]
 }
-let insertobj1 = {
-  insertobj with 
+let insertobj2 = {
+  insertobj1 with 
   fields = Some ["name"; "netid"];
   values = ["Roger Williams"; "rw1"]
 }
-let deleteobj = {table = "students"; where = None}
-let deleteobj1 = {deleteobj with where = Some whereobj}
-let createobj = {table = "dorms";fields = ["name"; "location"]}
+
+let deleteobj1 = {table = "students"; where = None}
+let deleteobj2 = {deleteobj1 with where = Some whereobj1}
+
+let createobj1 = {table = "dorms";fields = ["name"; "location"]}
 
 let queries_tests = [
-  query_test "SELECT a FROM alpha" (Select selectobj) "SELECT a FROM alpha";
-  query_test "SELECT a,b,c FROM alpha" (Select selectobj') 
+  query_test "SELECT a FROM alpha" (Select selectobj1) "SELECT a FROM alpha";
+  query_test "SELECT a,b,c FROM alpha" (Select selectobj2) 
     "SELECT a,b,c FROM alpha";
-  query_test "SELECT  a,   b,c FROM alpha        " (Select selectobj') 
+  query_test "SELECT  a,   b,c FROM alpha        " (Select selectobj2) 
     "SELECT  a,   b,c FROM alpha        ";
-  query_test "SELECT * FROM students" (Select selectobj1)
+  query_test "SELECT * FROM students" (Select selectobj3)
     "SELECT * FROM students";
-  query_test "SELECT name, netid FROM students" (Select selectobj2)
+  query_test "SELECT name, netid FROM students" (Select selectobj4)
     "SELECT name, netid FROM students";
-  query_test "SELECT name netid FROM students" (Select selectobj3)
+  query_test "SELECT name netid FROM students" (Select selectobj5)
     "SELECT name netid FROM students";
-  query_test "SELECT * FROM students WHERE name LIKE %i%" (Select selectobj4)
+  query_test "SELECT * FROM students WHERE name LIKE %i%" (Select selectobj6)
     "SELECT * FROM students WHERE name LIKE %i%";
-  query_test "SELECT * FROM students WHERE year <= 2021" (Select selectobj5)
+  query_test "SELECT * FROM students WHERE year <= 2021" (Select selectobj7)
     "SELECT * FROM students WHERE year <= 2021";
-  query_test "SELECT * FROM students ORDER BY name" (Select selectobj6)
+  query_test "SELECT * FROM students ORDER BY name" (Select selectobj8)
     "SELECT * FROM students ORDER BY name";
   query_test "SELECT * FROM students WHERE name LIKE %i% ORDER BY name" 
-    (Select selectobj7) 
+    (Select selectobj9) 
     "SELECT * FROM students WHERE name LIKE %i% ORDER BY name";
   query_test 
     "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)" 
-    (Insert insertobj)
+    (Insert insertobj1)
     "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)";
   query_test 
     "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)" 
-    (Insert insertobj1)
+    (Insert insertobj2)
     "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)";
-  query_test "DELETE FROM students" (Delete deleteobj) "DELETE FROM students";
-  query_test "DELETE FROM students WHERE name LIKE %i%" (Delete deleteobj1) 
+  query_test "DELETE FROM students" (Delete deleteobj1) "DELETE FROM students";
+  query_test "DELETE FROM students WHERE name LIKE %i%" (Delete deleteobj2) 
     "DELETE FROM students WHERE name LIKE %i%";
-  query_test "CREATE TABLE dorms (name, location)" (Create createobj) 
+  query_test "CREATE TABLE dorms (name, location)" (Create createobj1) 
     "CREATE TABLE dorms (name, location)";
   malformed_test "Select * FROMm students" "Illegal query" 
     "Select * FROM students";
@@ -176,9 +170,9 @@ let queries_tests = [
   malformed_test "INSERT" "Illegal query" "INSERT";
   malformed_test "INSERT INTO" "You must specify a table name" "INSERT INTO";
   malformed_test 
-  "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" 
-  "You must specify a valid list of values"
-  "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" ;
+    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" 
+    "You must specify a valid list of values"
+    "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West" ;
   malformed_test "DELETE" "Illegal query" "DELETE";
   malformed_test "DELETE FROM" "You must specify a table name" "DELETE FROM";
   malformed_test "DELETE FROM students table" 
@@ -208,7 +202,7 @@ let get_qry qry =
 
 let select_test name expected s = 
   "Select table test: " ^ name >:: (fun _ -> 
-    assert_equal expected (select s))
+      assert_equal expected (select s))
 
 (* [malformed_select_test name s] constructs an OUnit test named 
    [name] that asserts [s] applied to Computation.select raises a 
@@ -259,100 +253,100 @@ let select_tests = [
   select_test "SELECT netid, name FROM students" (fields', namenetid) qry';
   select_test "SELECT * FROM students" (schema, students) qry'';
   select_test "SELECT * FROM students ORDER BY name" 
-   (schema, students_ordered) qry_order;
+    (schema, students_ordered) qry_order;
   select_test "SELECT * FROM students WHERE name = Test" 
-     (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq;
+    (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq;
   select_test "SELECT * FROM students WHERE name LIKE %i%" 
-     (schema, students_where) qry_where_like;
+    (schema, students_where) qry_where_like;
   (* malformed_select_test "SELECT * FROM students WHERE name = test" 
-    ""
-    qry_where_eq_malformed; *)
+     ""
+     qry_where_eq_malformed; *)
 ]
 
 (* let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
-let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
-let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" 
-let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
+   let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
+   let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" 
+   let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
 
-let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
-let students_up_2 = students_up_1 @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
-
-
-let insert_tests = [
-  (* select_test "INSERT full" (fields', students_up_1) post_ins1; *)
-  (* select_test "INSERT partial" (fields', students_up_2) post_ins2; *)
-]
+   let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
+   let students_up_2 = students_up_1 @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
 
 
-let del_qry1 = parse "DELETE FROM students WHERE class = 1969" 
-let post_del1 = (*delete del_qry1;*) parse "SELECT * FROM students" |> get_qry
-let del_qry2 = parse "DELETE FROM students WHERE name = Joe" 
-let post_del2 = (*delete del_qry2;*) parse "SELECT * FROM students" |> get_qry
+   let insert_tests = [
+   (* select_test "INSERT full" (fields', students_up_1) post_ins1; *)
+   (* select_test "INSERT partial" (fields', students_up_2) post_ins2; *)
+   ]
 
-let students_up_3 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
 
-let delete_tests = [
-  (* These test cases are failing even though expected and received look the *)
-  (* select_test "DELETE partial1" (fields', students_up_3) post_del1; *)
-  (* select_test "DELETE partial2" (fields', students) post_del2; *)
-]
+   let del_qry1 = parse "DELETE FROM students WHERE class = 1969" 
+   let post_del1 = (*delete del_qry1;*) parse "SELECT * FROM students" |> get_qry
+   let del_qry2 = parse "DELETE FROM students WHERE name = Joe" 
+   let post_del2 = (*delete del_qry2;*) parse "SELECT * FROM students" |> get_qry
 
-(* DATA READ WRITE TESTS ******************************************************)
+   let students_up_3 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
 
-(* [table_from_txt_test name expected s] constructs an OUnit test named 
+   let delete_tests = [
+   (* These test cases are failing even though expected and received look the *)
+   (* select_test "DELETE partial1" (fields', students_up_3) post_del1; *)
+   (* select_test "DELETE partial2" (fields', students) post_del2; *)
+   ]
+
+   (* DATA READ WRITE TESTS ******************************************************)
+
+   (* [table_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.table_from_text*)
-let table_from_txt_test name expected s = 
-  "Table from Text test: " ^ name >:: (fun _ -> 
+   let table_from_txt_test name expected s = 
+   "Table from Text test: " ^ name >:: (fun _ -> 
       assert_equal ~printer:(pp_list_list pp_query) 
         expected (table_from_txt s))
 
-(* [schema_from_txt_test name expected s] constructs an OUnit test named 
+   (* [schema_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
-let schema_from_txt_test name expected s = 
-  "Schema from Text test: " ^ name >:: (fun _ -> 
+   let schema_from_txt_test name expected s = 
+   "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_equal expected (schema_from_txt s))
 
-(* [str_equ_test name expected s] constructs an OUnit test named 
+   (* [str_equ_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] 
-*)
-let str_lst_eq_test name expected s = 
-  "Schema from Text test: " ^ name >:: (fun _ -> 
+ *)
+   let str_lst_eq_test name expected s = 
+   "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_equal ~printer:(pp_list pp_query) expected s)
 
-(* [func_raises_test name expected f s] constructs an OUnit test named 
+   (* [func_raises_test name expected f s] constructs an OUnit test named 
    [name] that asserts [f] applied to [s] raises [expected]
-*)
-let f_raises_test name exn f s = 
-  "Schema from Text test: " ^ name >:: (fun _ -> 
+ *)
+   let f_raises_test name exn f s = 
+   "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_raises exn (fun _ -> (f s)))
 
-let fc = get_in_chan "students"
-let ln1 = read_next_line fc
-let ln2 = read_next_line fc
-let fc2 = get_in_chan "students"
+   let fc = get_in_chan "students"
+   let ln1 = read_next_line fc
+   let ln2 = read_next_line fc
+   let fc2 = get_in_chan "students"
 
-let schema2 = [
-  ("students", ["name"; "netid"; "class"; "major"; "home"]);
-  ("buildings", ["name"; "location"; "goodforstudying"])
-]
+   let schema2 = [
+   ("students", ["name"; "netid"; "class"; "major"; "home"]);
+   ("buildings", ["name"; "location"; "goodforstudying"])
+   ]
 
-let data_read_write_tests = [
-  table_from_txt_test "students" students "students";
-  schema_from_txt_test "example" schema2 ();
-  str_lst_eq_test "ln1" (List.nth students_ordered 0) ln1;
-  str_lst_eq_test "ln2" (List.nth students_ordered 1) ln2;
-  str_lst_eq_test "ln3" (List.nth students_ordered 2) (read_next_line fc);
-  str_lst_eq_test "ln4" (List.nth students_ordered 3) (read_next_line fc);
-  f_raises_test "no ln 5" (End_of_file) read_next_line fc;
-  (* Note Reverse Order *)
-  f_raises_test "no ln 5" (End_of_file) read_next_line fc2;
-  str_lst_eq_test "ln4 again" (List.nth students 3) (read_next_line fc2);
-  str_lst_eq_test "ln3 again" (List.nth students 2) (read_next_line fc2);
-  str_lst_eq_test "ln2 again" (List.nth students 1) (read_next_line fc2);
-  str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
-] *)
+   let data_read_write_tests = [
+   table_from_txt_test "students" students "students";
+   schema_from_txt_test "example" schema2 ();
+   str_lst_eq_test "ln1" (List.nth students_ordered 0) ln1;
+   str_lst_eq_test "ln2" (List.nth students_ordered 1) ln2;
+   str_lst_eq_test "ln3" (List.nth students_ordered 2) (read_next_line fc);
+   str_lst_eq_test "ln4" (List.nth students_ordered 3) (read_next_line fc);
+   f_raises_test "no ln 5" (End_of_file) read_next_line fc;
+   (* Note Reverse Order *)
+   f_raises_test "no ln 5" (End_of_file) read_next_line fc2;
+   str_lst_eq_test "ln4 again" (List.nth students 3) (read_next_line fc2);
+   str_lst_eq_test "ln3 again" (List.nth students 2) (read_next_line fc2);
+   str_lst_eq_test "ln2 again" (List.nth students 1) (read_next_line fc2);
+   str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
+   ] *)
 
 (******************************************************************************)
 
