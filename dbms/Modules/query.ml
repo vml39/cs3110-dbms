@@ -50,6 +50,10 @@ type create_obj = {
   fields: fieldname list;
 }
 
+type drop_obj = {
+  table: tablename;
+}
+
 type t = 
   | Select of select_obj
   (* SELECT * FROM table *)
@@ -58,6 +62,7 @@ type t =
      VALUES (value1, value2, value3, ...); *)
   | Delete of delete_obj
   | Create of create_obj
+  | Drop of drop_obj
   | Quit
 
 (** TODO: document *)
@@ -120,7 +125,7 @@ let select_table (record : select_obj) = function
     let new_record = {record with table = h} in 
     order_by "" new_record t
   | _ -> raise 
-    (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
+           (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
 
 (** TODO: document *)
 let rec select_fields acc fieldname (record : select_obj) q = 
@@ -137,7 +142,7 @@ let rec select_fields acc fieldname (record : select_obj) q =
 (** TODO: document *)
 let select_parse = function
   | [] -> raise 
-    (Malformed "You must include the field names and tables to be selected")
+            (Malformed "You must include the field names and tables to be selected")
   | lst -> 
     let init_rec = {
       table = ""; 
@@ -177,7 +182,7 @@ let insert_parse t =
   match t with   
   | [] -> raise (Malformed "You must specify a table name")
   | h::i::j::t when i = "VALUES" && j = "(" -> insert_values [] "" 
-    {init_record with table = h} t
+                                                 {init_record with table = h} t
   | h::i::t when i = "(" -> 
     insert_fields [] "" {init_record with table = h} t
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
@@ -220,7 +225,7 @@ let delete_parse = function
     } in
     delete_where "" init_where new_record t
   | _ -> raise (Malformed 
-    "You can delete all values from a table or specify a WHERE condition") 
+                  "You can delete all values from a table or specify a WHERE condition") 
 
 (** TODO: document *)
 let rec create_fields acc fieldname = function
@@ -238,6 +243,15 @@ let create_table_parse = function
     }
   | _ -> raise (Malformed "Invalid CREATE TABLE query")
 
+
+(** TODO: document *)
+let drop_table_parse = function 
+  | [] -> raise (Malformed "Must specify table to delete")
+  | h::[] -> {
+      table = h;
+    }
+  | _ -> raise (Malformed "Invalid DROP TABLE query")
+
 let parse str =
   match str 
         |> Str.global_replace (Str.regexp "[ ]+") " " 
@@ -250,7 +264,9 @@ let parse str =
   | h::t when h = "SELECT" -> Select (select_parse t)
   | h::i::t when h = "INSERT" && i = "INTO" -> Insert (insert_parse t)
   | h::i::t when h = "DELETE" && i = "FROM" -> Delete (delete_parse t)
+  | h::i::t when h = "TRUNCATE" && i = "TABLE" -> Delete (delete_parse t)
   | h::i::t when h = "CREATE" && i = "TABLE" -> Create (create_table_parse t)
+  | h::i::t when h = "DROP" && i = "TABLE" -> Drop (drop_table_parse t)
   | h::t when h = "QUIT" -> 
     if t <> [] 
     then raise (Malformed "If you would like to quit, please type QUIT") 

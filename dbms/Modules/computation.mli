@@ -36,8 +36,8 @@ val join: string list -> string list list
     Raises [Malformed] if no table name or fields provided in [qry]. *)
 val create_table: Query.create_obj -> unit
 
-(** [delete_table qry] deletes a file in the database's tables folder with the 
-    parameters specified in [qry]. The table schema is also removed to the 
+(** [drop_table qry] deletes a file in the database's tables folder with the 
+    name specified in [qry]. The table schema is also removed to the 
     schema.txt file for the database. 
     Raises [Malformed] if no table name or fields provided in [qry]. *)
-val delete_table: string list -> unit
+val drop_table: Query.drop_obj -> unit

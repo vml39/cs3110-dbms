@@ -142,6 +142,7 @@ let rec process_queries num () =
       | Insert obj -> insert obj; process_queries num ()
       | Delete obj -> delete obj; process_queries num ()
       | Create obj -> create_table obj; process_queries num ()
+      | Drop obj ->  drop_table obj; process_queries num ()
       | _ -> failwith "Unimplemented"
     end 
 

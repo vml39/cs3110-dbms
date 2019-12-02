@@ -27,6 +27,15 @@ val table_from_txt : string -> t
     Requires: filename is a valid filename contained in the directory*)
 val get_path : string -> string
 
+(** [get_schema_path filename] is the the string rep of the path to file schema
+*)
+val get_schema_path : string
+
+(** [get_schema_temp_path filename] is the the string rep of the path to the
+    temp file schema
+*)
+val get_schema_temp_path : string
+
 (** [get_in_chan filename] is the in_channel object for file filename
     Requires: filename is a valid filename contained in the directory*)
 val get_in_chan : string -> in_channel
@@ -35,13 +44,26 @@ val get_in_chan : string -> in_channel
     Requires: filename is a valid filename contained in the directory*)
 val get_out_chan : string -> out_channel
 
-(** [get_out_chan filename] is the out_channel object for database schema. *)
-val get_out_chan_schema: out_channel
+
+(** [get_in_chan_schema] is the in_channel object for database schema. *)
+val get_in_chan_schema: unit -> in_channel
+
+(** [get_out_chan] is the out_channel object for database schema. *)
+val get_out_chan_schema: unit -> out_channel
+
+
+(** [get_out_chan] is the out_channel object for database schema. *)
+val get_out_chan_temp_schema: unit -> out_channel
 
 (** [next_line fc] is the next line from the table in file filename
     Requires: fc is a valid file channel of a file contained in the directory
     Raises: End_of_file if at the end of the file*)
 val read_next_line : in_channel -> l
+
+(** [next_schema_line fc] is the next line from the schema
+    Requires: fc is a valid file channel of a file contained in the directory
+    Raises: End_of_file if at the end of the file*)
+val read_next_schema_line : in_channel -> (string * l)
 
 (** [write_line fc lst] appends the contents of lst as a new line to the table 
     in fc 

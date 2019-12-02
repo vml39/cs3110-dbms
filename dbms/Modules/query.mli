@@ -47,6 +47,10 @@ type create_obj = {
   fields: fieldname list;
 }
 
+type drop_obj = {
+  table: tablename;
+}
+
 (** TODO: document *)
 (** The type [query] represents a use query that is decomposed
     into a command and possibly an object phrase. *)
@@ -55,6 +59,7 @@ type t =
   | Insert of insert_obj
   | Delete of delete_obj
   | Create of create_obj
+  | Drop of drop_obj
   | Quit
 
 (** Raised when an empty query is parsed. *)
@@ -68,8 +73,8 @@ exception Malformed of string
     word (i.e., consecutive sequence of non-space characters) of [str] becomes 
     the command. The rest of the words, if any, become the object phrase.
     Examples: 
-   - [parse "    SELECT * FROM students  "] is [SELECT ["*";"FROM";"students"]]
-   - [parse "QUIT"] is [Quit]. 
+    - [parse "    SELECT * FROM students  "] is [SELECT ["*";"FROM";"students"]]
+    - [parse "QUIT"] is [Quit]. 
 
     Requires: [str] contains only alphanumeric (A-Z, a-z, 0-9) and commas and 
     space characters (only ASCII character code 32; not tabs or newlines, etc.).

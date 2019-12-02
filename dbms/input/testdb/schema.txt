@@ -1,3 +1,3 @@
-testdb
+cornell
 students: name, netid, class, major, home
 buildings: name, location, goodforstudying

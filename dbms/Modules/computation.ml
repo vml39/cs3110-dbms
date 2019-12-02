@@ -24,12 +24,12 @@ let select_fields schema fields =
 
 (** TODO: document *)
 (* let rec print_fields schema bfields acc = 
-  match schema, bfields with 
-  | [], [] -> List.rev acc
-  | h::t, h'::t' -> 
+   match schema, bfields with 
+   | [], [] -> List.rev acc
+   | h::t, h'::t' -> 
     if h' then print_fields t t' (h::acc) 
     else print_fields t t' acc
-  | _ -> failwith "inequal num of fields" *)
+   | _ -> failwith "inequal num of fields" *)
 
 let rec table_schema db_schema tablename = 
   match db_schema with 
@@ -246,6 +246,7 @@ let delete qry =
       let outc = get_out_chan temp_file in
       let inc = get_in_chan qry.table in
       let schema = table_schema (schema_from_txt ()) qry.table in ()
+
 (*
       match where_rec.ptn with
       | EQ -> 
@@ -273,11 +274,27 @@ let join qry =
   failwith "unimplemented"
 
 let rec create_table (qry: Query.create_obj) = 
-  let outc_schema = get_out_chan_schema in
+  let outc_schema = get_out_chan_schema () in
   write_line_table_schema outc_schema qry.table qry.fields; 
   close_out outc_schema;
   let outc_tables = get_out_chan qry.table in 
   close_out outc_tables
 
-let delete_table qry = 
-  failwith "unimplemented" 
+let rec drop_helper inc outc name = 
+  try let found_name, line = read_next_schema_line inc in
+    if name = found_name
+    then drop_helper inc outc name
+    else write_line_table_schema outc (found_name) (line); 
+    drop_helper inc outc name
+  with | End_of_file -> ()
+
+let drop_table qry = 
+  let outc_schema = get_out_chan_temp_schema () in
+  let inc_schema = get_in_chan_schema () in
+  output_string outc_schema (List.hd (read_next_line inc_schema) ^ "\n");
+  drop_helper inc_schema outc_schema qry.table;
+  close_out outc_schema;
+  close_in inc_schema;
+  Sys.remove (get_schema_path);
+  Sys.rename (get_schema_temp_path) (get_schema_path);
+  Sys.remove (get_path qry.table)

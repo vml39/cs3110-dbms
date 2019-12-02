@@ -75,6 +75,7 @@ let get_path filename =
    !database ^ Filename.dir_sep ^ 
    "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
+
 let get_in_chan filename =
   open_in (get_path filename) 
 
@@ -82,11 +83,33 @@ let get_out_chan filename =
   open_out_gen [Open_append; Open_creat] 0o666
     (get_path filename) 
 
-let get_out_chan_schema = 
+let get_schema_path () =  
+  Filename.parent_dir_name ^ Filename.dir_sep ^
+  "input" ^ Filename.dir_sep ^ 
+  "testdb" ^ Filename.dir_sep ^ "schema.txt"
+
+let get_schema_path =  
+  Filename.parent_dir_name ^ Filename.dir_sep ^
+  "input" ^ Filename.dir_sep ^ 
+  "testdb" ^ Filename.dir_sep ^ "schema.txt"
+
+let get_schema_temp_path =  
+  Filename.parent_dir_name ^ Filename.dir_sep ^
+  "input" ^ Filename.dir_sep ^ 
+  "testdb" ^ Filename.dir_sep ^ "schema.tmp"
+
+let get_out_chan_schema () = 
   open_out_gen [Open_append] 0o666
+    (get_schema_path)
+
+let get_in_chan_schema () = 
+  open_in (get_schema_path)
+
+let get_out_chan_temp_schema () = 
+  open_out_gen [Open_append; Open_creat] 0o666
     (Filename.parent_dir_name ^ Filename.dir_sep ^
      "input" ^ Filename.dir_sep ^ 
-     "testdb" ^ Filename.dir_sep ^ "schema.txt")
+     "testdb" ^ Filename.dir_sep ^ "schema.tmp")
 
 let read_next_line inc =
   let s = input_line inc in
@@ -94,6 +117,16 @@ let read_next_line inc =
   let s' = Str.global_replace reg "" s in 
   (*Split on Commas and remove leading whitespace*)
   (List.map String.trim (String.split_on_char ',' s'))
+
+
+let read_next_schema_line inc =
+  let s = input_line inc in
+  let name_and_fields  = String.split_on_char ':' s in
+  let name = List.hd name_and_fields in
+  let feilds = List.hd (List.tl name_and_fields) in
+  (*Split on Commas and remove leading whitespace*)
+  let field_list = (List.map String.trim (String.split_on_char ',' feilds)) in
+  (name, field_list)
 
 let write_line outc lst = 
   let single_a = 
@@ -103,16 +136,16 @@ let write_line outc lst =
 
 let write_line_table_schema outc table lst = 
   let single_a = 
-    "\n" ^ table ^ ": " ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) 
-    in
-  let single_b = String.sub single_a 0 (String.length single_a - 2) in
+    table ^ ": " ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) 
+  in
+  let single_b = String.sub single_a 0 (String.length single_a - 2) ^ "\n" in
   output_string outc single_b
 
 let write_line_schema outc lst = 
   let single_a = 
-    "\n" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) 
-    in
-  let single_b = String.sub single_a 0 (String.length single_a - 2) in
+    (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) 
+  in
+  let single_b = String.sub single_a 0 (String.length single_a - 2) ^ "\n" in
   output_string outc single_b
 
 let delete_line fc lst = failwith "unimplemented"
