@@ -5,6 +5,7 @@ MLIS=$(MODULES:=.mli)
 TEST=test.byte
 MAIN=main.byte
 OCAMLBUILD=ocamlbuild -use-ocamlfind
+RLWRAP=rlwrap
 
 default: build
 	utop
@@ -19,7 +20,7 @@ bisect-test:
 	BISECT_COVERAGE=YES $(OCAMLBUILD) -tag 'debug' $(TEST) && ./$(TEST) -runner sequential
 
 query:
-	$(OCAMLBUILD) $(MAIN) && ./$(MAIN)
+	$(OCAMLBUILD)  $(MAIN) && rlwrap ./$(MAIN)
 
 check:
 	bash checkenv.sh && bash checktypes.sh
