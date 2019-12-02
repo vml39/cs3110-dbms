@@ -33,10 +33,6 @@ type where_obj = {
   ptn: pattern
 }
 
-(* SELECT Orders.OrderID, Customers.CustomerName, Orders.OrderDate
-FROM Orders
-INNER JOIN Customers ON Orders.CustomerID=Customers.CustomerID; *)
-(* comes before where or order by *)
 type join_obj = {
   table: tablename;
   join: join_type;
@@ -127,7 +123,7 @@ let rec select_where fieldname where_rec (record : select_obj) = function
   | h::t -> select_where (new_field fieldname h) where_rec record t
 
 (** TODO: document *)
-let select_join_qry (record: select_obj) = function 
+let select_join_qry (record: select_obj) = function
   | [] -> record
   | h::t when h = "WHERE" -> 
     let init_where = {
@@ -220,7 +216,8 @@ let select_parse = function
       table = ""; 
       fields = []; 
       where = None; 
-      order = None
+      order = None;
+      join = None
     } in
     select_fields [] "" init_rec lst
 
@@ -330,7 +327,6 @@ let parse str =
         |> Str.global_replace (Str.regexp ",") " , " 
         |> Str.global_replace (Str.regexp "(") " ( " 
         |> Str.global_replace (Str.regexp ")") " ) "
-        |> Str.global_replace (Str.regexp "=") " = " 
         |> String.split_on_char ' ' 
         |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty

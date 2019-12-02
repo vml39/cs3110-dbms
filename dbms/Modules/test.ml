@@ -66,7 +66,7 @@ let empty_test name s =
   "Empty query Test: " ^ name >:: (fun _ -> 
       assert_raises Empty (fun () ->  (parse s)))
 
-let whereobj1 = {field = "name";op = Like; ptn = "%i%"}
+let whereobj1 = {field = "name"; op = Like; ptn = "%i%"}
 let whereobj2 = {field = "name"; op = EQ; ptn = "Daffy"}
 let whereobj3 = {field = "name"; op = NEQ; ptn = "Donald Duck"}
 let whereobj4 = {field = "name"; op = GT; ptn = "alpha"}
@@ -74,10 +74,11 @@ let whereobj5 = {field = "class"; op = LT; ptn = "2020"}
 let whereobj6 = {field = "height"; op = GEQ; ptn = "2.0"}
 let whereobj7 = {field = "year"; op = LEQ; ptn = "2021"}
 
+let joinobj1 = {table = "dorms"; join = Inner; on = ["buildings.id"; "dorms.buildingid"]}
 
-let selectobj1 = {table = "alpha"; fields = ["a"]; where = None; order = None}
+let selectobj1 = {table = "alpha"; fields = ["a"]; where = None; order = None; join = None}
 let selectobj2 = {selectobj1 with fields = ["a"; "b"; "c"]}
-let selectobj3 = {table = "students"; fields = ["*"]; where = None; order = None}
+let selectobj3 = {table = "students"; fields = ["*"]; where = None; order = None; join = None}
 let selectobj4 = {selectobj3 with fields = ["name"; "netid"]}
 let selectobj5 = {selectobj3 with fields = ["name netid"]}
 let selectobj6 = {selectobj3 with where = Some whereobj1}
@@ -89,7 +90,7 @@ let selectobj11 = {selectobj3 with where = Some whereobj6}
 let selectobj12 = {selectobj3 with where = Some whereobj7}
 let selectobj13 = {selectobj3 with order = Some "name"}
 let selectobj14 = {selectobj6 with order = Some "name"}
-
+let selectobj15 = {table = "buildings"; fields = ["*"]; where = None; order = None; join = Some joinobj1}
 
 let insertobj1 = {
   table = "students";
@@ -142,6 +143,11 @@ let queries_tests = [
   query_test "SELECT * FROM students WHERE name LIKE %i% ORDER BY name" 
     (Select selectobj14) 
     "SELECT * FROM students WHERE name LIKE %i% ORDER BY name";
+  (* Select join *)
+  query_test "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = 
+    dorms.buildingid"
+    (Select selectobj15)
+    "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid";
   (* Insert tests *)
   query_test 
     "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)" 

@@ -13,6 +13,10 @@ type pattern = string
 type operator = | EQ | GT | LT | GEQ | LEQ | Like | NEQ | None
 
 (** TODO: document *)
+type join_type = 
+  | Inner | Left | Right | Outer | None
+
+(** TODO: document *)
 type where_obj = {
   field: fieldname;
   op: operator;
@@ -20,12 +24,19 @@ type where_obj = {
 }
 
 (** TODO: document *)
+type join_obj = {
+  table: tablename;
+  join: join_type;
+  on: fieldname list;
+}
+
+(** TODO: document *)
 type select_obj = {
   table: tablename; 
   fields: fieldname list; 
   where: where_obj option; 
-  order: fieldname option
-  (* join:  *)
+  order: fieldname option;
+  join: join_obj option
 }
 
 (** TODO: document *)
@@ -47,6 +58,7 @@ type create_obj = {
   fields: fieldname list;
 }
 
+(** TODO: document *)
 type drop_obj = {
   table: tablename;
 }
