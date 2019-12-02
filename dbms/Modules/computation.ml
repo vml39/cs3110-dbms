@@ -34,7 +34,7 @@ let select_fields schema fields =
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
-    raise (Malformed "Table schema is empty")
+    raise (Malformed "Table Given Does Not Exist")
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
 (** [filter_fields fields acc schema] is a bool list [acc] where each elt 
@@ -245,8 +245,12 @@ let delete qry =
       let temp_file = qry.table ^ ".tmp" in
       let outc = get_out_chan temp_file in
       let inc = get_in_chan qry.table in
-      let schema = table_schema (schema_from_txt ()) qry.table in ()
+      let schema = table_schema (schema_from_txt ()) qry.table in
 
+      close_in inc;
+      close_out outc;
+      Sys.remove (get_path qry.table);
+      Sys.rename (get_path temp_file) (get_path qry.table)
 (*
       match where_rec.ptn with
       | EQ -> 
@@ -289,12 +293,13 @@ let rec drop_helper inc outc name =
   with | End_of_file -> ()
 
 let drop_table qry = 
+  let schema = table_schema (schema_from_txt ()) qry.table in 
   let outc_schema = get_out_chan_temp_schema () in
   let inc_schema = get_in_chan_schema () in
   output_string outc_schema (List.hd (read_next_line inc_schema) ^ "\n");
   drop_helper inc_schema outc_schema qry.table;
   close_out outc_schema;
   close_in inc_schema;
-  Sys.remove (get_schema_path);
-  Sys.rename (get_schema_temp_path) (get_schema_path);
+  Sys.remove (get_schema_path ());
+  Sys.rename (get_schema_temp_path ()) (get_schema_path ());
   Sys.remove (get_path qry.table)

@@ -29,12 +29,12 @@ val get_path : string -> string
 
 (** [get_schema_path filename] is the the string rep of the path to file schema
 *)
-val get_schema_path : string
+val get_schema_path : unit -> string
 
 (** [get_schema_temp_path filename] is the the string rep of the path to the
     temp file schema
 *)
-val get_schema_temp_path : string
+val get_schema_temp_path : unit -> string
 
 (** [get_in_chan filename] is the in_channel object for file filename
     Requires: filename is a valid filename contained in the directory*)

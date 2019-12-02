@@ -75,7 +75,6 @@ let get_path filename =
    !database ^ Filename.dir_sep ^ 
    "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
-
 let get_in_chan filename =
   open_in (get_path filename) 
 
@@ -86,30 +85,23 @@ let get_out_chan filename =
 let get_schema_path () =  
   Filename.parent_dir_name ^ Filename.dir_sep ^
   "input" ^ Filename.dir_sep ^ 
-  "testdb" ^ Filename.dir_sep ^ "schema.txt"
+  !database ^ Filename.dir_sep ^ "schema.txt"
 
-let get_schema_path =  
+let get_schema_temp_path () =  
   Filename.parent_dir_name ^ Filename.dir_sep ^
   "input" ^ Filename.dir_sep ^ 
-  "testdb" ^ Filename.dir_sep ^ "schema.txt"
-
-let get_schema_temp_path =  
-  Filename.parent_dir_name ^ Filename.dir_sep ^
-  "input" ^ Filename.dir_sep ^ 
-  "testdb" ^ Filename.dir_sep ^ "schema.tmp"
+  !database ^ Filename.dir_sep ^ "schema.tmp"
 
 let get_out_chan_schema () = 
   open_out_gen [Open_append] 0o666
-    (get_schema_path)
+    (get_schema_path ())
 
 let get_in_chan_schema () = 
-  open_in (get_schema_path)
+  open_in (get_schema_path ())
 
 let get_out_chan_temp_schema () = 
   open_out_gen [Open_append; Open_creat] 0o666
-    (Filename.parent_dir_name ^ Filename.dir_sep ^
-     "input" ^ Filename.dir_sep ^ 
-     "testdb" ^ Filename.dir_sep ^ "schema.tmp")
+    (get_schema_temp_path ())
 
 let read_next_line inc =
   let s = input_line inc in

@@ -94,6 +94,22 @@ let rec pp_table (fields, rows) =
 let invalid_command () = ANSITerminal.(
     print_string [red] "Invalid Command, Please try again.\n")
 
+(* [Malformed exception s] prints the exception s *)
+let malformed_exception s = ANSITerminal.(
+    print_string [red] ("Malformed Query: " ^ s ^ "\n"))
+
+(* [sys exception s] prints the file system error *)
+let sys_exception s = ANSITerminal.(
+    print_string [red] ("File System Exception: " ^ s ^ "\n"))
+
+
+(* [invalid_db] prints the error message when an invalid database is input
+   int the system *)
+let invalid_db s = ANSITerminal.(
+    print_string [red] ("Database " ^ s ^ " does not exit, please try again\n"));
+  print_string  "> "
+
+
 (* [write_row row] is the concatenation of each string in [row] delimited by
    a ",". The string is ended by a newline character *)
 let rec write_row = function
@@ -125,41 +141,57 @@ let rec process_queries num () =
   print_string "> ";
   match parse (read_line ()) with 
   | exception (Empty) -> process_queries num ()
-  | exception (Malformed "") -> invalid_command (); process_queries num ()
-  | command -> begin
-      match command with
-      | Quit -> print_endline "Goodbye for now.\n";
-        exit 0
-      | Select obj -> begin
-          let (fields, rows) = select obj in
-          if List.length rows < 30
-          then (* Print to terminal *)
-            try pp_table (fields, rows); process_queries num ()
-            with Failure _ ->  invalid_command (); process_queries num ()
-          else (* Print to file *)
-            write_to_file fields rows num; process_queries num ()
-        end
-      | Insert obj -> insert obj; process_queries num ()
-      | Delete obj -> delete obj; process_queries num ()
-      | Create obj -> create_table obj; process_queries num ()
-      | Drop obj ->  drop_table obj; process_queries num ()
-      | _ -> failwith "Unimplemented"
+  | exception (Query.Malformed "") -> invalid_command (); process_queries num () 
+  | exception (Query.Malformed s) -> 
+    malformed_exception s; process_queries num ()
+  | command -> begin 
+      try
+        match command with
+        | Quit -> print_endline "Goodbye for now.\n";
+          exit 0
+        | Select obj -> begin
+            let (fields, rows) = select obj in
+            if List.length rows < 30
+            then (* Print to terminal *)
+              try pp_table (fields, rows); process_queries num ()
+              with Failure s ->  malformed_exception s; process_queries num ()
+            else (* Print to file *)
+              write_to_file fields rows num; process_queries num ()
+          end
+        | Insert obj -> insert obj; process_queries num ()
+        | Delete obj -> delete obj; process_queries num ()
+        | Create obj -> create_table obj; process_queries num ()
+        | Drop obj ->  drop_table obj; process_queries num ()
+        | _ -> failwith "Unimplemented"  
+      with
+      | Query.Malformed s -> malformed_exception s; process_queries num ()
+      | Sys_error s -> sys_exception s; process_queries num ()
     end 
 
-(* [main ()] prompts the user to insert query, and then starts the engine to 
-    process them *)
-let main () = 
-  ANSITerminal.(print_string [red] "
-  \n\nWelcome to Ocaml DBMS\n");
-  print_endline "Please select your database\n";
-  print_string  "> ";
+let rec read_input_db () =
   match read_line () with
   | exception End_of_file -> ()
-  | db -> Datardwt.database := db;
-    ANSITerminal.(print_string [blue] (
-        "\n" ^ db ^ " selected. Please enter your query\n\n"));
-    let num = ref 1 in
-    process_queries num ()
+  | "QUIT" -> print_endline "Goodbye for now.\n"; exit 0
+  | db -> begin
+      if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
+                                "input" ^ Filename.dir_sep ^ db)))
+      then begin invalid_db db; read_input_db () end
+      else
+        Datardwt.database := db;
+      ANSITerminal.(print_string [blue] (
+          "\n" ^ db ^ " selected. Please enter your query\n\n"));
+      let num = ref 1 in
+      process_queries num ()
+    end
+
+(* [main ()] prompts the user to insert query, and then starts the engine to 
+   process them *)
+let main () = 
+  ANSITerminal.(print_string [red] "
+   \n\nWelcome to Ocaml DBMS\n");
+  print_endline "Please select your database\n";
+  print_string  "> ";
+  read_input_db ()
 
 (* Execute the dbms. *)
 let () = main ()
