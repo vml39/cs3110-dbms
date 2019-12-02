@@ -20,18 +20,35 @@ type operator =
   | NEQ 
   | None
 
+type join_type = 
+  | Inner
+  | Left
+  | Right
+  | Outer
+  | None
+
 type where_obj = {
   field: fieldname;
   op: operator;
   ptn: pattern
 }
 
+(* SELECT Orders.OrderID, Customers.CustomerName, Orders.OrderDate
+FROM Orders
+INNER JOIN Customers ON Orders.CustomerID=Customers.CustomerID; *)
+(* comes before where or order by *)
+type join_obj = {
+  table: tablename;
+  join: join_type;
+  on: fieldname list;
+}
+
 type select_obj = {
   table: tablename; 
   fields: fieldname list; 
   where: where_obj option; 
-  order: fieldname option
-  (* join:  *)
+  order: fieldname option;
+  join: join_obj option
 }
 
 type delete_obj = {
@@ -110,9 +127,64 @@ let rec select_where fieldname where_rec (record : select_obj) = function
   | h::t -> select_where (new_field fieldname h) where_rec record t
 
 (** TODO: document *)
+let select_join_qry (record: select_obj) = function 
+  | [] -> record
+  | h::t when h = "WHERE" -> 
+    let init_where = {
+      field = "";
+      op = None;
+      ptn = ""
+    } in 
+    select_where "" init_where record t
+  | h::i::t when h = "ORDER" && i = "BY" ->
+    order_by "" record t
+  | _ -> 
+    raise (Malformed "'JOIN' can only be followed by 'WHERE' or 'ORDER BY'")
+
+(** TODO: document *)
+let select_join_field (join_rec: join_obj) (record: select_obj) = function 
+  | [] -> 
+    raise (Malformed "You must provide a column from each table to join on")
+  | h::i::j::t when i = "=" -> 
+    let new_join = {
+      join_rec with 
+      on = h::j::[]
+    } in 
+    select_join_qry {record with join = Some new_join} t
+  | _ -> 
+    raise (Malformed "You must provide a column from each table to join on")
+
+(** TODO: document *)
+let select_join (join_rec: join_obj) (record: select_obj) = function 
+  | [] -> raise (Malformed "You must join ON another table")
+  | h::i::t when i = "ON" -> 
+    select_join_field {join_rec with table = h} record t
+  | _ -> raise (Malformed "You must join 'ON' another table")
+
+(** TODO: document *)
+let match_join join = 
+  if join = "INNER" then Inner 
+  else if join = "LEFT" then Left
+  else if join = "RIGHT" then Right
+  else if join = "OUTER" then Outer 
+  else raise (Malformed "Invalid join operation")
+
+(** TODO: document *)
 let select_table (record : select_obj) = function
   | [] ->  raise (Malformed "No table specified")
   | h::[] -> {record with table = h}
+  | h::i::j::t when j = "JOIN" -> 
+    let init_join = {
+      table = "";
+      join = match_join i;
+      on = []
+    } in 
+    let new_record = {
+      record with 
+      table = h;
+      join = Some init_join
+    } in 
+    select_join init_join new_record t
   | h::i::t when i = "WHERE" -> 
     let new_record = {record with table = h} in
     let init_where = {
@@ -125,7 +197,7 @@ let select_table (record : select_obj) = function
     let new_record = {record with table = h} in 
     order_by "" new_record t
   | _ -> raise 
-           (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
+    (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
 
 (** TODO: document *)
 let rec select_fields acc fieldname (record : select_obj) q = 
@@ -257,7 +329,8 @@ let parse str =
         |> Str.global_replace (Str.regexp "[ ]+") " " 
         |> Str.global_replace (Str.regexp ",") " , " 
         |> Str.global_replace (Str.regexp "(") " ( " 
-        |> Str.global_replace (Str.regexp ")") " ) " 
+        |> Str.global_replace (Str.regexp ")") " ) "
+        |> Str.global_replace (Str.regexp "=") " = " 
         |> String.split_on_char ' ' 
         |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty

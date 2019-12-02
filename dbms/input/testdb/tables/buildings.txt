@@ -1,5 +1,8 @@
-(Duffield Hall, Eng Quad, true)
-(Upson Hall, Eng Quad, true)
-(Goldwin Smith Hall, Arts Quad, false)
-(Mann Library, Ag Quad, true)
-(Uris Hall, Central, false)
+(1, Duffield Hall, Eng Quad, true)
+(2, Upson Hall, Eng Quad, true)
+(3, Goldwin Smith Hall, Arts Quad, false)
+(4, Mann Library, Ag Quad, true)
+(5, Uris Hall, Central, false)
+(6, Balch Hall, North, false)
+(7, Bethe Hall, West, true)
+
