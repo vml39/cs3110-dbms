@@ -106,7 +106,7 @@ let sys_exception s = ANSITerminal.(
 (* [invalid_db] prints the error message when an invalid database is input
    int the system *)
 let invalid_db s = ANSITerminal.(
-    print_string [red] ("Database " ^ s ^ " does not exit, please try again\n"));
+    print_string [red] ("Database " ^ s ^ " does not exist, please try again\n"));
   print_string  "> "
 
 
@@ -178,7 +178,7 @@ let rec read_input_db () =
       then begin invalid_db db; read_input_db () end
       else
         Datardwt.database := db;
-      ANSITerminal.(print_string [blue] (
+      ANSITerminal.(print_string [green] (
           "\n" ^ db ^ " selected. Please enter your query\n\n"));
       let num = ref 1 in
       process_queries num ()
