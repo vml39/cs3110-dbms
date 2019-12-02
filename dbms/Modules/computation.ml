@@ -88,11 +88,13 @@ let filter_row schema fields where (field, op, pattern) row =
       if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
-    | EQ -> 
-      if (List.nth row ind) = pattern 
-      then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
-      else None
-    | s -> failwith "Expected LIKE or = after WHERE"
+    | EQ -> partial_filter_pattern (=)
+    | NEQ -> partial_filter_pattern (<>)
+    | GT -> partial_filter_pattern (>)
+    | LT -> partial_filter_pattern (<)
+    | GEQ -> partial_filter_pattern (>=)
+    | LEQ -> partial_filter_pattern (<=)
+    | s -> failwith "Expected a valid operator"
 
   else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
 

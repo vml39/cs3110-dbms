@@ -245,15 +245,18 @@ let select1 = get_qry "SELECT netid FROM students"
 let select2 = get_qry "SELECT netid, name FROM students"
 let select3 = get_qry "SELECT * FROM students"
 let order1 = get_qry "SELECT * FROM students ORDER BY name"
+let where_like1 = get_qry "SELECT * FROM students WHERE name LIKE %i%"
 let where_eq1 = get_qry "SELECT * FROM students WHERE name = Test"
-let where_like1 = 
-  get_qry "SELECT * FROM students WHERE name LIKE %i%"
-let where_eq_mal1 = 
-  get_qry "SELECT * FROM students WHERE name = test"
+let where_neq1 = get_qry "SELECT * FROM students WHERE name <> Test"
+let where_gt1 = get_qry "SELECT * FROM students WHERE netid > dis52"
+let where_lt1 = get_qry "SELECT name FROM students WHERE class < 2021"
+let where_geq1 = get_qry "SELECT name, netid FROM students WHERE home >= Cat"
+let where_leq1 = get_qry "SELECT * FROM students WHERE major <= ECE"
+let where_eq_mal1 = get_qry "SELECT * FROM students WHERE name = test"
 let schema1 = ["name"; "netid"; "class"; "major"; "home"]
 let fields1 = ["netid"]
 let fields2 = ["name"; "netid"]
-let namenetid = [
+let name_netid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
   ["Vivian Li"; "vml39"];
@@ -265,10 +268,35 @@ let students = [
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"];
   ["Test"; "t123"; "2022"; "Government"; "North"]
 ]
-let students_where = [
+let students_where_like1 = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
   ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
+  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
+]
+let students_where_eq1 = [
+  ["Test"; "t123"; "2022"; "Government"; "North"]
+]
+let students_where_neq1 = [
+  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
+  ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
+]
+let students_where_gt1 = [
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"];
+  ["Test"; "t123"; "2022"; "Government"; "North"];
+]
+let students_where_lt1 = [
+  ["Robert Morgowicz"; ];
+  ["Vivian Li"; ]
+]
+let students_where_geq1 = [
+  ["Vivian Li"; "vml39";];
+  ["Test"; "t123";];
+]
+let students_where_leq1 = [
+  ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
+  ["Robert Morgowicz"; "rjm448"; "2020"; "ECE"; "Cascadilla Hall"];
 ]
 let students_ordered = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
@@ -280,14 +308,28 @@ let students_ordered = [
 let select_tests = [
   select_test "SELECT netid FROM students" 
     (fields1, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) select1;
-  select_test "SELECT netid, name FROM students" (fields2, namenetid) select2;
-  select_test "SELECT * FROM students" (schema1, students) select3;
+  select_test "SELECT netid, name FROM students" 
+    (fields2, name_netid) select2;
+  select_test "SELECT * FROM students" 
+    (schema1, students) select3;
+  select_test "SELECT * FROM students WHERE name LIKE %i%" 
+    (schema1, students_where_like1) where_like1;
+  select_test "SELECT * FROM students WHERE name = Test" 
+    (schema1, students_where_eq1) where_eq1;
+  select_test "SELECT * FROM students WHERE name <> Test"
+    (schema1, students_where_neq1) where_neq1;
+  select_test "SELECT * FROM students WHERE netid > dis52"
+    (schema1, students_where_gt1) where_gt1; 
+  select_test "SELECT name FROM students WHERE class < 2021"
+    (schema1, students_where_lt1) where_lt1; 
+  select_test "SELECT netid,class FROM students WHERE home >= Cat"
+    (schema1, students_where_geq1) where_geq1; 
+  select_test "SELECT * FROM students WHERE major <= ECE"
+    (schema1, students_where_leq1) where_leq1; 
   select_test "SELECT * FROM students ORDER BY name" 
     (schema1, students_ordered) order1;
-  select_test "SELECT * FROM students WHERE name = Test" 
-    (schema1, [["Test"; "t123"; "2022"; "Government"; "North"]]) where_eq1;
-  select_test "SELECT * FROM students WHERE name LIKE %i%" 
-    (schema1, students_where) where_like1;
+
+
   (* malformed_select_test "SELECT * FROM students WHERE name = test" 
      ""
      qry_where_eq_malformed; *)
