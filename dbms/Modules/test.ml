@@ -67,7 +67,13 @@ let empty_test name s =
       assert_raises Empty (fun () ->  (parse s)))
 
 let whereobj1 = {field = "name";op = Like; ptn = "%i%"}
-let whereobj2 = {field = "year"; op = LEQ; ptn = "2021"}
+let whereobj2 = {field = "name"; op = EQ; ptn = "Daffy"}
+let whereobj3 = {field = "name"; op = NEQ; ptn = "Donald Duck"}
+let whereobj4 = {field = "name"; op = GT; ptn = "alpha"}
+let whereobj5 = {field = "class"; op = LT; ptn = "2020"}
+let whereobj6 = {field = "height"; op = GEQ; ptn = "2.0"}
+let whereobj7 = {field = "year"; op = LEQ; ptn = "2021"}
+
 
 let selectobj1 = {table = "alpha"; fields = ["a"]; where = None; order = None}
 let selectobj2 = {selectobj1 with fields = ["a"; "b"; "c"]}
@@ -76,8 +82,14 @@ let selectobj4 = {selectobj3 with fields = ["name"; "netid"]}
 let selectobj5 = {selectobj3 with fields = ["name netid"]}
 let selectobj6 = {selectobj3 with where = Some whereobj1}
 let selectobj7 = {selectobj3 with where = Some whereobj2}
-let selectobj8 = {selectobj3 with order = Some "name"}
-let selectobj9 = {selectobj6 with order = Some "name"}
+let selectobj8 = {selectobj3 with where = Some whereobj3}
+let selectobj9 = {selectobj3 with where = Some whereobj4} 
+let selectobj10 = {selectobj3 with where = Some whereobj5}
+let selectobj11 = {selectobj3 with where = Some whereobj6}
+let selectobj12 = {selectobj3 with where = Some whereobj7}
+let selectobj13 = {selectobj3 with order = Some "name"}
+let selectobj14 = {selectobj6 with order = Some "name"}
+
 
 let insertobj1 = {
   table = "students";
@@ -96,6 +108,7 @@ let deleteobj2 = {deleteobj1 with where = Some whereobj1}
 let createobj1 = {table = "dorms";fields = ["name"; "location"]}
 
 let queries_tests = [
+  (* Basic select tests *)
   query_test "SELECT a FROM alpha" (Select selectobj1) "SELECT a FROM alpha";
   query_test "SELECT a,b,c FROM alpha" (Select selectobj2) 
     "SELECT a,b,c FROM alpha";
@@ -107,15 +120,29 @@ let queries_tests = [
     "SELECT name, netid FROM students";
   query_test "SELECT name netid FROM students" (Select selectobj5)
     "SELECT name netid FROM students";
-  query_test "SELECT * FROM students WHERE name LIKE %i%" (Select selectobj6)
-    "SELECT * FROM students WHERE name LIKE %i%";
-  query_test "SELECT * FROM students WHERE year <= 2021" (Select selectobj7)
-    "SELECT * FROM students WHERE year <= 2021";
-  query_test "SELECT * FROM students ORDER BY name" (Select selectobj8)
+  (* Select where tests *)
+  query_test "SELECT * FROM students WHERE name LIKE %i%" 
+    (Select selectobj6)  "SELECT * FROM students WHERE name LIKE %i%";
+  query_test "SELECT * FROM students WHERE name = Daffy" 
+    (Select selectobj7) "SELECT * FROM students WHERE name = Daffy";
+  query_test "SELECT * FROM students WHERE name <> Donald Duck" 
+    (Select selectobj8) "SELECT * FROM students WHERE name <> Donald Duck";
+  query_test "SELECT * FROM students WHERE name > alpha"
+    (Select selectobj9) "SELECT * FROM students WHERE name > alpha";
+  query_test "SELECT * FROM students WHERE name class < 2020" 
+    (Select selectobj10) "SELECT * FROM students WHERE class < 2020";
+  query_test "SELECT * FROM students WHERE name class >= 2020" 
+    (Select selectobj11) "SELECT * FROM students WHERE height >= 2.0";
+  query_test "SELECT * FROM students WHERE year <= 2021" 
+    (Select selectobj12) "SELECT * FROM students WHERE year <= 2021";
+  (* Select order by *)
+  query_test "SELECT * FROM students ORDER BY name" (Select selectobj13)
     "SELECT * FROM students ORDER BY name";
+  (* Select where and order by *)
   query_test "SELECT * FROM students WHERE name LIKE %i% ORDER BY name" 
-    (Select selectobj9) 
+    (Select selectobj14) 
     "SELECT * FROM students WHERE name LIKE %i% ORDER BY name";
+  (* Insert tests *)
   query_test 
     "INSERT INTO students VALUES (Roger Williams, rw1, 2023, Film, West)" 
     (Insert insertobj1)
@@ -124,11 +151,14 @@ let queries_tests = [
     "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)" 
     (Insert insertobj2)
     "INSERT INTO students (name, netid) VALUES (Roger Williams, rw1)";
+  (* Delete Tests *)
   query_test "DELETE FROM students" (Delete deleteobj1) "DELETE FROM students";
   query_test "DELETE FROM students WHERE name LIKE %i%" (Delete deleteobj2) 
     "DELETE FROM students WHERE name LIKE %i%";
+  (* Create tests *)
   query_test "CREATE TABLE dorms (name, location)" (Create createobj1) 
     "CREATE TABLE dorms (name, location)";
+  (* Malformed tests *)
   malformed_test "Select * FROMm students" "Illegal query" 
     "Select * FROM students";
   malformed_test "SELECT name fRom students" 
@@ -211,18 +241,18 @@ let malformed_select_test name m s =
   "Malformed select test: " ^ name >:: (fun _ ->
       assert_raises (Malformed m) (fun () -> (select s)))
 
-let qry = get_qry "SELECT netid FROM students"
-let qry' = get_qry "SELECT netid, name FROM students"
-let qry'' = get_qry "SELECT * FROM students"
-let qry_order = get_qry "SELECT * FROM students ORDER BY name"
-let qry_where_eq = get_qry "SELECT * FROM students WHERE name = Test"
-let qry_where_like = 
+let select1 = get_qry "SELECT netid FROM students"
+let select2 = get_qry "SELECT netid, name FROM students"
+let select3 = get_qry "SELECT * FROM students"
+let order1 = get_qry "SELECT * FROM students ORDER BY name"
+let where_eq1 = get_qry "SELECT * FROM students WHERE name = Test"
+let where_like1 = 
   get_qry "SELECT * FROM students WHERE name LIKE %i%"
-let qry_where_eq_malformed = 
+let where_eq_mal1 = 
   get_qry "SELECT * FROM students WHERE name = test"
-let schema = ["name"; "netid"; "class"; "major"; "home"]
-let fields = ["netid"]
-let fields' = ["name"; "netid"]
+let schema1 = ["name"; "netid"; "class"; "major"; "home"]
+let fields1 = ["netid"]
+let fields2 = ["name"; "netid"]
 let namenetid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
@@ -249,15 +279,15 @@ let students_ordered = [
 
 let select_tests = [
   select_test "SELECT netid FROM students" 
-    (fields, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) qry;
-  select_test "SELECT netid, name FROM students" (fields', namenetid) qry';
-  select_test "SELECT * FROM students" (schema, students) qry'';
+    (fields1, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) select1;
+  select_test "SELECT netid, name FROM students" (fields2, namenetid) select2;
+  select_test "SELECT * FROM students" (schema1, students) select3;
   select_test "SELECT * FROM students ORDER BY name" 
-    (schema, students_ordered) qry_order;
+    (schema1, students_ordered) order1;
   select_test "SELECT * FROM students WHERE name = Test" 
-    (schema, [["Test"; "t123"; "2022"; "Government"; "North"]]) qry_where_eq;
+    (schema1, [["Test"; "t123"; "2022"; "Government"; "North"]]) where_eq1;
   select_test "SELECT * FROM students WHERE name LIKE %i%" 
-    (schema, students_where) qry_where_like;
+    (schema1, students_where) where_like1;
   (* malformed_select_test "SELECT * FROM students WHERE name = test" 
      ""
      qry_where_eq_malformed; *)

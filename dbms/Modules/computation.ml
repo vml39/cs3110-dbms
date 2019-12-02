@@ -67,6 +67,14 @@ let parse_pattern pattern =
     |> List.filter ( fun s -> s <> "") in 
   convert_to_regex patternList
 
+(* [filter_pattern fields row ind pattern i operator] is [Some row] with only 
+   the fields specified in [fields].  Returns the row if the row follows the SQL
+   [pattern]. Returns [None] if the row does not follow the SQL [pattern] *)
+let filter_pattern fields row ind pattern i operator = 
+  if operator (List.nth row ind) pattern
+  then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  else None
+
 (** [filter_row schema fields where pattern row] is [Some row] with only the 
     fields specified in [fields]. Returns the row if [where] is [false] or if 
     [where] is [true] and the row follows the SQL [pattern]. Returns [None] if
@@ -74,6 +82,7 @@ let parse_pattern pattern =
 let filter_row schema fields where (field, op, pattern) row =
   let i = ref (-1) in 
   if where then let ind = index field schema in
+    let partial_filter_pattern = filter_pattern fields row ind pattern i in
     match op with
     | Like ->
       if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
@@ -82,7 +91,7 @@ let filter_row schema fields where (field, op, pattern) row =
     | EQ -> 
       if (List.nth row ind) = pattern 
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
-      else None 
+      else None
     | s -> failwith "Expected LIKE or = after WHERE"
 
   else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
