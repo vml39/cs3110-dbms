@@ -132,7 +132,9 @@ let write_to_file fields rows num=
   num := !num +1;
   fprintf oc "%s" (write_row fields);         (* write fields *)  
   fprintf oc "%s" (write_all_rows rows);      (* write all rows *)
-  close_out oc; ()                            (* flush and close the channel *)
+  close_out oc; 
+  ANSITerminal.(print_string [green] (
+      "\n" ^ "Query printed to " ^ "../output/query" ^ (string_of_int !num) ^ ".txt\n\n"));()                            (* flush and close the channel *)
 
 
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
