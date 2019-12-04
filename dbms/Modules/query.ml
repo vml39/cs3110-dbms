@@ -99,13 +99,6 @@ let create_where_record fieldname h op =
     ptn = "";
   }
 
-let create_where_record' fieldname h op ptn = 
-  {
-    field = new_field fieldname h;
-    op = op;
-    ptn = ptn;
-  }
-
 (** TODO: document *)
 let rec select_where_ptn ptn where_rec (record: select_obj) = function 
   | [] -> raise (Malformed "Must provide a pattern to match with after 'WHERE'")
@@ -170,7 +163,7 @@ let select_join_field (join_rec: join_obj) (record: select_obj) = function
 
 (** TODO: document *)
 let select_join (join_rec: join_obj) (record: select_obj) = function 
-  | [] -> raise (Malformed "You must join ON another table")
+  | [] -> raise (Malformed "You must join 'ON' another table")
   | h::i::t when i = "ON" -> 
     select_join_field {join_rec with table = h} record t
   | _ -> raise (Malformed "You must join 'ON' another table")
@@ -275,22 +268,27 @@ let insert_parse t =
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
 
 (** TODO: document *)
+let rec delete_where_ptn ptn where_rec (record : delete_obj) = function 
+  | [] -> {record with where = Some {where_rec with ptn = ptn}}
+  | h::t -> delete_where_ptn (new_field ptn h) where_rec record t
+
+(** TODO: document *)
 let rec delete_where fieldname where_rec (record : delete_obj) = function
   | [] -> {record with where = Some where_rec}
-  | h::op::ptn::t when op = "=" -> 
-    delete_where "" (create_where_record' fieldname h EQ ptn) record t
-  | h::op::ptn::t when op = ">" ->
-    delete_where "" (create_where_record' fieldname h GT ptn) record t
-  | h::op::ptn::t when op = "<" ->
-    delete_where "" (create_where_record' fieldname h LT ptn) record t
-  | h::op::ptn::t when op = ">=" ->
-    delete_where "" (create_where_record' fieldname h GEQ ptn) record t
-  | h::op::ptn::t when op = "<=" ->
-    delete_where "" (create_where_record' fieldname h LEQ ptn) record t
-  | h::op::ptn::t when op = "<>" ->
-    delete_where "" (create_where_record' fieldname h NEQ ptn) record t
-  | h::op::ptn::t when op = "LIKE" ->
-    delete_where "" (create_where_record' fieldname h Like ptn) record t
+  | h::op::t when op = "=" -> 
+    delete_where_ptn "" (create_where_record fieldname h EQ) record t
+  | h::op::t when op = ">" ->
+    delete_where_ptn "" (create_where_record fieldname h GT) record t
+  | h::op::t when op = "<" ->
+    delete_where_ptn "" (create_where_record fieldname h LT) record t
+  | h::op::t when op = ">=" ->
+    delete_where_ptn "" (create_where_record fieldname h GEQ) record t
+  | h::op::t when op = "<=" ->
+    delete_where_ptn "" (create_where_record fieldname h LEQ) record t
+  | h::op::t when op = "<>" ->
+    delete_where_ptn "" (create_where_record fieldname h NEQ) record t
+  | h::op::t when op = "LIKE" ->
+    delete_where_ptn "" (create_where_record fieldname h Like) record t
   | h::t -> delete_where (new_field fieldname h) where_rec record t
 
 (** TODO: document *)
