@@ -79,13 +79,16 @@ let filter_pattern fields row ind pattern i operator =
     fields specified in [fields]. Returns the row if [where] is [false] or if 
     [where] is [true] and the row follows the SQL [pattern]. Returns [None] if
     [where] is [true] and the row does not follow the SQL [pattern]. *)
-let filter_row schema fields where (field, op, pattern) row =
+let filter_row schema fields (where: Query.where_obj option) row =
   let i = ref (-1) in 
-  if where then let ind = index field schema in
-    let partial_filter_pattern = filter_pattern fields row ind pattern i in
-    match op with
+  match where with 
+  | None -> Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  | Some where -> 
+    let ind = index where.field schema in
+    let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
+    match where.op with
     | Like ->
-      if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
+      if Str.string_match (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
     | EQ -> partial_filter_pattern (=)
@@ -96,17 +99,17 @@ let filter_row schema fields where (field, op, pattern) row =
     | LEQ -> partial_filter_pattern (<=)
     | s -> failwith "Expected a valid operator"
 
-  else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  (* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
 
-(** [filter_table fc schema fields where pattern acc] is the table constructed
+(** [filter_table fc schema fields where acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
-let rec filter_table fc (schema: string list) fields where p acc = 
-  let row = try read_next_line fc |> filter_row schema fields where p with 
+let rec filter_table fc (schema: string list) fields (where: Query.where_obj option) acc = 
+  let row = try read_next_line fc |> filter_row schema fields where with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
-  | None -> filter_table fc schema fields where p acc
+  | None -> filter_table fc schema fields where acc
   | Some e when e = [] -> List.rev acc 
-  | Some r -> filter_table fc schema fields where p (r::acc)
+  | Some r -> filter_table fc schema fields where (r::acc)
 
 (** [comp n x y] is [-1] if the [n]th element of [x] is less than the [n]th value 
     of [y] using the Stdlib compare function; [0] if they are equal; and [1] if 
@@ -127,30 +130,52 @@ let order schema (qry_order: Query.fieldname option) table =
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
-  filter_table fc schema fields true 
-    (qry_where.field, qry_where.op, qry_where.ptn) []
+  filter_table fc schema fields (Some qry_where) []
 
 (** [where tablename qry schema fields] is the OCaml table created from parsing 
     each row in the database table with [tablename]. Table results are filtered
     if there is a "WHERE" keyword in [qry]. Table only contains the fields
     specified in [fields] from the table [schema]. *)
-let where tablename (qry_where : Query.where_obj option) schema fields = 
-  let fc = get_in_chan tablename in 
+let where tablename (qry_where : Query.where_obj option) schema fields fc = 
   match qry_where with
-  | None -> filter_table fc schema fields false ("", None, "") [] 
+  | None -> filter_table fc schema fields None [] 
   | Some w -> like_equal fc schema fields w
 
-(* let join = 
-  failwith "Unimplemented" *)
-(* if there's a join, pull in the columns from both rows *)
+let filter_row_join schema schema1 fields where line = 
+  (* need to match if row2 with row1 *)
+  failwith "unimp"
+
+let inner_join qry schema schema1 fields fc fc1 acc = 
+  (* read a line from fc and compare with every line from fc1 on *)
+  let row = try read_next_line fc |> filter_row_join schema schema1 fields where with 
+      | exn -> Stdlib.close_in fc; Some []
+    in match row with 
+    | None -> filter_table fc schema fields qry.where acc
+    | Some e when e = [] -> List.rev acc 
+    | Some r -> filter_table fc schema fields qry.where (r::acc)
+
+let join qry (qry_join : Query.join_obj) schema fields fc = 
+  let fc1 = get_in_chan qry_join.table in 
+  (* need to get schem and fields of table 2 *)
+  let schema1 = table_schema (schema_from_txt ()) qry_join.table in 
+  match qry_join.join with 
+  | Inner -> failwith "inner"
+  | Left -> failwith "left"
+  | Right -> failwith "right"
+  | Outer -> failwith "outer"
+  | None -> raise (Malformed "Must provide a type of join")
 
 let select (qry : Query.select_obj) =
   let tablename = qry.table in 
   let schema = table_schema (schema_from_txt ()) tablename in 
   let fields = select_fields schema qry.fields in 
-  let bool_fields = filter_fields schema [] fields in 
-  let table = where tablename qry.where schema bool_fields in 
-  (order_fields schema bool_fields, order schema qry.order table)
+  let fc = get_in_chan tablename in 
+  match qry.join with 
+  | None -> 
+    let bool_fields = filter_fields schema [] fields in
+    let table = where tablename qry.where schema bool_fields fc in 
+    (order_fields schema bool_fields, order schema qry.order table)
+  | Some join_obj -> join qry join_obj schema fields fc 
 
 (*
 (** TODO: document *)
