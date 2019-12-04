@@ -262,6 +262,7 @@ let where_eq_mal1 = get_qry "SELECT * FROM students WHERE name = test"
 let schema1 = ["name"; "netid"; "class"; "major"; "home"]
 let fields1 = ["netid"]
 let fields2 = ["name"; "netid"]
+let fields3 = ["name"]
 let name_netid = [
   ["Daniel Stabile"; "dis52"]; 
   ["Robert Morgowicz"; "rjm448"]; 
@@ -327,9 +328,9 @@ let select_tests = [
   select_test "SELECT * FROM students WHERE netid > dis52"
     (schema1, students_where_gt1) where_gt1; 
   select_test "SELECT name FROM students WHERE class < 2021"
-    (schema1, students_where_lt1) where_lt1; 
-  select_test "SELECT netid,class FROM students WHERE home >= Cat"
-    (schema1, students_where_geq1) where_geq1; 
+    (fields3, students_where_lt1) where_lt1; 
+  select_test "SELECT name, netid FROM students WHERE home >= Cat"
+    (fields2, students_where_geq1) where_geq1; 
   select_test "SELECT * FROM students WHERE major <= ECE"
     (schema1, students_where_leq1) where_leq1; 
   select_test "SELECT * FROM students ORDER BY name" 
