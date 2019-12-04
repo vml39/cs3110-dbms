@@ -74,7 +74,7 @@ let whereobj5 = {field = "class"; op = LT; ptn = "2020"}
 let whereobj6 = {field = "height"; op = GEQ; ptn = "2.0"}
 let whereobj7 = {field = "year"; op = LEQ; ptn = "2021"}
 
-let joinobj1 = {table = "dorms"; join = Inner; on = ["buildings.id"; "dorms.buildingid"]}
+let joinobj1 = {table = "dorms"; join = Inner; on = ("buildings.id", "dorms.buildingid")}
 
 let selectobj1 = {table = "alpha"; fields = ["a"]; where = None; order = None; join = None}
 let selectobj2 = {selectobj1 with fields = ["a"; "b"; "c"]}
@@ -198,7 +198,7 @@ let queries_tests = [
     "Must provide a field, operator and pattern after 'WHERE'"
     "SELECT name, netid FROM students WHERE name oops %i%";
   malformed_test "SELECT name, netid FROM students WHERE name <="
-    "Must provide a field, operator and pattern after 'WHERE'"
+    "Must provide a pattern to match with after 'WHERE'"
     "SELECT name, netid FROM students WHERE name <=";
   malformed_test "SELECT name, netid FROM students ORDER BY"
     "Must provide a field to order by"
