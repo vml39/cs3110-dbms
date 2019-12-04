@@ -236,15 +236,23 @@ let rec get_col n lst : string =
   match lst with 
   | [] -> failwith "column not found"
   | h :: t -> if n = 0 then h else get_col (n-1) t
-
-let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
-  try let line = read_next_line inc in
-    if cond (get_col col_no line) v
-    then delete_helper inc outc col_no cond v
-    else write_line outc line; 
-    delete_helper inc outc col_no cond v
-  with | End_of_file -> ()
 *)
+let rec delete_helper inc outc schema ind op ptn =
+  try let line = read_next_line inc in
+    if op (List.nth line ind) ptn
+    then delete_helper inc outc schema ind op ptn
+    else write_line outc line; 
+    delete_helper inc outc schema ind op ptn
+  with | End_of_file -> ()
+
+let rec delete_helper_like inc outc schema ind ptn =
+  try let line = read_next_line inc in
+    if Str.string_match (Str.regexp (parse_pattern ptn)) (List.nth line ind) 0
+    then delete_helper_like inc outc schema ind ptn
+    else write_line outc line; 
+    delete_helper_like inc outc schema ind ptn
+  with | End_of_file -> ()
+
 let delete qry = 
   match qry.where with
   | None -> begin 
@@ -257,11 +265,33 @@ let delete qry =
       let outc = get_out_chan temp_file in
       let inc = get_in_chan qry.table in
       let schema = table_schema (schema_from_txt ()) qry.table in
-
-      close_in inc;
-      close_out outc;
-      Sys.remove (get_path qry.table);
-      Sys.rename (get_path temp_file) (get_path qry.table)
+      let ind = index where_rec.field schema in 
+      (* for each row*)
+      if where_rec.op = Like 
+      then begin
+        delete_helper_like inc outc schema ind where_rec.ptn;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path qry.table);
+        Sys.rename (get_path temp_file) (get_path qry.table)
+      end
+      else 
+        let oper =
+          match where_rec.op with
+          | EQ -> (=)
+          | GT -> (>)
+          | LT -> (<)
+          | GEQ -> (>=)
+          | LEQ -> (=)
+          | Like -> (fun s1 s2 -> true)
+          | NEQ -> (<>)
+          | None -> failwith "Expected a valid operator"
+        in
+        delete_helper inc outc schema ind oper where_rec.ptn;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path qry.table);
+        Sys.rename (get_path temp_file) (get_path qry.table)
 (*
       match where_rec.ptn with
       | EQ -> 
