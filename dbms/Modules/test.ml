@@ -293,12 +293,12 @@ let students_where_gt1 = [
   ["Test"; "t123"; "2022"; "Government"; "North"];
 ]
 let students_where_lt1 = [
-  ["Robert Morgowicz"; ];
-  ["Vivian Li"; ]
+  ["Robert Morgowicz"];
+  ["Vivian Li"]
 ]
 let students_where_geq1 = [
-  ["Vivian Li"; "vml39";];
-  ["Test"; "t123";];
+  ["Vivian Li"; "vml39"];
+  ["Test"; "t123"];
 ]
 let students_where_leq1 = [
   ["Daniel Stabile"; "dis52"; "2021"; "CS"; "Cascadilla Hall"];
@@ -328,7 +328,7 @@ let select_tests = [
     (schema1, students_where_gt1) where_gt1; 
   select_test "SELECT name FROM students WHERE class < 2021"
     (schema1, students_where_lt1) where_lt1; 
-  select_test "SELECT netid,class FROM students WHERE home >= Cat"
+  select_test "SELECT netid, class FROM students WHERE home >= Cat"
     (schema1, students_where_geq1) where_geq1; 
   select_test "SELECT * FROM students WHERE major <= ECE"
     (schema1, students_where_leq1) where_leq1; 

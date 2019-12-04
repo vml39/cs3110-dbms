@@ -76,6 +76,7 @@ type t =
   | Delete of delete_obj
   | Create of create_obj
   | Drop of drop_obj
+  | Read of string
   | Quit
 
 (** TODO: document *)
@@ -193,7 +194,7 @@ let select_table (record : select_obj) = function
     let new_record = {record with table = h} in 
     order_by "" new_record t
   | _ -> raise 
-    (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
+           (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
 
 (** TODO: document *)
 let rec select_fields acc fieldname (record : select_obj) q = 
@@ -336,6 +337,7 @@ let parse str =
   | h::i::t when h = "TRUNCATE" && i = "TABLE" -> Delete (delete_parse t)
   | h::i::t when h = "CREATE" && i = "TABLE" -> Create (create_table_parse t)
   | h::i::t when h = "DROP" && i = "TABLE" -> Drop (drop_table_parse t)
+  | h::i::t::[] when h = "READ" && i = "FROM" -> Read t
   | h::t when h = "QUIT" -> 
     if t <> [] 
     then raise (Malformed "If you would like to quit, please type QUIT") 

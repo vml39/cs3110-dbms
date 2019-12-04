@@ -72,6 +72,7 @@ type t =
   | Delete of delete_obj
   | Create of create_obj
   | Drop of drop_obj
+  | Read of string (* TODO: Should this not be a string? *)
   | Quit
 
 (** Raised when an empty query is parsed. *)
