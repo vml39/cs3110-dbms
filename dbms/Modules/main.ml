@@ -163,7 +163,6 @@ let rec process_queries num () =
         | Delete obj -> delete obj; process_queries num ()
         | Create obj -> create_table obj; process_queries num ()
         | Drop obj ->  drop_table obj; process_queries num ()
-        | _ -> failwith "Unimplemented"  
       with
       | Query.Malformed s -> malformed_exception s; process_queries num ()
       | Sys_error s -> sys_exception s; process_queries num ()
