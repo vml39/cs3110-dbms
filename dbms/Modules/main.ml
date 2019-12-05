@@ -77,17 +77,14 @@ let are_rows_empty = function
 (*[pp_table schema output] is the printing of [schema] and [output]. The
   elements in [schema] are the  *)
 let rec pp_table (fields, rows) =
-  if are_rows_empty rows 
-  then failwith "Row must be non empty"
-  else 
-    let widths = calc_widths fields rows in (* Calc width of each column *)
-    let ind = ref(0) in
-    let widths_lst = (Array.to_list widths) in
-    pp_divider "╔═" "╦═" "╗" widths_lst;
-    pp_row ind widths fields ; (* Print field names *)
-    pp_divider "╠═" "╬═" "╣" widths_lst;
-    pp_all_rows ind widths rows; (* Print all rows *)
-    pp_divider "╚═" "╩═" "╝" widths_lst;()
+  let widths = calc_widths fields rows in (* Calc width of each column *)
+  let ind = ref(0) in
+  let widths_lst = (Array.to_list widths) in
+  pp_divider "╔═" "╦═" "╗" widths_lst;
+  pp_row ind widths fields ; (* Print field names *)
+  pp_divider "╠═" "╬═" "╣" widths_lst;
+  pp_all_rows ind widths rows; (* Print all rows *)
+  pp_divider "╚═" "╩═" "╝" widths_lst;()
 
 (* [invalid_command ()] is the printing of ""Invalid Command, Please try 
    again.\n"" *)
