@@ -1,3 +1,4 @@
 cornell
 students: name, netid, class, major, home
-buildings: name, location, goodforstudying
+buildings: id, name, location, goodforstudying
+dorms: name, location, buildingid
