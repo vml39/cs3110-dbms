@@ -222,7 +222,7 @@ let rec select_fields acc fieldname (record : select_obj) q =
 (** TODO: document *)
 let select_parse = function
   | [] -> raise 
-            (Malformed "You must include the field names and tables to be selected")
+     (Malformed "You must include the field names and tables to be selected")
   | lst -> 
     let init_rec = {
       table = ""; 

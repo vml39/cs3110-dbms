@@ -7,6 +7,12 @@ let index field schema =
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
+(** TODO: document *)
+let get_field s = 
+  let len = String.length s in 
+  let ind = String.index s '.' in 
+  (String.sub s 0 ind, String.sub s (ind+1) (len-ind-1))
+
 (** [check_fields schema fields] is [unit] if field in [fields] is in [schema]. 
     Raises [Malformed] otherwise. *)
 let rec check_fields schema = function 
@@ -15,12 +21,27 @@ let rec check_fields schema = function
     if List.mem h schema then check_fields schema t 
     else raise (Malformed "Field selected not in schema")
 
+(** TODO: document *)
+let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function 
+  | [] -> (List.rev acc1, List.rev acc2)
+  | h::t ->
+    if fst (get_field h) = table1 && List.mem (snd (get_field h)) schema1
+    then (print_string "fst"; check_fields_join table1 table2 schema1 schema2 ((snd (get_field h))::acc1) acc2 t)
+    else if fst (get_field h) = table2 && List.mem (snd (get_field h)) schema2
+    then (print_string "snd"; check_fields_join table1 table2 schema1 schema2 acc1 (snd (get_field h)::acc2) t)
+    else raise (Malformed "Field selected is not part of either table in JOIN")
+
 (** [select_fields schema fields] is [schema] if [fields] is [[*]] and [fields]
     otherwise. 
     Raises [Malformed] if not all [fields] are in [schema]. *)
 let select_fields schema fields = 
   if fields = ["*"] then schema
   else (check_fields schema fields; fields)
+
+(** TODO: document *)
+let select_fields_join table1 table2 schema1 schema2 fields = 
+  if fields = ["*"] then (schema1, schema2)
+  else check_fields_join table1 table2 schema1 schema2 [] [] fields
 
 (** TODO: document *)
 (* let rec print_fields schema bfields acc = 
@@ -34,7 +55,7 @@ let select_fields schema fields =
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
-    raise (Malformed "Table Given Does Not Exist")
+    raise (Malformed "Table given does not exist")
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
 (** [filter_fields fields acc schema] is a bool list [acc] where each elt 
@@ -79,13 +100,16 @@ let filter_pattern fields row ind pattern i operator =
     fields specified in [fields]. Returns the row if [where] is [false] or if 
     [where] is [true] and the row follows the SQL [pattern]. Returns [None] if
     [where] is [true] and the row does not follow the SQL [pattern]. *)
-let filter_row schema fields where (field, op, pattern) row =
+let filter_row schema fields (where: Query.where_obj option) row =
   let i = ref (-1) in 
-  if where then let ind = index field schema in
-    let partial_filter_pattern = filter_pattern fields row ind pattern i in
-    match op with
+  match where with 
+  | None -> Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  | Some where -> 
+    let ind = index where.field schema in
+    let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
+    match where.op with
     | Like ->
-      if Str.string_match (Str.regexp (parse_pattern pattern)) (List.nth row ind) 0
+      if Str.string_match (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
       then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
       else None
     | EQ -> partial_filter_pattern (=)
@@ -96,17 +120,17 @@ let filter_row schema fields where (field, op, pattern) row =
     | LEQ -> partial_filter_pattern (<=)
     | s -> failwith "Expected a valid operator"
 
-  else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  (* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
 
-(** [filter_table fc schema fields where pattern acc] is the table constructed
+(** [filter_table fc schema fields where acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
-let rec filter_table fc (schema: string list) fields where p acc = 
-  let row = try read_next_line fc |> filter_row schema fields where p with 
+let rec filter_table fc (schema: string list) fields (where: Query.where_obj option) acc = 
+  let row = try read_next_line fc |> filter_row schema fields where with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
-  | None -> filter_table fc schema fields where p acc
+  | None -> filter_table fc schema fields where acc
   | Some e when e = [] -> List.rev acc 
-  | Some r -> filter_table fc schema fields where p (r::acc)
+  | Some r -> filter_table fc schema fields where (r::acc)
 
 (** [comp n x y] is [-1] if the [n]th element of [x] is less than the [n]th value 
     of [y] using the Stdlib compare function; [0] if they are equal; and [1] if 
@@ -127,30 +151,84 @@ let order schema (qry_order: Query.fieldname option) table =
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
     the fields specified in [fields] from the table [schema]. *)
 let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
-  filter_table fc schema fields true 
-    (qry_where.field, qry_where.op, qry_where.ptn) []
+  filter_table fc schema fields (Some qry_where) []
 
 (** [where tablename qry schema fields] is the OCaml table created from parsing 
     each row in the database table with [tablename]. Table results are filtered
     if there is a "WHERE" keyword in [qry]. Table only contains the fields
     specified in [fields] from the table [schema]. *)
-let where tablename (qry_where : Query.where_obj option) schema fields = 
-  let fc = get_in_chan tablename in 
+let where tablename (qry_where : Query.where_obj option) schema fields fc = 
   match qry_where with
-  | None -> filter_table fc schema fields false ("", None, "") [] 
+  | None -> filter_table fc schema fields None [] 
   | Some w -> like_equal fc schema fields w
 
-(* let join = 
-  failwith "Unimplemented" *)
-(* if there's a join, pull in the columns from both rows *)
+let rec pp_list = function 
+  | [] -> ()
+  | h::t -> print_string (h^", "); pp_list t
+
+let rec pp_list_list = function 
+  | [] -> ()
+  | h::t -> print_newline (pp_list h); pp_list_list t
+
+(** TODO: document *)
+let get_cond field schema row = 
+  index (snd (get_field field)) schema |> List.nth row
+
+(** TODO: document *)
+let rec filter_table2 qry_join cond field_index fc1 = 
+  try 
+    let row = read_next_line fc1 in 
+    (* pp_list row; *)
+    if List.nth row field_index = cond then Some row
+    else filter_table2 qry_join cond field_index fc1
+  with 
+    | exn -> Stdlib.close_in fc1; None
+
+(** TODO: document *)
+let filter_row_join qry (qry_join : join_obj) schema schema1 fields row : string list option = 
+  (* match qry.where with 
+  (* get only the rows from each table that we need *)
+  | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  (* run rows through where condition *)
+  | Some ->  *)
+  let fc1 = get_in_chan qry_join.table in 
+  match filter_table2 qry.join (get_cond (fst qry_join.on) schema row) 
+  (index (snd (get_field (snd qry_join.on))) schema1) fc1 with 
+  | None -> None
+  | Some r -> Some (row@r)
+
+(** TODO: document *)
+let rec inner_join qry qry_join schema schema1 fields fc acc = 
+  let row = try read_next_line fc |> filter_row_join qry qry_join schema schema1 fields with 
+    | exn -> Stdlib.close_in fc; Some []
+  in match row with 
+  | None -> inner_join qry qry_join schema schema1 fields fc acc
+  | Some e when e = [] -> List.rev acc 
+  | Some r -> inner_join qry qry_join schema schema1 fields fc (r::acc)
+
+(** TODO: document *)
+let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema schema1 fields fc = 
+  match qry_join.join with 
+  | Inner ->  inner_join qry qry_join schema schema1 fields fc []
+  | Left -> failwith "left" (* return all rows from left table and have null columns if something doesn't exist in right table *)
+  | Right -> failwith "right" (* opposite of left *)
+  | Outer -> failwith "outer" (* returns results from both *)
+  | None -> raise (Malformed "Must provide a type of join")
 
 let select (qry : Query.select_obj) =
   let tablename = qry.table in 
   let schema = table_schema (schema_from_txt ()) tablename in 
-  let fields = select_fields schema qry.fields in 
-  let bool_fields = filter_fields schema [] fields in 
-  let table = where tablename qry.where schema bool_fields in 
-  (order_fields schema bool_fields, order schema qry.order table)
+  let fc = get_in_chan tablename in 
+  match qry.join with 
+  | None -> 
+    let fields = select_fields schema qry.fields in 
+    let bool_fields = filter_fields schema [] fields in
+    let table = where tablename qry.where schema bool_fields fc in 
+    (order_fields schema bool_fields, order schema qry.order table)
+  | Some join_obj -> 
+    let schema1 = table_schema (schema_from_txt ()) join_obj.table in 
+    let fields' = select_fields_join qry.table join_obj.table schema schema1 qry.fields in 
+    ((fst fields')@(snd fields'), join qry join_obj schema schema1 fields' fc)
 
 (*
 (** TODO: document *)
@@ -240,15 +318,23 @@ let rec get_col n lst : string =
   match lst with 
   | [] -> failwith "column not found"
   | h :: t -> if n = 0 then h else get_col (n-1) t
-
-let rec delete_helper inc outc col_no (cond:'a->'a->bool) (v:string) =
-  try let line = read_next_line inc in
-    if cond (get_col col_no line) v
-    then delete_helper inc outc col_no cond v
-    else write_line outc line; 
-    delete_helper inc outc col_no cond v
-  with | End_of_file -> ()
 *)
+let rec delete_helper inc outc schema ind op ptn =
+  try let line = read_next_line inc in
+    if op (List.nth line ind) ptn
+    then delete_helper inc outc schema ind op ptn
+    else write_line outc line; 
+    delete_helper inc outc schema ind op ptn
+  with | End_of_file -> ()
+
+let rec delete_helper_like inc outc schema ind ptn =
+  try let line = read_next_line inc in
+    if Str.string_match (Str.regexp (parse_pattern ptn)) (List.nth line ind) 0
+    then delete_helper_like inc outc schema ind ptn
+    else write_line outc line; 
+    delete_helper_like inc outc schema ind ptn
+  with | End_of_file -> ()
+
 let delete qry = 
   match qry.where with
   | None -> begin 
@@ -261,11 +347,33 @@ let delete qry =
       let outc = get_out_chan temp_file in
       let inc = get_in_chan qry.table in
       let schema = table_schema (schema_from_txt ()) qry.table in
-
-      close_in inc;
-      close_out outc;
-      Sys.remove (get_path qry.table);
-      Sys.rename (get_path temp_file) (get_path qry.table)
+      let ind = index where_rec.field schema in 
+      (* for each row*)
+      if where_rec.op = Like 
+      then begin
+        delete_helper_like inc outc schema ind where_rec.ptn;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path qry.table);
+        Sys.rename (get_path temp_file) (get_path qry.table)
+      end
+      else 
+        let oper =
+          match where_rec.op with
+          | EQ -> (=)
+          | GT -> (>)
+          | LT -> (<)
+          | GEQ -> (>=)
+          | LEQ -> (=)
+          | Like -> (fun s1 s2 -> true)
+          | NEQ -> (<>)
+          | None -> failwith "Expected a valid operator"
+        in
+        delete_helper inc outc schema ind oper where_rec.ptn;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path qry.table);
+        Sys.rename (get_path temp_file) (get_path qry.table)
 (*
       match where_rec.ptn with
       | EQ -> 

@@ -259,6 +259,7 @@ let where_lt1 = get_qry "SELECT name FROM students WHERE class < 2021"
 let where_geq1 = get_qry "SELECT name, netid FROM students WHERE home >= Cat"
 let where_leq1 = get_qry "SELECT * FROM students WHERE major <= ECE"
 let where_eq_mal1 = get_qry "SELECT * FROM students WHERE name = test"
+let join_inner = get_qry "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
 let schema1 = ["name"; "netid"; "class"; "major"; "home"]
 let fields1 = ["netid"]
 let fields2 = ["name"; "netid"]
@@ -335,7 +336,8 @@ let select_tests = [
     (schema1, students_where_leq1) where_leq1; 
   select_test "SELECT * FROM students ORDER BY name" 
     (schema1, students_ordered) order1;
-
+  select_test "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
+    (schema1, students) join_inner;
 
   (* malformed_select_test "SELECT * FROM students WHERE name = test" 
      ""

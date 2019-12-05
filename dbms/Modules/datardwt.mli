@@ -7,7 +7,6 @@ type t = (string list) list
 (** The abstract type representa schema *)
 type s = (string * (string list)) list
 
-
 val database : string ref
 
 (* TODO: Specs *)
