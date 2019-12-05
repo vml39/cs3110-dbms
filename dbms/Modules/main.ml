@@ -202,6 +202,8 @@ let queries_from_file filename =
     close_out oc
   else invalid_file filename
 
+let table_height rows = 4 + List.length rows 
+
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
   user queries*)
 let rec process_queries num () =
@@ -218,8 +220,9 @@ let rec process_queries num () =
           exit 0
         | Select obj -> 
           begin
+            let width, height = ANSITerminal.size () in 
             let (fields, rows) = select obj in
-            if List.length rows < 30
+            if table_height rows < height
             then (* Print to terminal *)
               try pp_table (fields, rows); process_queries num ()
               with Failure s ->  malformed_exception s; process_queries num ()
