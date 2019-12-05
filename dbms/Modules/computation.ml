@@ -7,6 +7,12 @@ let index field schema =
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
+(** TODO: document *)
+let get_field s = 
+  let len = String.length s in 
+  let ind = String.index s '.' in 
+  (String.sub s 0 ind, String.sub s (ind+1) (len-ind-1))
+
 (** [check_fields schema fields] is [unit] if field in [fields] is in [schema]. 
     Raises [Malformed] otherwise. *)
 let rec check_fields schema = function 
@@ -15,12 +21,27 @@ let rec check_fields schema = function
     if List.mem h schema then check_fields schema t 
     else raise (Malformed "Field selected not in schema")
 
+(** TODO: document *)
+let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function 
+  | [] -> (List.rev acc1, List.rev acc2)
+  | h::t ->
+    if fst (get_field h) = table1 && List.mem (snd (get_field h)) schema1
+    then (print_string "fst"; check_fields_join table1 table2 schema1 schema2 ((snd (get_field h))::acc1) acc2 t)
+    else if fst (get_field h) = table2 && List.mem (snd (get_field h)) schema2
+    then (print_string "snd"; check_fields_join table1 table2 schema1 schema2 acc1 (snd (get_field h)::acc2) t)
+    else raise (Malformed "Field selected is not part of either table in JOIN")
+
 (** [select_fields schema fields] is [schema] if [fields] is [[*]] and [fields]
     otherwise. 
     Raises [Malformed] if not all [fields] are in [schema]. *)
 let select_fields schema fields = 
   if fields = ["*"] then schema
   else (check_fields schema fields; fields)
+
+(** TODO: document *)
+let select_fields_join table1 table2 schema1 schema2 fields = 
+  if fields = ["*"] then (schema1, schema2)
+  else check_fields_join table1 table2 schema1 schema2 [] [] fields
 
 (** TODO: document *)
 (* let rec print_fields schema bfields acc = 
@@ -34,7 +55,7 @@ let select_fields schema fields =
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
-    raise (Malformed "Table Given Does Not Exist")
+    raise (Malformed "Table given does not exist")
   | h::t -> if fst h = tablename then snd h else table_schema t tablename
 
 (** [filter_fields fields acc schema] is a bool list [acc] where each elt 
@@ -141,41 +162,73 @@ let where tablename (qry_where : Query.where_obj option) schema fields fc =
   | None -> filter_table fc schema fields None [] 
   | Some w -> like_equal fc schema fields w
 
-let filter_row_join schema schema1 fields where line = 
-  (* need to match if row2 with row1 *)
-  failwith "unimp"
+let rec pp_list = function 
+  | [] -> ()
+  | h::t -> print_string (h^", "); pp_list t
 
-let inner_join qry schema schema1 fields fc fc1 acc = 
-  (* read a line from fc and compare with every line from fc1 on *)
-  let row = try read_next_line fc |> filter_row_join schema schema1 fields where with 
-      | exn -> Stdlib.close_in fc; Some []
-    in match row with 
-    | None -> filter_table fc schema fields qry.where acc
-    | Some e when e = [] -> List.rev acc 
-    | Some r -> filter_table fc schema fields qry.where (r::acc)
+let rec pp_list_list = function 
+  | [] -> ()
+  | h::t -> print_newline (pp_list h); pp_list_list t
 
-let join qry (qry_join : Query.join_obj) schema fields fc = 
+(** TODO: document *)
+let get_cond field schema row = 
+  index (snd (get_field field)) schema |> List.nth row
+
+(** TODO: document *)
+let rec filter_table2 qry_join cond field_index fc1 = 
+  try 
+    let row = read_next_line fc1 in 
+    (* pp_list row; *)
+    if List.nth row field_index = cond then Some row
+    else filter_table2 qry_join cond field_index fc1
+  with 
+    | exn -> Stdlib.close_in fc1; None
+
+(** TODO: document *)
+let filter_row_join qry (qry_join : join_obj) schema schema1 fields row : string list option = 
+  (* match qry.where with 
+  (* get only the rows from each table that we need *)
+  | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  (* run rows through where condition *)
+  | Some ->  *)
   let fc1 = get_in_chan qry_join.table in 
-  (* need to get schem and fields of table 2 *)
-  let schema1 = table_schema (schema_from_txt ()) qry_join.table in 
+  match filter_table2 qry.join (get_cond (fst qry_join.on) schema row) 
+  (index (snd (get_field (snd qry_join.on))) schema1) fc1 with 
+  | None -> None
+  | Some r -> Some (row@r)
+
+(** TODO: document *)
+let rec inner_join qry qry_join schema schema1 fields fc acc = 
+  let row = try read_next_line fc |> filter_row_join qry qry_join schema schema1 fields with 
+    | exn -> Stdlib.close_in fc; Some []
+  in match row with 
+  | None -> inner_join qry qry_join schema schema1 fields fc acc
+  | Some e when e = [] -> List.rev acc 
+  | Some r -> inner_join qry qry_join schema schema1 fields fc (r::acc)
+
+(** TODO: document *)
+let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema schema1 fields fc = 
   match qry_join.join with 
-  | Inner -> failwith "inner"
-  | Left -> failwith "left"
-  | Right -> failwith "right"
-  | Outer -> failwith "outer"
+  | Inner ->  inner_join qry qry_join schema schema1 fields fc []
+  | Left -> failwith "left" (* return all rows from left table and have null columns if something doesn't exist in right table *)
+  | Right -> failwith "right" (* opposite of left *)
+  | Outer -> failwith "outer" (* returns results from both *)
   | None -> raise (Malformed "Must provide a type of join")
 
 let select (qry : Query.select_obj) =
   let tablename = qry.table in 
   let schema = table_schema (schema_from_txt ()) tablename in 
-  let fields = select_fields schema qry.fields in 
   let fc = get_in_chan tablename in 
   match qry.join with 
   | None -> 
+    let fields = select_fields schema qry.fields in 
     let bool_fields = filter_fields schema [] fields in
     let table = where tablename qry.where schema bool_fields fc in 
     (order_fields schema bool_fields, order schema qry.order table)
-  | Some join_obj -> join qry join_obj schema fields fc 
+  | Some join_obj -> 
+    let schema1 = table_schema (schema_from_txt ()) join_obj.table in 
+    let fields' = select_fields_join qry.table join_obj.table schema schema1 qry.fields in 
+    ((fst fields')@(snd fields'), join qry join_obj schema schema1 fields' fc)
 
 (*
 (** TODO: document *)
