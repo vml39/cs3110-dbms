@@ -131,18 +131,14 @@ let rec write_all_rows = function
 (* [write_to_file fields rows] is the printing of fields and rows into text file
    in output folder.  Each element in each row is delimited by "," and each
    row is seperated by a newline character*)
-let write_to_file fields rows num query_from_file filename query=
-  if query_from_file
-  then  
-    let oc = open_out_gen [Open_append; Open_creat] 0o666
-        (".." ^ Filename.dir_sep ^ "output" ^ Filename.dir_sep 
-         ^ filename ^ "_processed" ^ ".txt") in 
+let write_to_file fields rows num query_from_file filename query oc_option=
+  match oc_option with
+  | Some oc ->
     fprintf oc "%s" (query ^ "\n");
     fprintf oc "%s" (write_row fields);         (* write fields *)  
-    fprintf oc "%s" ((write_all_rows rows) ^ "\n\n");      (* write all rows *)
-    close_out oc; 
+    fprintf oc "%s" ((write_all_rows rows) ^ "\n");      (* write all rows *)
     ()
-  else 
+  | None ->
     let oc = open_out (".." ^ Filename.dir_sep ^ "output" ^ Filename.dir_sep 
                        ^ "query" ^ (string_of_int !num) ^ ".txt") in  
     num := !num +1;
@@ -154,14 +150,15 @@ let write_to_file fields rows num query_from_file filename query=
         ^ Filename.dir_sep ^ "query" ^ (string_of_int !num) ^ ".txt\n\n"));()
 
 
-let rec read_write_commands inc filename =
+let rec rd_wt_queries_from_file inc oc filename =
   try
     let query = input_line inc in
     match parse query  with
-    | exception (Empty) -> (); read_write_commands inc filename
-    | exception (Query.Malformed "") -> invalid_command (); read_write_commands inc filename
+    | exception (Empty) -> (); rd_wt_queries_from_file inc oc filename
+    | exception (Query.Malformed "") -> 
+      invalid_command (); rd_wt_queries_from_file inc oc filename
     | exception (Query.Malformed s) -> 
-      malformed_exception s; read_write_commands inc filename
+      malformed_exception s; rd_wt_queries_from_file inc oc filename
     | command -> begin 
         try
           match command with
@@ -169,11 +166,16 @@ let rec read_write_commands inc filename =
             exit 0
           | Select obj -> 
             let (fields, rows) = select obj in
-            write_to_file fields rows (ref (-1)) true filename query; read_write_commands inc filename
-          | Insert obj -> insert obj; read_write_commands inc filename
-          | Delete obj -> delete obj; read_write_commands inc filename
-          | Create obj -> create_table obj; read_write_commands inc filename
-          | Drop obj ->  drop_table obj; read_write_commands inc filename
+            write_to_file fields rows (ref (-1)) true filename query (Some oc); 
+            rd_wt_queries_from_file inc oc filename
+          | Insert obj -> insert obj; fprintf oc "%s" (query ^ "\n\n"); 
+            rd_wt_queries_from_file inc oc filename
+          | Delete obj -> delete obj; fprintf oc "%s" (query ^ "\n\n"); 
+            rd_wt_queries_from_file inc oc filename
+          | Create obj -> create_table obj; fprintf oc "%s" (query ^ "\n\n"); 
+            rd_wt_queries_from_file inc oc filename
+          | Drop obj ->  drop_table obj; fprintf oc "%s" (query ^ "\n\n"); 
+            rd_wt_queries_from_file inc oc filename
           | Read _ -> failwith "You cannot use READ FROM in a file"  
         with
         | Query.Malformed s -> malformed_exception s
@@ -188,13 +190,16 @@ let rec read_write_commands inc filename =
 
 (* TODO: Document *)
 let queries_from_file filename = 
-  if Sys.file_exists (".." ^ Filename.dir_sep ^ "input" ^ Filename.dir_sep 
-                      ^ "commands" ^ Filename.dir_sep ^ filename ^ ".txt")
+  let filepath = (".." ^ Filename.dir_sep ^ "input" ^ Filename.dir_sep 
+                  ^ "commands" ^ Filename.dir_sep ^ filename ^ ".txt") in
+  if Sys.file_exists filepath
   then 
-    let filepath = (".." ^ Filename.dir_sep ^ "input" ^ Filename.dir_sep 
-                    ^ "commands" ^ Filename.dir_sep ^ filename ^ ".txt") in
     let inc = open_in filepath in
-    read_write_commands inc filename
+    let oc = open_out_gen [Open_append; Open_creat] 0o666
+        (".." ^ Filename.dir_sep ^ "output" ^ Filename.dir_sep 
+         ^ filename ^ "_processed" ^ ".txt") in 
+    rd_wt_queries_from_file inc oc filename;
+    close_out oc
   else invalid_file filename
 
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
@@ -219,7 +224,7 @@ let rec process_queries num () =
               try pp_table (fields, rows); process_queries num ()
               with Failure s ->  malformed_exception s; process_queries num ()
             else (* Print to file *)
-              write_to_file fields rows num false "" ""; process_queries num ()
+              write_to_file fields rows num false "" "" None; process_queries num ()
           end
         | Insert obj -> insert obj; process_queries num ()
         | Delete obj -> delete obj; process_queries num ()
