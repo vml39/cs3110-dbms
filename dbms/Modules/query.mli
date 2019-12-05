@@ -27,7 +27,7 @@ type where_obj = {
 type join_obj = {
   table: tablename;
   join: join_type;
-  on: fieldname list;
+  on: fieldname * fieldname;
 }
 
 (** TODO: document *)

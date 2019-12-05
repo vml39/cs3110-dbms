@@ -36,7 +36,7 @@ type where_obj = {
 type join_obj = {
   table: tablename;
   join: join_type;
-  on: fieldname list;
+  on: fieldname * fieldname
 }
 
 type select_obj = {
@@ -93,34 +93,45 @@ let rec order_by fieldname (record : select_obj) = function
   | h::t -> order_by (new_field fieldname h) record t
 
 (** TODO: document *)
-let create_where_record fieldname h op ptn = 
+let create_where_record fieldname h op = 
   {
     field = new_field fieldname h;
     op = op;
-    ptn = ptn;
+    ptn = "";
   }
 
 (** TODO: document *)
+let rec select_where_ptn ptn where_rec (record: select_obj) = function 
+  | [] -> raise (Malformed "Must provide a pattern to match with after 'WHERE'")
+  | h::i::j::t when i = "ORDER" && j = "BY" -> 
+    order_by "" {
+      record with 
+      where = Some {where_rec with ptn = new_field ptn h}
+    } t
+  | h::t when t = [] -> {
+    record with 
+    where = Some {where_rec with ptn = new_field ptn h}
+    }
+  | h::t -> select_where_ptn (new_field ptn h) where_rec record t
+
+(** TODO: document *)
 let rec select_where fieldname where_rec (record : select_obj) = function
-  | [] when where_rec.field = "" || where_rec.op = None || where_rec.ptn = "" ->
+  | [] ->
     raise (Malformed "Must provide a field, operator and pattern after 'WHERE'")
-  | [] -> {record with where = Some where_rec}
-  | h::i::t when h = "ORDER" && i = "BY" -> 
-    order_by "" {record with where = Some where_rec} t
-  | h::op::ptn::t when op = "=" -> 
-    select_where "" (create_where_record fieldname h EQ ptn) record t
-  | h::op::ptn::t when op = ">" ->
-    select_where "" (create_where_record fieldname h GT ptn) record t
-  | h::op::ptn::t when op = "<" ->
-    select_where "" (create_where_record fieldname h LT ptn) record t
-  | h::op::ptn::t when op = ">=" ->
-    select_where "" (create_where_record fieldname h GEQ ptn) record t
-  | h::op::ptn::t when op = "<=" ->
-    select_where "" (create_where_record fieldname h LEQ ptn) record t
-  | h::op::ptn::t when op = "<>" ->
-    select_where "" (create_where_record fieldname h NEQ ptn) record t
-  | h::op::ptn::t when op = "LIKE" ->
-    select_where "" (create_where_record fieldname h Like ptn) record t
+  | h::op::t when op = "=" -> 
+    select_where_ptn "" (create_where_record fieldname h EQ) record t
+  | h::op::t when op = ">" ->
+    select_where_ptn "" (create_where_record fieldname h GT) record t
+  | h::op::t when op = "<" ->
+    select_where_ptn "" (create_where_record fieldname h LT) record t
+  | h::op::t when op = ">=" ->
+    select_where_ptn "" (create_where_record fieldname h GEQ) record t
+  | h::op::t when op = "<=" ->
+    select_where_ptn "" (create_where_record fieldname h LEQ) record t
+  | h::op::t when op = "<>" ->
+    select_where_ptn "" (create_where_record fieldname h NEQ) record t
+  | h::op::t when op = "LIKE" ->
+    select_where_ptn "" (create_where_record fieldname h Like) record t
   | h::t -> select_where (new_field fieldname h) where_rec record t
 
 (** TODO: document *)
@@ -145,7 +156,7 @@ let select_join_field (join_rec: join_obj) (record: select_obj) = function
   | h::i::j::t when i = "=" -> 
     let new_join = {
       join_rec with 
-      on = h::j::[]
+      on = (h, j)
     } in 
     select_join_qry {record with join = Some new_join} t
   | _ -> 
@@ -153,7 +164,7 @@ let select_join_field (join_rec: join_obj) (record: select_obj) = function
 
 (** TODO: document *)
 let select_join (join_rec: join_obj) (record: select_obj) = function 
-  | [] -> raise (Malformed "You must join ON another table")
+  | [] -> raise (Malformed "You must join 'ON' another table")
   | h::i::t when i = "ON" -> 
     select_join_field {join_rec with table = h} record t
   | _ -> raise (Malformed "You must join 'ON' another table")
@@ -174,7 +185,7 @@ let select_table (record : select_obj) = function
     let init_join = {
       table = "";
       join = match_join i;
-      on = []
+      on = ("", "")
     } in 
     let new_record = {
       record with 
@@ -258,22 +269,27 @@ let insert_parse t =
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
 
 (** TODO: document *)
+let rec delete_where_ptn ptn where_rec (record : delete_obj) = function 
+  | [] -> {record with where = Some {where_rec with ptn = ptn}}
+  | h::t -> delete_where_ptn (new_field ptn h) where_rec record t
+
+(** TODO: document *)
 let rec delete_where fieldname where_rec (record : delete_obj) = function
   | [] -> {record with where = Some where_rec}
-  | h::op::ptn::t when op = "=" -> 
-    delete_where "" (create_where_record fieldname h EQ ptn) record t
-  | h::op::ptn::t when op = ">" ->
-    delete_where "" (create_where_record fieldname h GT ptn) record t
-  | h::op::ptn::t when op = "<" ->
-    delete_where "" (create_where_record fieldname h LT ptn) record t
-  | h::op::ptn::t when op = ">=" ->
-    delete_where "" (create_where_record fieldname h GEQ ptn) record t
-  | h::op::ptn::t when op = "<=" ->
-    delete_where "" (create_where_record fieldname h LEQ ptn) record t
-  | h::op::ptn::t when op = "<>" ->
-    delete_where "" (create_where_record fieldname h NEQ ptn) record t
-  | h::op::ptn::t when op = "LIKE" ->
-    delete_where "" (create_where_record fieldname h Like ptn) record t
+  | h::op::t when op = "=" -> 
+    delete_where_ptn "" (create_where_record fieldname h EQ) record t
+  | h::op::t when op = ">" ->
+    delete_where_ptn "" (create_where_record fieldname h GT) record t
+  | h::op::t when op = "<" ->
+    delete_where_ptn "" (create_where_record fieldname h LT) record t
+  | h::op::t when op = ">=" ->
+    delete_where_ptn "" (create_where_record fieldname h GEQ) record t
+  | h::op::t when op = "<=" ->
+    delete_where_ptn "" (create_where_record fieldname h LEQ) record t
+  | h::op::t when op = "<>" ->
+    delete_where_ptn "" (create_where_record fieldname h NEQ) record t
+  | h::op::t when op = "LIKE" ->
+    delete_where_ptn "" (create_where_record fieldname h Like) record t
   | h::t -> delete_where (new_field fieldname h) where_rec record t
 
 (** TODO: document *)

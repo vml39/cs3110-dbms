@@ -140,6 +140,10 @@ let where tablename (qry_where : Query.where_obj option) schema fields =
   | None -> filter_table fc schema fields false ("", None, "") [] 
   | Some w -> like_equal fc schema fields w
 
+(* let join = 
+  failwith "Unimplemented" *)
+(* if there's a join, pull in the columns from both rows *)
+
 let select (qry : Query.select_obj) =
   let tablename = qry.table in 
   let schema = table_schema (schema_from_txt ()) tablename in 
@@ -284,9 +288,6 @@ let delete qry =
           Sys.rename (get_path temp_file) (get_path tablename)
           *)
     end
-
-let join qry = 
-  failwith "unimplemented"
 
 let rec create_table (qry: Query.create_obj) = 
   let outc_schema = get_out_chan_schema () in
