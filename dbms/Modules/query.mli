@@ -64,6 +64,13 @@ type drop_obj = {
 }
 
 (** TODO: document *)
+type help_obj = {
+  s1: string;
+  s2: string;
+}
+
+
+(** TODO: document *)
 (** The type [query] represents a use query that is decomposed
     into a command and possibly an object phrase. *)
 type t = 
@@ -73,6 +80,8 @@ type t =
   | Create of create_obj
   | Drop of drop_obj
   | Read of string (* TODO: Should this not be a string? *)
+  | Changedb of string
+  | Help of help_obj
   | Quit
 
 (** Raised when an empty query is parsed. *)

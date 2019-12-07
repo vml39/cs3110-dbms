@@ -40,15 +40,15 @@ let rec check_fields schema = function
     (fields1, fields2) parsed from [fields]. 
     Raises [Malformed] if any [fields] are not in [schema1] or [schema2]. *)
 let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function
-(* order_fields schema bool_fields *)
+  (* order_fields schema bool_fields *)
   | [] -> List.rev acc1, List.rev acc2
   | h::t ->
     if fst (get_field h) = table1 && List.mem (snd (get_field h)) schema1
     then check_fields_join table1 table2 schema1 schema2 
-      ((snd (get_field h))::acc1) acc2 t
+        ((snd (get_field h))::acc1) acc2 t
     else if fst (get_field h) = table2 && List.mem (snd (get_field h)) schema2
     then check_fields_join table1 table2 schema1 schema2 
-      acc1 (snd (get_field h)::acc2) t
+        acc1 (snd (get_field h)::acc2) t
     else raise (Malformed "Field selected is not part of either table in JOIN")
 
 (** [select_fields schema fields] is [schema] if [fields] is [[*]] and [fields]
@@ -93,7 +93,7 @@ let rec order_fields schema fields =
 let order_fields_join schema fields = 
   let bfields1, bfields2 = 
     (filter_fields (fst schema) (fst fields) [], 
-    filter_fields (snd schema) (snd fields) [])
+     filter_fields (snd schema) (snd fields) [])
   in (order_fields (fst schema) bfields1)@(order_fields (snd schema) bfields2)
 
 (** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
@@ -147,7 +147,7 @@ let filter_row schema fields (where: Query.where_obj option) row =
     | LEQ -> partial_filter_pattern (<=)
     | s -> failwith "Expected a valid operator"
 
-  (* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
+(* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
 
 (** [filter_table fc schema fields where acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
@@ -208,15 +208,15 @@ let rec filter_table2 qry_join cond field_index schema2 fields fc1 =
     then Some (filter_row2 schema2 (snd fields) row)
     else filter_table2 qry_join cond field_index schema2 fields fc1
   with 
-    | exn -> Stdlib.close_in fc1; None
+  | exn -> Stdlib.close_in fc1; None
 
 (** [filter_row_join qry qry_join schema schema2 fields row] is...  *)
 let filter_row_join qry (qry_join : join_obj) schema fields row : string list option = 
   (* match qry.where with 
-  (* get only the rows from each table that we need *)
-  | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
-  (* run rows through where condition *)
-  | Some ->  *)
+     (* get only the rows from each table that we need *)
+     | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+     (* run rows through where condition *)
+     | Some ->  *)
   let fc1 = get_in_chan qry_join.table in 
   let cond = get_cond (fst qry_join.on) (fst schema) row in 
   let field_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
@@ -259,7 +259,7 @@ let select (qry : Query.select_obj) =
       select_fields_join qry.table join_obj.table (schema, schema1) qry.fields 
     in 
     (order_fields_join (schema, schema1) fields', 
-    join qry join_obj (schema, schema1) fields' fc)
+     join qry join_obj (schema, schema1) fields' fc)
 
 (*
 (** TODO: document *)
@@ -454,3 +454,40 @@ let drop_table qry =
   Sys.remove (get_schema_path ());
   Sys.rename (get_schema_temp_path ()) (get_schema_path ());
   Sys.remove (get_path qry.table)
+
+let general_msg = "General Message \n"
+
+let select_msg = "'SELECT' QUERY \n"
+
+let insert_msg = "'INSERT INTO' QUERY \n"
+
+let delete_msg = "'DELETE' QUERY \n"
+
+let truncate_msg = "'TRUNCATE TABLE' QUERY \n"
+
+let create_msg = "'CREATE TABLE' QUERY \n"
+
+let drop_msg = "'DROP TABLE' QUERY \n"
+
+let change_msg = "'CHANGE DATABASE' QUERY \n"
+
+let read_msg = "'READ' QUERY \n"
+
+let quit_msg = "'QUIT' QUERY \n"
+
+let help_msg = "'HELP' QUERY \n"
+
+let help_with qry =
+  match qry.s1, qry.s2 with
+  | "", "" -> general_msg
+  | "SELECT", _ -> select_msg
+  | "INSERT", _ -> insert_msg
+  | "DELETE", _ -> delete_msg
+  | "TRUNCATE", _ -> truncate_msg
+  | "CREATE", _ -> create_msg
+  | "DROP", _ -> drop_msg
+  | "CHANGE", _ -> change_msg
+  | "READ", _ -> read_msg
+  | "QUIT", _ -> quit_msg
+  | "HELP", _ -> help_msg
+  | _ -> "Sorry, I can't help you with that\n"

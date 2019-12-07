@@ -41,3 +41,7 @@ val create_table: Query.create_obj -> unit
     schema.txt file for the database. 
     Raises [Malformed] if no table name or fields provided in [qry]. *)
 val drop_table: Query.drop_obj -> unit
+
+(** [help_with qry] Prints a string with a help message pertaining to the 
+    input qry**)
+val help_with: Query.help_obj -> string
