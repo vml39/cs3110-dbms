@@ -40,6 +40,7 @@ let rec check_fields schema = function
     (fields1, fields2) parsed from [fields]. 
     Raises [Malformed] if any [fields] are not in [schema1] or [schema2]. *)
 let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function
+  (* order_fields schema bool_fields *)
   | [] -> List.rev acc1, List.rev acc2
   | h::t ->
     if fst (get_field h) = table1 && List.mem (snd (get_field h)) schema1
@@ -58,9 +59,9 @@ let select_fields schema fields =
   else (check_fields schema fields; fields)
 
 (** TODO: document *)
-let select_fields_join table1 table2 schema1 schema2 fields = 
-  if fields = ["*"] then (schema1, schema2)
-  else check_fields_join table1 table2 schema1 schema2 [] [] fields
+let select_fields_join table1 table2 schema fields = 
+  if fields = ["*"] then (fst schema, snd schema)
+  else check_fields_join table1 table2 (fst schema) (snd schema) [] [] fields
 
 (** TODO: document *)
 (* let rec print_fields schema bfields acc = 
@@ -87,6 +88,13 @@ let rec filter_fields schema fields acc =
 let rec order_fields schema fields = 
   let i = ref (-1) in
   List.filter(fun x -> i := !i + 1; List.nth fields !i) schema
+
+(** [order_fields_join schema fields] is... *)
+let order_fields_join schema fields = 
+  let bfields1, bfields2 = 
+    (filter_fields (fst schema) (fst fields) [], 
+     filter_fields (snd schema) (snd fields) [])
+  in (order_fields (fst schema) bfields1)@(order_fields (snd schema) bfields2)
 
 (** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
     regex pattern. *)
@@ -203,33 +211,33 @@ let rec filter_table2 qry_join cond field_index schema2 fields fc1 =
   | exn -> Stdlib.close_in fc1; None
 
 (** [filter_row_join qry qry_join schema schema2 fields row] is...  *)
-let filter_row_join qry (qry_join : join_obj) schema1 schema2 fields row : string list option = 
+let filter_row_join qry (qry_join : join_obj) schema fields row : string list option = 
   (* match qry.where with 
      (* get only the rows from each table that we need *)
      | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
      (* run rows through where condition *)
      | Some ->  *)
   let fc1 = get_in_chan qry_join.table in 
-  let cond = get_cond (fst qry_join.on) schema1 row in 
-  let field_ind = index (snd (get_field (snd qry_join.on))) schema2 in 
-  match filter_table2 qry.join cond field_ind schema2 fields fc1 with 
+  let cond = get_cond (fst qry_join.on) (fst schema) row in 
+  let field_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
+  match filter_table2 qry.join cond field_ind (snd schema) fields fc1 with 
   | None -> None
-  | Some r' -> let r = filter_row2 schema1 (fst fields) row in 
+  | Some r' -> let r = filter_row2 (fst schema) (fst fields) row in 
     Some (r@r')
 
 (** [inner_join qry qry_join schema1 schema2 fields fc acc] is... *)
-let rec inner_join qry qry_join schema1 schema2 fields fc acc = 
-  let row = try read_next_line fc |> filter_row_join qry qry_join schema1 schema2 fields with 
+let rec inner_join qry qry_join schema fields fc acc = 
+  let row = try read_next_line fc |> filter_row_join qry qry_join schema fields with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
-  | None -> inner_join qry qry_join schema1 schema2 fields fc acc
+  | None -> inner_join qry qry_join schema fields fc acc
   | Some e when e = [] -> List.rev acc 
-  | Some r -> inner_join qry qry_join schema1 schema2 fields fc (r::acc)
+  | Some r -> inner_join qry qry_join schema fields fc (r::acc)
 
 (** [join qry qry_join schema1 schema2 fields fc] is... *)
-let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema1 schema2 fields fc = 
+let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema fields fc = 
   match qry_join.join with 
-  | Inner ->  inner_join qry qry_join schema1 schema2 fields fc []
+  | Inner ->  inner_join qry qry_join schema fields fc []
   | Left -> failwith "left" (* return all rows from left table and have null columns if something doesn't exist in right table *)
   | Right -> failwith "right" (* opposite of left *)
   | Outer -> failwith "outer" (* returns results from both *)
@@ -247,9 +255,11 @@ let select (qry : Query.select_obj) =
     (order_fields schema bool_fields, order schema qry.order table)
   | Some join_obj -> 
     let schema1 = table_schema (schema_from_txt ()) join_obj.table in 
-    let fields' = select_fields_join qry.table join_obj.table schema schema1 qry.fields in 
-    (* order the fields *)
-    ((fst fields')@(snd fields'), join qry join_obj schema schema1 fields' fc)
+    let fields' = 
+      select_fields_join qry.table join_obj.table (schema, schema1) qry.fields 
+    in 
+    (order_fields_join (schema, schema1) fields', 
+     join qry join_obj (schema, schema1) fields' fc)
 
 (*
 (** TODO: document *)
@@ -444,3 +454,40 @@ let drop_table qry =
   Sys.remove (get_schema_path ());
   Sys.rename (get_schema_temp_path ()) (get_schema_path ());
   Sys.remove (get_path qry.table)
+
+let general_msg = "General Message \n"
+
+let select_msg = "'SELECT' QUERY \n"
+
+let insert_msg = "'INSERT INTO' QUERY \n"
+
+let delete_msg = "'DELETE' QUERY \n"
+
+let truncate_msg = "'TRUNCATE TABLE' QUERY \n"
+
+let create_msg = "'CREATE TABLE' QUERY \n"
+
+let drop_msg = "'DROP TABLE' QUERY \n"
+
+let change_msg = "'CHANGE DATABASE' QUERY \n"
+
+let read_msg = "'READ' QUERY \n"
+
+let quit_msg = "'QUIT' QUERY \n"
+
+let help_msg = "'HELP' QUERY \n"
+
+let help_with qry =
+  match qry.s1, qry.s2 with
+  | "", "" -> general_msg
+  | "SELECT", _ -> select_msg
+  | "INSERT", _ -> insert_msg
+  | "DELETE", _ -> delete_msg
+  | "TRUNCATE", _ -> truncate_msg
+  | "CREATE", _ -> create_msg
+  | "DROP", _ -> drop_msg
+  | "CHANGE", _ -> change_msg
+  | "READ", _ -> read_msg
+  | "QUIT", _ -> quit_msg
+  | "HELP", _ -> help_msg
+  | _ -> "Sorry, I can't help you with that\n"

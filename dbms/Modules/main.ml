@@ -100,10 +100,10 @@ let sys_exception s = ANSITerminal.(
     print_string [red] ("File System Exception: " ^ s ^ "\n"))
 
 (* [invalid_db] prints the error message when an invalid database is input
-   int the system *)
+   in the system *)
 let invalid_db s = ANSITerminal.(
-    print_string [red] ("Database " ^ s ^ " does not exist, please try again\n"));
-  print_string  "> "
+    print_string [red] ("Database " ^ s ^ " does not exist, please try again\n"))
+
 
 (* [invalid_file s] prints the error message when an invalid file is input
    into the system *)
@@ -173,6 +173,8 @@ let rec rd_wt_queries_from_file inc oc filename =
           | Drop obj ->  drop_table obj; fprintf oc "%s" (query ^ "\n\n"); 
             rd_wt_queries_from_file inc oc filename
           | Read _ -> failwith "You cannot use READ FROM in a file"  
+          | Help obj -> failwith "You cannot ask for HELP in a file" 
+          | Changedb s -> failwith "You cannot use CHANGE DATABASE in a file"
         with
         | Query.Malformed s -> malformed_exception s
         | Sys_error s -> sys_exception s
@@ -232,6 +234,22 @@ let rec process_queries num () =
         | Create obj -> create_table obj; process_queries num ()
         | Drop obj ->  drop_table obj; process_queries num ()
         | Read file -> queries_from_file file; process_queries num () 
+        | Changedb db' -> begin
+            let num = ref 1 in
+            if (not 
+                  (Sys.file_exists 
+                     (Filename.parent_dir_name ^ Filename.dir_sep ^
+                      "input" ^ Filename.dir_sep ^ db')))
+            then begin invalid_db db'; process_queries num () end
+            else
+              Datardwt.database := db';
+            ANSITerminal.(print_string [green] (
+                "\n" ^ db' ^ " selected. Please enter your query\n\n"));
+
+            process_queries num ()
+          end
+        | Help obj -> print_string (help_with obj); process_queries num () 
+      (*| Help lst -> *)
       with
       | Query.Malformed s -> malformed_exception s; process_queries num ()
       | Sys_error s -> sys_exception s; process_queries num ()
@@ -244,7 +262,8 @@ let rec read_input_db () =
   | db -> begin
       if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
                                 "input" ^ Filename.dir_sep ^ db)))
-      then begin invalid_db db; read_input_db () end
+      then begin invalid_db db;   print_string  "> ";
+        read_input_db () end
       else
         Datardwt.database := db;
       ANSITerminal.(print_string [green] (
