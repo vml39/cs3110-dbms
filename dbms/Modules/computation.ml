@@ -120,7 +120,7 @@ let filter_row schema fields (where: Query.where_obj option) row =
     | LEQ -> partial_filter_pattern (<=)
     | s -> failwith "Expected a valid operator"
 
-  (* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
+(* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
 
 (** [filter_table fc schema fields where acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
@@ -182,18 +182,18 @@ let rec filter_table2 qry_join cond field_index fc1 =
     if List.nth row field_index = cond then Some row
     else filter_table2 qry_join cond field_index fc1
   with 
-    | exn -> Stdlib.close_in fc1; None
+  | exn -> Stdlib.close_in fc1; None
 
 (** TODO: document *)
 let filter_row_join qry (qry_join : join_obj) schema schema1 fields row : string list option = 
   (* match qry.where with 
-  (* get only the rows from each table that we need *)
-  | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
-  (* run rows through where condition *)
-  | Some ->  *)
+     (* get only the rows from each table that we need *)
+     | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+     (* run rows through where condition *)
+     | Some ->  *)
   let fc1 = get_in_chan qry_join.table in 
   match filter_table2 qry.join (get_cond (fst qry_join.on) schema row) 
-  (index (snd (get_field (snd qry_join.on))) schema1) fc1 with 
+          (index (snd (get_field (snd qry_join.on))) schema1) fc1 with 
   | None -> None
   | Some r -> Some (row@r)
 

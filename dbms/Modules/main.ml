@@ -99,20 +99,16 @@ let malformed_exception s = ANSITerminal.(
 let sys_exception s = ANSITerminal.(
     print_string [red] ("File System Exception: " ^ s ^ "\n"))
 
-
 (* [invalid_db] prints the error message when an invalid database is input
    int the system *)
 let invalid_db s = ANSITerminal.(
     print_string [red] ("Database " ^ s ^ " does not exist, please try again\n"));
   print_string  "> "
 
-
-(* [invalid_file] prints the error message when an invalid file is input
+(* [invalid_file s] prints the error message when an invalid file is input
    into the system *)
 let invalid_file s = ANSITerminal.(
-    print_string [red] ("File " ^ s ^ " does not exist, please try again\n"));
-  print_string  "> "
-
+    print_string [red] ("File " ^ s ^ " does not exist, please try again\n"))
 
 (* [write_row row] is the concatenation of each string in [row] delimited by
    a ",". The string is ended by a newline character *)
@@ -202,6 +198,8 @@ let queries_from_file filename =
     close_out oc
   else invalid_file filename
 
+(* [table_height rows] is the # of lines [rows] would take up as a table with
+   an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
 let table_height rows = 4 + List.length rows 
 
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
@@ -220,9 +218,9 @@ let rec process_queries num () =
           exit 0
         | Select obj -> 
           begin
-            let width, height = ANSITerminal.size () in 
+            let terminal_w, terminal_h = ANSITerminal.size () in 
             let (fields, rows) = select obj in
-            if table_height rows < height
+            if table_height rows < terminal_h
             then (* Print to terminal *)
               try pp_table (fields, rows); process_queries num ()
               with Failure s ->  malformed_exception s; process_queries num ()
