@@ -261,6 +261,7 @@ let where_leq1 = get_qry "SELECT * FROM students WHERE major <= ECE"
 let where_eq_mal1 = get_qry "SELECT * FROM students WHERE name = test"
 let join_inner = get_qry "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
 let schema1 = ["name"; "netid"; "class"; "major"; "home"]
+let schema2 = ["id"; "name"; "location"; "goodforstudying"; "name"; "location"; "buildingid"]
 let fields1 = ["netid"]
 let fields2 = ["name"; "netid"]
 let fields3 = ["name"]
@@ -312,6 +313,10 @@ let students_ordered = [
   ["Test"; "t123"; "2022"; "Government"; "North"];
   ["Vivian Li"; "vml39"; "2020"; "IS"; "Collegetown"]
 ]
+let buildings_join = [
+  ["6"; "Balch Hall"; "North"; "false"; "Balch Hall"; "North"; "6"];
+  ["7"; "Bethe Hall"; "West"; "true"; "Bethe Hall"; "West"; "7"];
+]
 
 let select_tests = [
   select_test "SELECT netid FROM students" 
@@ -337,7 +342,7 @@ let select_tests = [
   select_test "SELECT * FROM students ORDER BY name" 
     (schema1, students_ordered) order1;
   select_test "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
-    (schema1, students) join_inner;
+    (schema2, buildings_join) join_inner;
 
   (* malformed_select_test "SELECT * FROM students WHERE name = test" 
      ""

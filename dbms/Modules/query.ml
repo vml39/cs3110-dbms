@@ -354,7 +354,7 @@ let parse str =
   | h::i::t when h = "CREATE" && i = "TABLE" -> Create (create_table_parse t)
   | h::i::t when h = "DROP" && i = "TABLE" -> Drop (drop_table_parse t)
   | h::i::t::[] when h = "READ" && i = "FROM" -> Read t
-  | h::t when h = "QUIT" -> 
+  | h::t when h = "QUIT" || h = "quit" -> 
     if t <> [] 
     then raise (Malformed "If you would like to quit, please type QUIT") 
     else Quit
