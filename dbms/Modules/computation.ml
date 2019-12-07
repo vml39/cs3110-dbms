@@ -1,34 +1,53 @@
 open Query
 open Datardwt
 
+let rec pp_list = function 
+  | [] -> ()
+  | h::t -> print_string (h^", "); pp_list t
+
+let rec pp_list_bool = function 
+  | [] -> ()
+  | h::t -> 
+    if h then (print_string ("true , "); pp_list_bool t)
+    else (print_string ("false , "); pp_list_bool t)
+
+let rec pp_list_list = function 
+  | [] -> ()
+  | h::t -> print_newline (pp_list h); pp_list_list t
+
 (** [index field schema] is the index of [field] in list [schema]. *)
 let index field schema =
   let i = ref (-1) in 
   List.fold_left 
     (fun ind x -> i := !i + 1; if x = field then !i else ind) 0 schema
 
-(** TODO: document *)
+(** [get_field s] is (table, field) parsed from [s], separated by '.'. *)
 let get_field s = 
   let len = String.length s in 
   let ind = String.index s '.' in 
   (String.sub s 0 ind, String.sub s (ind+1) (len-ind-1))
 
 (** [check_fields schema fields] is [unit] if field in [fields] is in [schema]. 
-    Raises [Malformed] otherwise. *)
+    Raises [Malformed] if any [fields] are not in [schema]. *)
 let rec check_fields schema = function 
   | [] -> () 
   | h::t -> 
     if List.mem h schema then check_fields schema t 
     else raise (Malformed "Field selected not in schema")
 
-(** TODO: document *)
-let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function 
-  | [] -> (List.rev acc1, List.rev acc2)
+(** [check_fields_join table1 table2 schema1 schema2 acc1 acc2 fields] is the 
+    list of field names from [table1] and [table2] in the form 
+    (fields1, fields2) parsed from [fields]. 
+    Raises [Malformed] if any [fields] are not in [schema1] or [schema2]. *)
+let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function
+  | [] -> List.rev acc1, List.rev acc2
   | h::t ->
     if fst (get_field h) = table1 && List.mem (snd (get_field h)) schema1
-    then (print_string "fst"; check_fields_join table1 table2 schema1 schema2 ((snd (get_field h))::acc1) acc2 t)
+    then check_fields_join table1 table2 schema1 schema2 
+      ((snd (get_field h))::acc1) acc2 t
     else if fst (get_field h) = table2 && List.mem (snd (get_field h)) schema2
-    then (print_string "snd"; check_fields_join table1 table2 schema1 schema2 acc1 (snd (get_field h)::acc2) t)
+    then check_fields_join table1 table2 schema1 schema2 
+      acc1 (snd (get_field h)::acc2) t
     else raise (Malformed "Field selected is not part of either table in JOIN")
 
 (** [select_fields schema fields] is [schema] if [fields] is [[*]] and [fields]
@@ -61,8 +80,8 @@ let rec table_schema db_schema tablename =
 (** [filter_fields fields acc schema] is a bool list [acc] where each elt 
     corresponds to a field in [schema], where the elt is [true] if the field 
     is in [fields] and false otherwise. *)
-let rec filter_fields fields acc schema = 
-  List.map (fun x -> if List.mem x schema then true else false) fields
+let rec filter_fields schema fields acc = 
+  List.map (fun x -> if List.mem x fields then true else false) schema
 
 (** [order_fields schema fields] is [fields] ordered according to [schema]. *)
 let rec order_fields schema fields = 
@@ -162,54 +181,55 @@ let where tablename (qry_where : Query.where_obj option) schema fields fc =
   | None -> filter_table fc schema fields None [] 
   | Some w -> like_equal fc schema fields w
 
-let rec pp_list = function 
-  | [] -> ()
-  | h::t -> print_string (h^", "); pp_list t
+(** [filter_row2 schema fields row] is... *)
+let filter_row2 schema fields row =
+  let bool_fields = filter_fields schema fields [] in
+  match filter_row schema bool_fields None row with 
+  | None -> []
+  | Some r -> r
 
-let rec pp_list_list = function 
-  | [] -> ()
-  | h::t -> print_newline (pp_list h); pp_list_list t
-
-(** TODO: document *)
+(** [get_cond field schema row] is... *)
 let get_cond field schema row = 
   index (snd (get_field field)) schema |> List.nth row
 
-(** TODO: document *)
-let rec filter_table2 qry_join cond field_index fc1 = 
+(** [filter_table2 qry_join cond field_index fc1] is...  *)
+let rec filter_table2 qry_join cond field_index schema2 fields fc1 = 
   try 
     let row = read_next_line fc1 in 
-    (* pp_list row; *)
-    if List.nth row field_index = cond then Some row
-    else filter_table2 qry_join cond field_index fc1
+    if List.nth row field_index = cond 
+    then Some (filter_row2 schema2 (snd fields) row)
+    else filter_table2 qry_join cond field_index schema2 fields fc1
   with 
     | exn -> Stdlib.close_in fc1; None
 
-(** TODO: document *)
-let filter_row_join qry (qry_join : join_obj) schema schema1 fields row : string list option = 
+(** [filter_row_join qry qry_join schema schema2 fields row] is...  *)
+let filter_row_join qry (qry_join : join_obj) schema1 schema2 fields row : string list option = 
   (* match qry.where with 
   (* get only the rows from each table that we need *)
   | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
   (* run rows through where condition *)
   | Some ->  *)
   let fc1 = get_in_chan qry_join.table in 
-  match filter_table2 qry.join (get_cond (fst qry_join.on) schema row) 
-  (index (snd (get_field (snd qry_join.on))) schema1) fc1 with 
+  let cond = get_cond (fst qry_join.on) schema1 row in 
+  let field_ind = index (snd (get_field (snd qry_join.on))) schema2 in 
+  match filter_table2 qry.join cond field_ind schema2 fields fc1 with 
   | None -> None
-  | Some r -> Some (row@r)
+  | Some r' -> let r = filter_row2 schema1 (fst fields) row in 
+    Some (r@r')
 
-(** TODO: document *)
-let rec inner_join qry qry_join schema schema1 fields fc acc = 
-  let row = try read_next_line fc |> filter_row_join qry qry_join schema schema1 fields with 
+(** [inner_join qry qry_join schema1 schema2 fields fc acc] is... *)
+let rec inner_join qry qry_join schema1 schema2 fields fc acc = 
+  let row = try read_next_line fc |> filter_row_join qry qry_join schema1 schema2 fields with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
-  | None -> inner_join qry qry_join schema schema1 fields fc acc
+  | None -> inner_join qry qry_join schema1 schema2 fields fc acc
   | Some e when e = [] -> List.rev acc 
-  | Some r -> inner_join qry qry_join schema schema1 fields fc (r::acc)
+  | Some r -> inner_join qry qry_join schema1 schema2 fields fc (r::acc)
 
-(** TODO: document *)
-let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema schema1 fields fc = 
+(** [join qry qry_join schema1 schema2 fields fc] is... *)
+let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema1 schema2 fields fc = 
   match qry_join.join with 
-  | Inner ->  inner_join qry qry_join schema schema1 fields fc []
+  | Inner ->  inner_join qry qry_join schema1 schema2 fields fc []
   | Left -> failwith "left" (* return all rows from left table and have null columns if something doesn't exist in right table *)
   | Right -> failwith "right" (* opposite of left *)
   | Outer -> failwith "outer" (* returns results from both *)
@@ -222,12 +242,13 @@ let select (qry : Query.select_obj) =
   match qry.join with 
   | None -> 
     let fields = select_fields schema qry.fields in 
-    let bool_fields = filter_fields schema [] fields in
+    let bool_fields = filter_fields schema fields [] in
     let table = where tablename qry.where schema bool_fields fc in 
     (order_fields schema bool_fields, order schema qry.order table)
   | Some join_obj -> 
     let schema1 = table_schema (schema_from_txt ()) join_obj.table in 
     let fields' = select_fields_join qry.table join_obj.table schema schema1 qry.fields in 
+    (* order the fields *)
     ((fst fields')@(snd fields'), join qry join_obj schema schema1 fields' fc)
 
 (*
