@@ -376,7 +376,6 @@ let join (qry: select_obj) (qry_join: join_obj) schema fields =
   | Right -> 
     let fc = get_in_chan qry_join.table in 
     right_join qry qry_join schema fields fc []
-  | Outer -> failwith "outer" (* returns results from both *)
   | None -> raise (Malformed "Must provide a type of join")
 
 let select (qry : Query.select_obj) =
