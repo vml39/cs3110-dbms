@@ -214,7 +214,8 @@ let select_table (record : select_obj) = function
   | _ -> raise 
            (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
 
-(** TODO: document *)
+(** [select_fields acc fieldname record q] is [record] with 
+    fields = [fieldname] *)
 let rec select_fields acc fieldname (record : select_obj) q = 
   match q with 
   | [] -> raise (Malformed "Field names malformed or no 'FROM' keyword")
@@ -226,7 +227,8 @@ let rec select_fields acc fieldname (record : select_obj) q =
     select_fields ((new_field fieldname h)::acc) "" record t
   | h::t -> select_fields acc (new_field fieldname h) record t
 
-(** TODO: document *)
+(** [select_parse lst] is a select_obj if [lst] follows the select query rules.
+    Malformed otherwise.*)
 let select_parse = function
   | [] -> raise 
             (Malformed "You must include the field names and tables to be selected")
@@ -240,7 +242,9 @@ let select_parse = function
     } in
     select_fields [] "" init_rec lst
 
-(** TODO: document *)
+(** [insert_fields acc value record lst] is [record] with 
+    values = [value] filled in if [lst] follows the insert query rules. 
+    Malformed otherwise *)
 let rec insert_values acc value (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify a valid list of values")
   | h::i::t when i = ")" && t = [] -> 
@@ -249,7 +253,9 @@ let rec insert_values acc value (record: insert_obj) = function
     insert_values ((new_field value h)::acc) "" record t
   | h::t -> insert_values acc (new_field value h) record t
 
-(** TODO: document *)
+(** [insert_fields acc fieldname record lst] is an [record] with 
+    fields = [fieldname], and values filled in if [lst] follows the insert query 
+    rules.  Malformed otherwise *)
 let rec insert_fields acc fieldname (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify values")
   | h::i::j::k::t when i = ")" && j = "VALUES" && k = "(" -> 
@@ -260,7 +266,8 @@ let rec insert_fields acc fieldname (record: insert_obj) = function
     insert_fields ((new_field fieldname h)::acc) "" record t
   | h::t -> insert_fields acc (new_field fieldname h) record t
 
-(** TODO: document *)
+(** [insert_parse t] is an insert_obj with table, fields, and values filled in
+    if [t] follows the insert query rules. Malformed otherwise *)
 let insert_parse t =
   let init_record = {
     table = "";
@@ -275,12 +282,14 @@ let insert_parse t =
     insert_fields [] "" {init_record with table = h} t
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
 
-(** TODO: document *)
+(** [delete_where_ptn ptn where_rec record lst] is a delete_obj if [lst] follows
+    the delete where query rules *)
 let rec delete_where_ptn ptn where_rec (record : delete_obj) = function 
   | [] -> {record with where = Some {where_rec with ptn = ptn}}
   | h::t -> delete_where_ptn (new_field ptn h) where_rec record t
 
-(** TODO: document *)
+(** [delete_where fieldname where_rec record lst] is a delete_obj if 
+    if lst matches one of the valid where operators*)
 let rec delete_where fieldname where_rec (record : delete_obj) = function
   | [] -> {record with where = Some where_rec}
   | h::op::t when op = "=" -> 
@@ -299,7 +308,8 @@ let rec delete_where fieldname where_rec (record : delete_obj) = function
     delete_where_ptn "" (create_where_record fieldname h Like) record t
   | h::t -> delete_where (new_field fieldname h) where_rec record t
 
-(** TODO: document *)
+(** [delete_parse lst] is a delete_obj if lst follows the delete query rules.
+    Malformed otherwise. *)
 let delete_parse = function 
   | [] -> raise (Malformed "You must specify a table name")
   | h::t when t = [] -> {
@@ -320,14 +330,16 @@ let delete_parse = function
   | _ -> raise (Malformed 
                   "You can delete all values from a table or specify a WHERE condition") 
 
-(** TODO: document *)
+(** [create_fields acc fieldname lst] is the list of fields to be populated by
+    the create query *)
 let rec create_fields acc fieldname = function
   | [] -> raise (Malformed "Invalid field names")
   | h::i::t when i = ")" && t = [] -> List.rev ((new_field fieldname h)::acc)
   | h::i::t when i = "," -> create_fields ((new_field fieldname h)::acc) "" t
   | h::t -> create_fields acc (new_field fieldname h) t 
 
-(** TODO: document *)
+(** [create_table_parse lst] is a create_obj if [lst] matches the create table
+    query rules.  Malformed otherwise*)
 let create_table_parse = function 
   | [] -> raise (Malformed "Must specify fields for the new table")
   | h::i::t when i = "(" -> {
@@ -337,7 +349,8 @@ let create_table_parse = function
   | _ -> raise (Malformed "Invalid CREATE TABLE query")
 
 
-(** TODO: document *)
+(** [drop_table_parse lst] is a drop_obj if [lst] matches the drop table 
+    query rules. Malformed otherwise.*)
 let drop_table_parse = function 
   | [] -> raise (Malformed "Must specify table to delete")
   | h::[] -> {
@@ -346,7 +359,7 @@ let drop_table_parse = function
   | _ -> raise (Malformed "Invalid DROP TABLE query")
 
 
-(** TODO: document *)
+(** [help_parse lst] is a help_obj if [lst] follows the help query rules *)
 let help_parse = function 
   | [] -> {
       s1 = "";
@@ -362,6 +375,10 @@ let help_parse = function
     }
   | _ -> raise (Malformed "please specify a command from the approved list")
 
+(* [parse str] is the parsing of [str].  [str] is split into a list with each 
+   word, ',', '(', and ')' as a seperate element.  The list is then parsed 
+   according to the type of command it is identified as.  Illegal queries
+   result in a <Malformed message>.*)
 let parse str =
   match str 
         |> Str.global_replace (Str.regexp "[ ]+") " " 
