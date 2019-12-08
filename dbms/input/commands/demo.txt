@@ -1,0 +1,19 @@
+SELECT * FROM students
+CREATE TABLE stooges (name, netid)
+INSERT INTO stooges VALUES (Robert Morgowicz, rjm448)
+INSERT INTO stooges (name, netid) VALUES (Daniel Stabile, dis52)
+SELECT * FROM stooges
+INSERT INTO stooges (name) VALUES (Vivian Li)
+SELECT * FROM stooges
+SELECT * FROM students ORDER BY netid
+SELECT * FROM students WHERE name LIKE %i% ORDER BY netid
+
+DELETE FROM stooges WHERE netid != rjm448
+SELECT * FROM stooges
+SELECT * FROM students
+TRUNCATE TABLE stooges
+SELECT * FROM stooges
+INSERT INTO stooges (netid) VALUES (dis52)
+SELECT * FROM stooges
+DROP TABE stooges
+
