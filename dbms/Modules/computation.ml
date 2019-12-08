@@ -1,6 +1,7 @@
 open Query
 open Datardwt
 
+(* PRINT DEBUG HELPERS *)
 let ps s = 
   print_newline (); print_string s
 
@@ -67,14 +68,6 @@ let select_fields_join table1 table2 schema fields =
   else check_fields_join table1 table2 (fst schema) (snd schema) [] [] fields
 
 (** TODO: document *)
-(* let rec print_fields schema bfields acc = 
-   match schema, bfields with 
-   | [], [] -> List.rev acc
-   | h::t, h'::t' -> 
-    if h' then print_fields t t' (h::acc) 
-    else print_fields t t' acc
-   | _ -> failwith "inequal num of fields" *)
-
 let rec table_schema db_schema tablename = 
   match db_schema with 
   | [] -> 
@@ -92,6 +85,7 @@ let rec order_fields schema fields =
   let i = ref (-1) in
   List.filter(fun x -> i := !i + 1; List.nth fields !i) schema
 
+(** TODO: document *)
 (** [order_fields_join schema fields] is... *)
 let order_fields_join schema fields = 
   let bfields1, bfields2 = 
@@ -210,41 +204,46 @@ let where tablename (qry_where : Query.where_obj option) schema fields fc =
   | None -> filter_table fc schema fields None [] 
   | Some w -> like_equal fc schema fields w
 
+(** TODO: document *)
 (** [get_cond field schema row] is... *)
 let get_cond field schema row = 
   index (snd (get_field field)) schema |> List.nth row
 
+(** TODO: document *)
 (** [filter_row2 schema fields row] is... *)
-let filter_row2 (qry: select_obj) table schema fields row =
+let join_filter_row (qry: select_obj) table schema fields row =
   let bool_fields = filter_fields schema fields [] in
   filter_row_join table schema bool_fields qry.where row
 
-(** [filter_table2 qry_join cond field_index fc1] is...  *)
-let rec filter_table2 qry (qry_join: join_obj) cond field_index schema2 fields fc1 = 
+(** TODO: document *)
+(** [filter_table2 qry_join cond f_index fc1] is...  *)
+let rec ij_filter_table qry (qry_join: join_obj) cond ind schema2 fields fc1 = 
   try 
     let row = read_next_line fc1 in 
-    if List.nth row field_index = cond 
-    then filter_row2 qry qry_join.table schema2 (snd fields) row
-    else filter_table2 qry qry_join cond field_index schema2 fields fc1
+    if List.nth row ind = cond 
+    then join_filter_row qry qry_join.table schema2 (snd fields) row
+    else ij_filter_table qry qry_join cond ind schema2 fields fc1
   with 
   | exn -> Stdlib.close_in fc1; None
 
+(** TODO: document *)
 (** [join_row qry qry_join schema schema2 fields row] is...  *)
-let join_row qry (qry_join: join_obj) schema fields row : string list option =
+let ij_row qry (qry_join: join_obj) schema fields row : string list option =
   let fc1 = get_in_chan qry_join.table in 
   let cond = get_cond (fst qry_join.on) (fst schema) row in 
-  let field_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
-  match filter_table2 qry qry_join cond field_ind (snd schema) fields fc1 with 
+  let f_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
+  match ij_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
   | None -> None
   | Some r' -> begin 
-    match filter_row2 qry qry.table (fst schema) (fst fields) row with 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
     | None -> None
     | Some r -> Some (r@r')
   end 
 
+(** TODO: document *)
 (** [inner_join qry qry_join schema1 schema2 fields fc acc] is... *)
 let rec inner_join qry qry_join schema fields fc acc = 
-  let row = try read_next_line fc |> join_row qry qry_join schema fields 
+  let row = try read_next_line fc |> ij_row qry qry_join schema fields 
   with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
@@ -252,12 +251,55 @@ let rec inner_join qry qry_join schema fields fc acc =
   | Some e when e = [] -> List.rev acc 
   | Some r -> inner_join qry qry_join schema fields fc (r::acc)
 
+(* if there's a where, need to not populate it with null *)
+let rec lj_filter_table qry (qry_join: join_obj) cond ind schema2 fields fc1 = 
+  try 
+    let row = read_next_line fc1 in 
+    if List.nth row ind = cond 
+    then join_filter_row qry qry_join.table schema2 (snd fields) row
+    else lj_filter_table qry qry_join cond ind schema2 fields fc1
+  with 
+  | exn -> Stdlib.close_in fc1; Some []
+
+let rec populate_null acc = function 
+  | [] -> acc 
+  | h::t -> populate_null ("null"::acc) t
+
+(* left join half working but basically populating the rest of the fields as null *)
+let lj_row qry (qry_join: join_obj) schema fields row : string list option =
+  let fc1 = get_in_chan qry_join.table in 
+  let cond = get_cond (fst qry_join.on) (fst schema) row in 
+  let f_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
+  match lj_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
+  | None -> None (* need to differentiate between a none from where and a none from null *)
+  | Some r when r = [] -> begin 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+    | None -> None 
+    | Some r -> 
+      Some (r@(snd fields |> populate_null []))
+  end 
+  | Some r' -> begin 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+    | None -> None
+    | Some r -> Some (r@r')
+  end 
+
+let rec left_join qry qry_join schema fields fc acc = 
+  let row = try read_next_line fc |> lj_row qry qry_join schema fields 
+  with 
+    | exn -> Stdlib.close_in fc; Some []
+  in match row with 
+  | None -> left_join qry qry_join schema fields fc acc
+  | Some e when e = [] -> List.rev acc 
+  | Some r -> left_join qry qry_join schema fields fc (r::acc)
+
+(** TODO: document *)
 (** [join qry qry_join schema1 schema2 fields fc] is... 
     Raises [Malformed] if the query contains an invalid type of join. *)
 let join qry (qry_join: Query.join_obj) schema fields fc = 
   match qry_join.join with 
   | Inner ->  inner_join qry qry_join schema fields fc []
-  | Left -> failwith "left" (* return all rows from left table and have null columns if something doesn't exist in right table *)
+  | Left -> left_join qry qry_join schema fields fc []
   | Right -> failwith "right" (* opposite of left *)
   | Outer -> failwith "outer" (* returns results from both *)
   | None -> raise (Malformed "Must provide a type of join")
@@ -296,7 +338,7 @@ let insert (qry: insert_obj) =
   let schema = table_schema (schema_from_txt ()) qry.table in 
   match qry.fields with 
   | None -> if List.length qry.values <> List.length schema 
-    then raise (Malformed "Values given do not match Schema")
+    then raise (Malformed "Values given do not match schema")
     else begin
       (* you have all cols so insert them all*)
       let outc = get_out_chan qry.table in
@@ -313,6 +355,7 @@ let insert (qry: insert_obj) =
 
 (* DELETE *)
 
+(** TODO: document *)
 let rec delete_helper inc outc schema ind op ptn =
   try let line = read_next_line inc in
     if op (List.nth line ind) ptn
@@ -321,6 +364,7 @@ let rec delete_helper inc outc schema ind op ptn =
     delete_helper inc outc schema ind op ptn
   with | End_of_file -> ()
 
+(** TODO: document *)
 let rec delete_helper_like inc outc schema ind ptn =
   try let line = read_next_line inc in
     if Str.string_match (Str.regexp (parse_pattern ptn)) (List.nth line ind) 0
@@ -377,6 +421,7 @@ let rec create_table (qry: Query.create_obj) =
   let outc_tables = get_out_chan qry.table in 
   close_out outc_tables
 
+(** TODO: document *)
 let rec drop_helper inc outc name = 
   try let found_name, line = read_next_schema_line inc in
     if name = found_name

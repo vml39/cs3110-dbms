@@ -317,6 +317,7 @@ let students_ordered = [
 let buildings_join = [
   ["6"; "Balch Hall"; "North"; "false"; "Balch Hall"; "North"; "6"];
   ["7"; "Bethe Hall"; "West"; "true"; "Bethe Hall"; "West"; "7"];
+  ["8"; "Becker Hall"; "West"; "false"; "Becker Hall"; "West"; "8"];
 ]
 
 let select_tests = [

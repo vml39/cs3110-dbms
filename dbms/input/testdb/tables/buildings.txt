@@ -5,3 +5,4 @@
 (5, Uris Hall, Central, false)
 (6, Balch Hall, North, false)
 (7, Bethe Hall, West, true)
+(8, Becker Hall, West, false)

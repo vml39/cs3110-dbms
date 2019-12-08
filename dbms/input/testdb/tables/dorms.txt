@@ -1,2 +1,3 @@
 (Balch Hall, North, 6)
 (Bethe Hall, West, 7)
+(Becker Hall, West, 8)
