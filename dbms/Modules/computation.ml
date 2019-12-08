@@ -242,8 +242,8 @@ let rec rj_filter_table qry (qry_join: join_obj) cond ind schema1 fields fc1 =
     (* need to return the left table with vals = null *)
     then join_filter_row qry qry.table schema1 (fst fields) row
     else 
-    (* need to keep the row?? *)
-    rj_filter_table qry qry_join cond ind schema1 fields fc1
+      (* need to keep the row?? *)
+      rj_filter_table qry qry_join cond ind schema1 fields fc1
   with 
   | exn -> 
     Stdlib.close_in fc1; 
@@ -258,21 +258,21 @@ let rj_row (qry: select_obj) (qry_join: join_obj) schema fields row : string lis
   match rj_filter_table qry qry_join cond f_ind (fst schema) fields fc1 with 
   | None -> None 
   | Some r when r = [] -> begin 
-    match join_filter_row qry qry_join.table (snd schema) (snd fields) row with 
-    | None -> None 
-    | Some r' -> 
-      Some ((fst fields |> populate_null [])@r')
-  end 
+      match join_filter_row qry qry_join.table (snd schema) (snd fields) row with 
+      | None -> None 
+      | Some r' -> 
+        Some ((fst fields |> populate_null [])@r')
+    end 
   | Some r -> begin 
-    match join_filter_row qry qry_join.table (snd schema) (snd fields) row with 
-    | None -> None
-    | Some r' -> Some (r@r')
-  end 
+      match join_filter_row qry qry_join.table (snd schema) (snd fields) row with 
+      | None -> None
+      | Some r' -> Some (r@r')
+    end 
 
 (** TODO: document *)
 let rec right_join qry qry_join schema fields fc acc = 
   let row = try read_next_line fc |> rj_row qry qry_join schema fields 
-  with 
+    with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> right_join qry qry_join schema fields fc acc
@@ -302,11 +302,11 @@ let lj_row qry (qry_join: join_obj) schema fields row : string list option =
   match lj_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
   | None -> None 
   | Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None 
-    | Some r -> 
-      Some (r@(snd fields |> populate_null []))
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None 
+      | Some r -> 
+        Some (r@(snd fields |> populate_null []))
+    end 
   | Some r' -> begin 
       match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None
@@ -346,16 +346,16 @@ let ij_row qry (qry_join: join_obj) schema fields row : string list option =
   match ij_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
   | None -> None
   | Some r' -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None
-    | Some r -> Some (r@r')
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None
+      | Some r -> Some (r@r')
+    end 
 
 (** TODO: document *)
 (** [inner_join qry qry_join schema fields fc acc] is... *)
 let rec inner_join qry qry_join schema fields fc acc = 
   let row = try read_next_line fc |> ij_row qry qry_join schema fields 
-  with 
+    with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> inner_join qry qry_join schema fields fc acc
@@ -398,7 +398,8 @@ let select (qry : Query.select_obj) =
 
 (* INSERT *)
 
-(** TODO: document *)
+(** [vals_update sch cols vals acc] is the list of values to insert into a
+    table with empty strings inserted for uninputted columns*)
 let rec vals_update sch cols vals acc =
   match sch, cols with
   | [], [] -> List.rev acc
@@ -429,7 +430,9 @@ let insert (qry: insert_obj) =
 
 (* DELETE *)
 
-(** TODO: document *)
+(** [delete_helper inc outc schema ind op ptn] iterates through the file in inc,
+    evaluating the where condition and rewriting only those lines which do
+    not satisfy the where condition*)
 let rec delete_helper inc outc schema ind op ptn =
   try let line = read_next_line inc in
     if op (List.nth line ind) ptn
@@ -438,7 +441,9 @@ let rec delete_helper inc outc schema ind op ptn =
     delete_helper inc outc schema ind op ptn
   with | End_of_file -> ()
 
-(** TODO: document *)
+(** [delete_helper_like inc outc schema ind ptn] iterates through the file in 
+    inc, evaluating the like condition and rewriting only those lines which do
+    not satisfy the like condition*)
 let rec delete_helper_like inc outc schema ind ptn =
   try let line = read_next_line inc in
     if Str.string_match (Str.regexp (parse_pattern ptn)) (List.nth line ind) 0
@@ -495,7 +500,8 @@ let rec create_table (qry: Query.create_obj) =
   let outc_tables = get_out_chan qry.table in 
   close_out outc_tables
 
-(** TODO: document *)
+(** [drop_helper inc outc name] removes the line contaning the columns for
+    the table with name [name]*)
 let rec drop_helper inc outc name = 
   try let found_name, line = read_next_schema_line inc in
     if name = found_name
@@ -516,15 +522,18 @@ let drop_table qry =
   Sys.rename (get_schema_temp_path ()) (get_schema_path ());
   Sys.remove (get_path qry.table)
 
+(** general help message for help command*)
 let general_msg = 
   "'HELP' Command: \n"
   ^ "To get help for a command, type HELP and the command name \n"
   ^ "The list of valid commands is: SELECT, INSERT INTO, DELETE, TRUNCATE"
   ^ " TABLE, CREATE TABLE, DROP TABLE, CHANGE DATABASE, READ, HELP, and QUIT\n"
 
+(** help message for select*)
 let select_msg = 
   "'SELECT' QUERY: \n"
 
+(** help message for insert*)
 let insert_msg = 
   "'INSERT INTO' QUERY: \n"
   ^ "'INSERT INTO' inserts a new row into a table inserting data into the"
@@ -536,6 +545,7 @@ let insert_msg =
   ^ "*For this case, length of (v1, v2,... vn) must match the number of"
   ^ " columns in the table.\n"
 
+(** help message for delete*)
 let delete_msg = 
   "'DELETE' QUERY: \n"
   ^ "'DELETE' deletes rows from a table, optionally meeting a given condition\n"
@@ -544,13 +554,14 @@ let delete_msg =
   ^ "REQUIRES: [tablename] is the name of an existing table and"
   ^ "b is a conditional following WHERE guidelines.\n"
 
+(** help message for truncate*)
 let truncate_msg = 
   "'TRUNCATE TABLE' QUERY: \n"
   ^ "'TRUNCATE TABLE' removes all data from a specified table.\n"
   ^ "USAGE: TRUNCATE TABLE [tablename]\n"
   ^ "REQUIRES: [tablename] is the name of an existing table.\n"
 
-
+(** help message for create*)
 let create_msg = 
   "'CREATE TABLE' QUERY: \n"
   ^ "'CREATE TABLE' creates a new, empty table with the specified name.\n"
@@ -559,12 +570,14 @@ let create_msg =
   ^ "parentheses, or colons).\n"
   ^ "oh? Create!\n"
 
+(** help message for drop*)
 let drop_msg = 
   "'DROP TABLE' QUERY: \n"
   ^ "'DROP TABLE' removes a specified table from the database.\n"
   ^ "USAGE: DROP TABLE [tablename]\n"
   ^ "REQUIRES: [tablename] is the name of an existing table.\n"
 
+(** help message for change*)
 let change_msg = 
   "'CHANGE DATABASE' Command: \n"
   ^ "'CHANGE DATABASE' changes the working database.\n"
@@ -572,6 +585,7 @@ let change_msg =
   ^ "REQUIRES: [databasename] is the name of an existing database visible to"
   ^ " the system.\n"
 
+(** help message for read*)
 let read_msg = 
   "'READ' Command: \n"
   ^ "'READ' reads queries from an input file and sends their results to an"
@@ -580,6 +594,7 @@ let read_msg =
   ^ "REQUIRES: [filename] is the name of an existing file in the 'input' folder"
   ^ " containing properly formatted queries.\n"
 
+(** help message for quit*)
 let quit_msg = 
   "'QUIT' Command: \n"
   ^ "'QUIT' exits the dbms\n"
@@ -587,9 +602,11 @@ let quit_msg =
   ^ "       2) quit\n"
   ^ "       2) q\n"
 
+(** help message for help*)
 let help_msg = 
   "'HELP' Command: \n"
 
+(** help message for where*)
 let where_msg = 
   "'WHERE' Keyword: \n"
   ^ "'WHERE' specifies a condition under which a query performs its operation. "
@@ -599,12 +616,18 @@ let where_msg =
   ^ "USAGE: WHERE [columnname] [op] [value]"
   ^ "SUPPORTED OPERATORS: =, <, >, <=, >=, !=, LIKE\n"
 
+(** help message for join*)
 let join_msg = 
   "'JOIN' Keyword: \n"
 
+(** help message for order by*)
 let order_msg = 
   "'ORDER BY' Keyword: \n"
+  ^ "'ORDER BY' allows you to sort the output of the SELECT query by one of "
+  ^ "USAGE: ORDER BY [columnname]\n"
+  ^ "REQUIRES: [columnanme] is the name of a column in the queried table"
 
+(** help message for like*)
 let like_msg = 
   "'LIKE' Operator: \n"
   ^ "The LIKE operator is used in a WHERE clause to search for a specified "
