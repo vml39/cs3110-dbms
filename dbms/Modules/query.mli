@@ -14,7 +14,7 @@ type operator = | EQ | GT | LT | GEQ | LEQ | Like | NEQ | None
 
 (** TODO: document *)
 type join_type = 
-  | Inner | Left | Right | Outer | None
+  | Inner | Left | Right | None
 
 (** TODO: document *)
 type where_obj = {
