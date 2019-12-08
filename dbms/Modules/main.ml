@@ -145,7 +145,8 @@ let write_to_file fields rows num query_from_file filename query oc_option=
         "\n" ^ "Query written to " ^ ".." ^ Filename.dir_sep ^ "output" 
         ^ Filename.dir_sep ^ "query" ^ (string_of_int !num) ^ ".txt\n\n"));()
 
-
+(* [compute_commands_from_file command query filename oc] is the computation of
+   [command] and writing the result to [oc]*)
 let compute_commands_from_file command query filename oc =
   begin 
     try
@@ -167,6 +168,8 @@ let compute_commands_from_file command query filename oc =
     | Sys_error s -> sys_exception s
   end 
 
+(** [rd_wt_queries_from_file inc oc filename] is the reading and writing of the
+    computed queries in [filename]*)
 let rec rd_wt_queries_from_file inc oc filename =
   try
     let query = input_line inc in
@@ -185,7 +188,8 @@ let rec rd_wt_queries_from_file inc oc filename =
     close_in inc
 
 
-(* TODO: Document *)
+(* [queries_from_file filename] is the computation of the queries in [filename] 
+*)
 let queries_from_file filename = 
   let filepath = (".." ^ Filename.dir_sep ^ "input" ^ Filename.dir_sep 
                   ^ "commands" ^ Filename.dir_sep ^ filename ^ ".txt") in
@@ -203,7 +207,8 @@ let queries_from_file filename =
    an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
 let table_height rows = 4 + List.length rows 
 
-(* TODO: Comment *)
+(* [change_db] is the switch from the current database to the new database [db].
+   If the database doesn't exist, an error message is displayed*)
 let change_db db = 
   if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
                             "input" ^ Filename.dir_sep ^ db)))
@@ -214,7 +219,9 @@ let change_db db =
         "\n" ^ db ^ " selected. Please enter your query\n\n"))
   end
 
-(* TODO: Comment *)
+(* [print_or_write_select obj num] is the display of select commands in either
+   terminal if the terminal screen is big enough to display the entire table or 
+   to a file otherwise*)
 let print_or_write_select obj num = 
   begin
     let terminal_w, terminal_h = ANSITerminal.size () in 
@@ -227,7 +234,8 @@ let print_or_write_select obj num =
       write_to_file fields rows num false "" "" None
   end
 
-(* TODO: Comment *)
+(* [compute_command_from_terminal command num] is the computation of commands.
+   READ, CHANGE DATABASE, and HELP commands are allowed*)
 let compute_command_from_terminal command num = 
   try
     match command with
