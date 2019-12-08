@@ -378,8 +378,8 @@ let select_tests = [
     "Must provide a pattern to match with after WHERE operator";
   malformed_select_test "SELECT asdf FROM students WHERE asdf LIKE hello" 
     "Field(s) selected not in schema";
-  (* malformed_select_test "SELECT class FROM students WHERE asdf LIKE asdf" 
-     "WHERE field not in schema"; *)
+  malformed_select_test "SELECT class FROM students WHERE asdf LIKE asdf" 
+    "WHERE field not in schema";
   (* Order by malformed *)
   malformed_select_test "SELECT asdf FROM students order" 
     "The table name can only be followed by 'WHERE' or 'ORDER BY'";
@@ -391,8 +391,8 @@ let select_tests = [
     "Must provide a field to order by";
   malformed_select_test "SELECT asdf FROM students ORDER BY asdf" 
     "Field(s) selected not in schema";
-  (* malformed_select_test "SELECT class FROM students ORDER BY classsssss" 
-     "ORDER BY field is not in schema"; *)
+  malformed_select_test "SELECT class FROM students ORDER BY classsssss" 
+    "ORDER BY field is not in schema";
   (* where & order by malformed *)
   malformed_select_test "SELECT asdf FROM students where name = i ORDER BY" 
     "The table name can only be followed by 'WHERE' or 'ORDER BY'";
@@ -404,10 +404,10 @@ let select_tests = [
     "Must provide a field to order by";
   malformed_select_test "SELECT asdf FROM students WHERE x = 1 ORDER BY y" 
     "Field(s) selected not in schema";
-  (* malformed_select_test "SELECT class FROM students WHERE x = 1 ORDER BY y"
-     "WHERE field not in schema"; *)
-  (* malformed_select_test "SELECT class FROM students WHERE class = 1 ORDER BY y"
-     "ORDER BY field is not in schema"; *)
+  malformed_select_test "SELECT class FROM students WHERE x = 1 ORDER BY y"
+    "WHERE field not in schema";
+  malformed_select_test "SELECT class FROM students WHERE class = 1 ORDER BY y"
+    "ORDER BY field is not in schema";
 ]
 
 (* malformed_select_test "SELECT * FROM students WHERE name = test" 
