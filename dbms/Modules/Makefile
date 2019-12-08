@@ -5,7 +5,6 @@ MLIS=$(MODULES:=.mli)
 TEST=test.byte
 MAIN=main.byte
 OCAMLBUILD=ocamlbuild -use-ocamlfind -plugin-tag 'package(bisect_ppx-ocamlbuild)'
-RLWRAP=rlwrap
 PKGS=oUnit,str,ANSITerminal
 
 default: build
@@ -18,7 +17,7 @@ test:
 	$(OCAMLBUILD) -tag debug $(TEST) && ./$(TEST)
 
 bisect-test:
-	BISECT_COVERAGE=YES $(OCAMLBUILD) -tag 'debug' $(TEST) && ./$(TEST) -runner sequential
+	BISECT_COVERAGE=YES $(OCAMLBUILD) -tag debug $(TEST) && ./$(TEST) -runner sequential
 
 bisect: clean bisect-test
 	bisect-ppx-report -I _build -html report bisect0001.out
