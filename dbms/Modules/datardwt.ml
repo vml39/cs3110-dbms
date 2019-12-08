@@ -110,10 +110,13 @@ let get_out_chan_schema () =
 let get_in_chan_schema () = 
   open_in (get_schema_path ())
 
+(* [get_out_chan_temp_schema] is the output channel to the temp schema*)
 let get_out_chan_temp_schema () = 
   open_out_gen [Open_append; Open_creat] 0o666
     (get_schema_temp_path ())
 
+(* [read_next_line inc] is a line from the channel of table fc in the database
+   formatted as a string list*)
 let read_next_line inc =
   let s = input_line inc in
   let reg = Str.regexp "(\\|)" in
@@ -121,7 +124,8 @@ let read_next_line inc =
   (*Split on Commas and remove leading whitespace*)
   (List.map String.trim (String.split_on_char ',' s'))
 
-
+(* [read_next_schema_line inc] is a line from the schema of the current database
+   formatted as a name, field list pair*)
 let read_next_schema_line inc =
   let s = input_line inc in
   let name_and_fields  = String.split_on_char ':' s in
@@ -131,12 +135,15 @@ let read_next_schema_line inc =
   let field_list = (List.map String.trim (String.split_on_char ',' feilds)) in
   (name, field_list)
 
+(* [write_line outc lst] writes the contents of lst to outc in tuple notation*)
 let write_line outc lst = 
   let single_a = 
     "(" ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) in
   let single_b = String.sub single_a 0 (String.length single_a - 2) ^ ")\n" in
   output_string outc single_b
 
+(* [write_line_table_schema outc t lst] writes t and the contents of lst to 
+    outc in the schema format (t: lst0, lst1,...) *)
 let write_line_table_schema outc table lst = 
   let single_a = 
     table ^ ": " ^ (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) 
@@ -144,6 +151,8 @@ let write_line_table_schema outc table lst =
   let single_b = String.sub single_a 0 (String.length single_a - 2) ^ "\n" in
   output_string outc single_b
 
+(* [write_line_schema outc lst] writesthe contents of lst to 
+    outc in the schema format (lst0, lst1,...) *)
 let write_line_schema outc lst = 
   let single_a = 
     (List.fold_left (fun acc s -> acc ^ s ^ ", " ) "" lst) 
@@ -151,5 +160,4 @@ let write_line_schema outc lst =
   let single_b = String.sub single_a 0 (String.length single_a - 2) ^ "\n" in
   output_string outc single_b
 
-let delete_line fc lst = failwith "unimplemented"
 

@@ -4,12 +4,13 @@ type l = string list
 (** The abstract type representing a table *)
 type t = (string list) list
 
-(** The abstract type representa schema *)
+(** The abstract type representing a schema *)
 type s = (string * (string list)) list
 
+(** The current database name *)
 val database : string ref
 
-(* TODO: Specs *)
+(* [set_database] reads a line for a name to set the current database to *)
 val set_database : unit -> string
 
 (** [schema_from_txt] is as association list representing the schema for
