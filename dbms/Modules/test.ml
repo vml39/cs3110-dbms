@@ -16,7 +16,7 @@ let pp_list pp_elt lst =
     in loop 0 "" lst
   in "[" ^ pp_elts lst ^ "]"
 
-(** [pp_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
+(** [pp_list_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
     to pretty-print each element of [lst]. *)
 let pp_list_list pp_elt lst =
   let pp_elts lst =
@@ -29,6 +29,8 @@ let pp_list_list pp_elt lst =
     in loop 0 "" lst
   in "[" ^ pp_elts (List.flatten lst) ^ "]"
 
+(** [pp_list_list' pp_elt lst] pretty-prints [snd lst], using [pp_elt]
+    to pretty-print each element of [snd lst]. *)
 let pp_list_list' pp_elt lst =
   let lst' = snd lst in 
   let pp_elts lst' =
