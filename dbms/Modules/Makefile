@@ -19,6 +19,9 @@ test:
 bisect-test:
 	BISECT_COVERAGE=YES $(OCAMLBUILD) -tag 'debug' $(TEST) && ./$(TEST) -runner sequential
 
+bisect: clean bisect-test
+	bisect-ppx-report -I _build -html report bisect0001.out
+
 query:
 	$(OCAMLBUILD)  $(MAIN) && rlwrap ./$(MAIN)
 
