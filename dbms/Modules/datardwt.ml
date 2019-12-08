@@ -20,7 +20,7 @@ let rec parse_schema_line acc_tbl s =
     (h , (List.map String.trim (String.split_on_char ',' s))) :: acc_tbl
   | _ -> failwith "Invalid schema pattern"
 
-(*[read_file a f fc] is the list of lines from file f*)
+(*[read_schema a f fc] is the list of lines from schema f*)
 let rec read_schema acc_tbl filename file_channel =  
   try 
     let s = input_line file_channel in 
@@ -28,6 +28,7 @@ let rec read_schema acc_tbl filename file_channel =
   with
   | End_of_file -> close_in file_channel; List.rev acc_tbl
 
+(*[schema_from_text] is the full schema of the current database*)
 let schema_from_txt () = 
   let file_channel = 
     open_in (Filename.parent_dir_name ^ Filename.dir_sep ^
@@ -56,7 +57,7 @@ let rec read_file acc_tbl filename file_channel =
   with
   | End_of_file -> close_in file_channel; List.rev acc_tbl
 
-(*[table_from_txt f] is a list of string list where each string list is 
+(*[table_from_txt f] is a list of string lists where each string list is 
   a row in the table named f*)
 let table_from_txt filename = 
   (* Generate path to file and open it*)
@@ -69,33 +70,43 @@ let table_from_txt filename =
   (*read it, line by line*)
   read_file empty filename file_channel 
 
+(* [get_path f] is the string  representation of the file path to f*)
 let get_path filename =
   (Filename.parent_dir_name ^ Filename.dir_sep ^
    "input" ^ Filename.dir_sep ^ 
    !database ^ Filename.dir_sep ^ 
    "tables" ^ Filename.dir_sep ^ filename ^ ".txt") 
 
+(* [get_in_chan f] is the input channel to the file f*)
 let get_in_chan filename =
   open_in (get_path filename) 
 
+(* [get_out_chan f] is the output channel to the file f, if f does not exist,
+   it is created*)
 let get_out_chan filename =
   open_out_gen [Open_append; Open_creat] 0o666
     (get_path filename) 
 
+(* [get_out_chan f] is the output channel to the file f, if f does not exist,
+   it is created*)
 let get_schema_path () =  
   Filename.parent_dir_name ^ Filename.dir_sep ^
   "input" ^ Filename.dir_sep ^ 
   !database ^ Filename.dir_sep ^ "schema.txt"
 
+(* [get_schema_temp_path] is the string representation of the path to the temp
+   schema*)
 let get_schema_temp_path () =  
   Filename.parent_dir_name ^ Filename.dir_sep ^
   "input" ^ Filename.dir_sep ^ 
   !database ^ Filename.dir_sep ^ "schema.tmp"
 
+(* [get_out_chan_schema] is the output channel to the schema*)
 let get_out_chan_schema () = 
   open_out_gen [Open_append] 0o666
     (get_schema_path ())
 
+(* [get_in_chan_schema] is the input channel to the schema*)
 let get_in_chan_schema () = 
   open_in (get_schema_path ())
 

@@ -127,18 +127,18 @@ let filter_pattern fields row ind pattern i operator =
 (** TODO: document *)
 let match_pattern fields row ind where i = 
   let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
-    match where.op with
-    | Like ->
-      if Str.string_match (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
-      then Some (filter_list fields row i)
-      else None
-    | EQ -> partial_filter_pattern (=)
-    | NEQ -> partial_filter_pattern (<>)
-    | GT -> partial_filter_pattern (>)
-    | LT -> partial_filter_pattern (<)
-    | GEQ -> partial_filter_pattern (>=)
-    | LEQ -> partial_filter_pattern (<=)
-    | s -> failwith "Expected a valid operator"
+  match where.op with
+  | Like ->
+    if Str.string_match (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
+    then Some (filter_list fields row i)
+    else None
+  | EQ -> partial_filter_pattern (=)
+  | NEQ -> partial_filter_pattern (<>)
+  | GT -> partial_filter_pattern (>)
+  | LT -> partial_filter_pattern (<)
+  | GEQ -> partial_filter_pattern (>=)
+  | LEQ -> partial_filter_pattern (<=)
+  | s -> failwith "Expected a valid operator"
 
 (** [filter_row schema fields where pattern row] is [Some row] with only the 
     fields specified in [fields]. Returns the row if [where] is [false] or if 
@@ -235,16 +235,16 @@ let ij_row qry (qry_join: join_obj) schema fields row : string list option =
   match ij_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
   | None -> None
   | Some r' -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None
-    | Some r -> Some (r@r')
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None
+      | Some r -> Some (r@r')
+    end 
 
 (** TODO: document *)
 (** [inner_join qry qry_join schema1 schema2 fields fc acc] is... *)
 let rec inner_join qry qry_join schema fields fc acc = 
   let row = try read_next_line fc |> ij_row qry qry_join schema fields 
-  with 
+    with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> inner_join qry qry_join schema fields fc acc
@@ -273,20 +273,20 @@ let lj_row qry (qry_join: join_obj) schema fields row : string list option =
   match lj_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
   | None -> None (* need to differentiate between a none from where and a none from null *)
   | Some r when r = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None 
-    | Some r -> 
-      Some (r@(snd fields |> populate_null []))
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None 
+      | Some r -> 
+        Some (r@(snd fields |> populate_null []))
+    end 
   | Some r' -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None
-    | Some r -> Some (r@r')
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None
+      | Some r -> Some (r@r')
+    end 
 
 let rec left_join qry qry_join schema fields fc acc = 
   let row = try read_next_line fc |> lj_row qry qry_join schema fields 
-  with 
+    with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> left_join qry qry_join schema fields fc acc
@@ -454,13 +454,13 @@ let select_msg =
 let insert_msg = 
   "'INSERT INTO' QUERY: \n"
   ^ "'INSERT INTO' inserts a new row into a table inserting data into the"
-  ^ " specified coulmns\n"
+  ^ " specified coulmns.\n"
   ^ "USAGE: 1) INSERT INTO [tablename] (f1, f2,... fn) VALUES (v1, v2,... vn)\n"
   ^ "       2) INSERT INTO [tablename] VALUES (v1, v2,... vn)*\n"
   ^ "REQUIRES: [tablename] is the name of an existing table and" 
-  ^ "(f1, f2,... fn) are colmum names in [tablename]\n"
+  ^ "(f1, f2,... fn) are colmum names in [tablename].\n"
   ^ "*For this case, length of (v1, v2,... vn) must match the number of"
-  ^ " columns\n"
+  ^ " columns in the table.\n"
 
 let delete_msg = 
   "'DELETE' QUERY: \n"
@@ -468,35 +468,35 @@ let delete_msg =
   ^ "USAGE: 1) DELETE FROM [tablename]\n"
   ^ "       2) DELETE FROM [tablename] WHERE [b]\n"
   ^ "REQUIRES: [tablename] is the name of an existing table and"
-  ^ "b is a conditional following WHERE guidelines\n"
+  ^ "b is a conditional following WHERE guidelines.\n"
 
 let truncate_msg = 
   "'TRUNCATE TABLE' QUERY: \n"
-  ^ "'TRUNCATE TABLE' removes all data from a specified table\n"
+  ^ "'TRUNCATE TABLE' removes all data from a specified table.\n"
   ^ "USAGE: TRUNCATE TABLE [tablename]\n"
-  ^ "REQUIRES: [tablename] is the name of an existing table\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table.\n"
 
 
 let create_msg = 
   "'CREATE TABLE' QUERY: \n"
-  ^ "'CREATE TABLE' creates a new, empty table with the specified name\n"
+  ^ "'CREATE TABLE' creates a new, empty table with the specified name.\n"
   ^ "USAGE: CREATE TABLE [tablename]\n"
-  ^ "REQUIRES: [tablename] is a valid table name (no whitespace, commas, \n"
-  ^ "parentheses, colons, or other syntactiaclly improtant characters)"
+  ^ "REQUIRES: [tablename] is a valid table name (no whitespace, commas, "
+  ^ "parentheses, or colons).\n"
   ^ "oh? Create!\n"
 
 let drop_msg = 
   "'DROP TABLE' QUERY: \n"
-  ^ "'DROP TABLE' removes a specified table from the database\n"
+  ^ "'DROP TABLE' removes a specified table from the database.\n"
   ^ "USAGE: DROP TABLE [tablename]\n"
-  ^ "REQUIRES: [tablename] is the name of an existing table\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table.\n"
 
 let change_msg = 
   "'CHANGE DATABASE' Command: \n"
-  ^ "'CHANGE DATABASE' changes the working database\n"
+  ^ "'CHANGE DATABASE' changes the working database.\n"
   ^ "USAGE: CHANGE DATABASE [databasename]\n"
   ^ "REQUIRES: [databasename] is the name of an existing database visible to"
-  ^ " the system\n"
+  ^ " the system.\n"
 
 let read_msg = 
   "'READ' Command: \n"
@@ -504,24 +504,41 @@ let read_msg =
   ^ " output file\n"
   ^ "USAGE: READ FROM [filename]\n"
   ^ "REQUIRES: [filename] is the name of an existing file in the 'input' folder"
-  ^ "containing properly formatted queries\n"
+  ^ " containing properly formatted queries.\n"
 
 let quit_msg = 
   "'QUIT' Command: \n"
   ^ "'QUIT' exits the dbms\n"
-  ^ "USAGE: QUIT\n"
+  ^ "USAGE: 1) QUIT\n"
+  ^ "       2) quit\n"
+  ^ "       2) q\n"
 
 let help_msg = 
   "'HELP' Command: \n"
 
 let where_msg = 
   "'WHERE' Keyword: \n"
+  ^ "'WHERE' specifies a condition under which a query performs its operation. "
+  ^ " This dbms supports simple boolean operators and LIKE only.  AND and OR "
+  ^ "are not supported.  Simple comparisons are done using Ocaml's Stlib "
+  ^ "compare functions on strings.\n"  
+  ^ "USAGE: WHERE [columnname] [op] [value]"
+  ^ "SUPPORTED OPERATORS: =, <, >, <=, >=, !=, LIKE\n"
 
 let join_msg = 
   "'JOIN' Keyword: \n"
 
 let order_msg = 
   "'ORDER BY' Keyword: \n"
+
+let like_msg = 
+  "'LIKE' Operator: \n"
+  ^ "The LIKE operator is used in a WHERE clause to search for a specified "
+  ^ "pattern in a column.\n"
+  ^ "There are two wildcards often used in conjunction with the LIKE operator\n"
+  ^ " 1) % - The percent sign represents zero, one, or multiple characters\n"
+  ^ " 2) _ - The underscore represents a single character\n"
+  ^ "USAGE: WHERE [columnname] LIKE [pattern]"
 
 let help_with qry =
   match qry.s1, qry.s2 with
@@ -539,4 +556,5 @@ let help_with qry =
   | "WHERE", _ -> where_msg
   | "JOIN", _ -> join_msg
   | "ORDER", "BY" -> order_msg
+  | "LIKE", _ -> like_msg
   | s1, s2 -> "Sorry, I can't help you with '" ^ s1 ^ " " ^ s2 ^ "'\n"
