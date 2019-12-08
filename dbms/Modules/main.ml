@@ -80,6 +80,7 @@ let rec pp_table (fields, rows) =
   let widths = calc_widths fields rows in (* Calc width of each column *)
   let ind = ref(0) in
   let widths_lst = (Array.to_list widths) in
+  print_endline ("Number of records: " ^ (string_of_int (List.length rows)));
   pp_divider "╔═" "╦═" "╗" widths_lst;
   pp_row ind widths fields ; (* Print field names *)
   pp_divider "╠═" "╬═" "╣" widths_lst;
