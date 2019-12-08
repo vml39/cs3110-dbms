@@ -33,7 +33,7 @@ let rec check_fields schema = function
   | [] -> () 
   | h::t -> 
     if List.mem h schema then check_fields schema t 
-    else raise (Malformed "Field selected not in schema")
+    else raise (Malformed "Field(s) selected not in schema")
 
 (** [check_fields_join table1 table2 schema1 schema2 acc1 acc2 fields] is the 
     list of field names from [table1] and [table2] in the form 
