@@ -264,7 +264,7 @@ let rec inner_join qry qry_join schema fields fc acc =
   | Some e when e = [] -> List.rev acc 
   | Some r -> inner_join qry qry_join schema fields fc (r::acc)
 
-(* if there's a where, need to not populate it with null *)
+(** TODO: document *)
 let rec lj_filter_table qry (qry_join: join_obj) cond ind schema2 fields fc1 = 
   try 
     let row = read_next_line fc1 in 
@@ -272,19 +272,24 @@ let rec lj_filter_table qry (qry_join: join_obj) cond ind schema2 fields fc1 =
     then join_filter_row qry qry_join.table schema2 (snd fields) row
     else lj_filter_table qry qry_join cond ind schema2 fields fc1
   with 
-  | exn -> Stdlib.close_in fc1; Some []
+  | exn -> 
+    Stdlib.close_in fc1; 
+    if qry.where = None then Some []
+    else None 
 
+(** TODO: document *)
 let rec populate_null acc = function 
   | [] -> acc 
   | h::t -> populate_null ("null"::acc) t
 
-(* left join half working but basically populating the rest of the fields as null *)
+(** TODO: document *)
+
 let lj_row qry (qry_join: join_obj) schema fields row : string list option =
   let fc1 = get_in_chan qry_join.table in 
   let cond = get_cond (fst qry_join.on) (fst schema) row in 
   let f_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
   match lj_filter_table qry qry_join cond f_ind (snd schema) fields fc1 with 
-  | None -> None (* need to differentiate between a none from where and a none from null *)
+  | None -> None 
   | Some r when r = [] -> begin 
     match join_filter_row qry qry.table (fst schema) (fst fields) row with 
     | None -> None 
@@ -297,6 +302,7 @@ let lj_row qry (qry_join: join_obj) schema fields row : string list option =
     | Some r -> Some (r@r')
   end 
 
+(** TODO: document *)
 let rec left_join qry qry_join schema fields fc acc = 
   let row = try read_next_line fc |> lj_row qry qry_join schema fields 
   with 
