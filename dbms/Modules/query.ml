@@ -67,6 +67,12 @@ type drop_obj = {
   table: tablename;
 }
 
+type help_obj = {
+  s1: string;
+  s2: string;
+}
+
+
 type t = 
   | Select of select_obj
   (* SELECT * FROM table *)
@@ -77,6 +83,8 @@ type t =
   | Create of create_obj
   | Drop of drop_obj
   | Read of string
+  | Changedb of string
+  | Help of help_obj
   | Quit
 
 (** TODO: document *)
@@ -102,15 +110,16 @@ let create_where_record fieldname h op =
 
 (** TODO: document *)
 let rec select_where_ptn ptn where_rec (record: select_obj) = function 
-  | [] -> raise (Malformed "Must provide a pattern to match with after 'WHERE'")
+  | [] -> 
+    raise (Malformed "Must provide a pattern to match with after WHERE operator")
   | h::i::j::t when i = "ORDER" && j = "BY" -> 
     order_by "" {
       record with 
       where = Some {where_rec with ptn = new_field ptn h}
     } t
   | h::t when t = [] -> {
-    record with 
-    where = Some {where_rec with ptn = new_field ptn h}
+      record with 
+      where = Some {where_rec with ptn = new_field ptn h}
     }
   | h::t -> select_where_ptn (new_field ptn h) where_rec record t
 
@@ -222,7 +231,7 @@ let rec select_fields acc fieldname (record : select_obj) q =
 (** TODO: document *)
 let select_parse = function
   | [] -> raise 
-     (Malformed "You must include the field names and tables to be selected")
+            (Malformed "You must include the field names and tables to be selected")
   | lst -> 
     let init_rec = {
       table = ""; 
@@ -338,6 +347,23 @@ let drop_table_parse = function
     }
   | _ -> raise (Malformed "Invalid DROP TABLE query")
 
+
+(** TODO: document *)
+let help_parse = function 
+  | [] -> {
+      s1 = "";
+      s2 = "";
+    }
+  | s1::s2::[] -> {
+      s1 = String.uppercase_ascii s1;
+      s2 = String.uppercase_ascii s2;
+    }
+  | h::[] -> {
+      s1 = String.uppercase_ascii h;
+      s2 = "";
+    }
+  | _ -> raise (Malformed "please specify a command from the approved list")
+
 let parse str =
   match str 
         |> Str.global_replace (Str.regexp "[ ]+") " " 
@@ -354,6 +380,9 @@ let parse str =
   | h::i::t when h = "CREATE" && i = "TABLE" -> Create (create_table_parse t)
   | h::i::t when h = "DROP" && i = "TABLE" -> Drop (drop_table_parse t)
   | h::i::t::[] when h = "READ" && i = "FROM" -> Read t
+  | h::i::t::[] when h = "CHANGE" && i = "DATABASE" -> Changedb t
+  | h::t when h = "HELP" -> Help (help_parse t)
+  | h::t when h = "help" -> raise (Malformed "Did you mean 'HELP'?")
   | h::t when h = "QUIT" || h = "quit" || h = "q" -> 
     if t <> [] 
     then raise (Malformed "If you would like to quit, please type QUIT") 

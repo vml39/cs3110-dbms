@@ -36,22 +36,22 @@ let rec check_fields schema = function
   | [] -> () 
   | h::t -> 
     if List.mem h schema then check_fields schema t 
-    else raise (Malformed "Field selected not in schema")
+    else raise (Malformed "Field(s) selected not in schema")
 
 (** [check_fields_join table1 table2 schema1 schema2 acc1 acc2 fields] is the 
     list of field names from [table1] and [table2] in the form 
     (fields1, fields2) parsed from [fields]. 
     Raises [Malformed] if any [fields] are not in [schema1] or [schema2]. *)
 let rec check_fields_join table1 table2 schema1 schema2 acc1 acc2 = function
-(* order_fields schema bool_fields *)
+  (* order_fields schema bool_fields *)
   | [] -> List.rev acc1, List.rev acc2
   | h::t ->
     if fst (get_field h) = table1 && List.mem (snd (get_field h)) schema1
     then check_fields_join table1 table2 schema1 schema2 
-      ((snd (get_field h))::acc1) acc2 t
+        ((snd (get_field h))::acc1) acc2 t
     else if fst (get_field h) = table2 && List.mem (snd (get_field h)) schema2
     then check_fields_join table1 table2 schema1 schema2 
-      acc1 (snd (get_field h)::acc2) t
+        acc1 (snd (get_field h)::acc2) t
     else raise (Malformed "Field selected is not part of either table in JOIN")
 
 (** [select_fields schema fields] is [schema] if [fields] is [[*]] and [fields]
@@ -96,7 +96,7 @@ let rec order_fields schema fields =
 let order_fields_join schema fields = 
   let bfields1, bfields2 = 
     (filter_fields (fst schema) (fst fields) [], 
-    filter_fields (snd schema) (snd fields) [])
+     filter_fields (snd schema) (snd fields) [])
   in (order_fields (fst schema) bfields1)@(order_fields (snd schema) bfields2)
 
 (** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
@@ -227,7 +227,7 @@ let rec filter_table2 qry (qry_join: join_obj) cond field_index schema2 fields f
     then filter_row2 qry qry_join.table schema2 (snd fields) row
     else filter_table2 qry qry_join cond field_index schema2 fields fc1
   with 
-    | exn -> Stdlib.close_in fc1; None
+  | exn -> Stdlib.close_in fc1; None
 
 (** [join_row qry qry_join schema schema2 fields row] is...  *)
 let join_row qry (qry_join: join_obj) schema fields row : string list option =
@@ -278,33 +278,10 @@ let select (qry : Query.select_obj) =
       select_fields_join qry.table join_obj.table (schema, schema1) qry.fields 
     in 
     (order_fields_join (schema, schema1) fields', 
-    join qry join_obj (schema, schema1) fields' fc)
+     join qry join_obj (schema, schema1) fields' fc)
 
-(*
-(** TODO: document *)
-(* Parses the table name form query*)
-let insert_table (qry : Query.insert_obj) =
-  match qry with
-  | [] -> raise Malformed
-  | "INTO" :: t -> if List.length t < 2 then raise Malformed
-    else List.hd t, List.tl t
-  | h :: t -> raise Malformed
+(* INSERT *)
 
-(** TODO: document *)
-(* Parses the values from qry *)
-let rec insert_vals qry acc_col acc_val = 
-  match qry with
-  | [] -> List.rev acc_col, List.rev acc_val
-  | h :: t -> insert_vals t acc_col (h :: acc_val)
-
-(** TODO: document *)
-(* Parses the columns and values from qry *)
-let rec insert_cols_and_vals qry acc_col acc_val =
-  match qry with 
-  | [] -> raise Malformed
-  | "VALUES" :: t -> insert_vals t acc_col acc_val
-  | h :: t -> insert_cols_and_vals t (h :: acc_col) acc_val
-*)
 (** TODO: document *)
 let rec vals_update sch cols vals acc =
   match sch, cols with
@@ -333,42 +310,9 @@ let insert (qry: insert_obj) =
     let outc = get_out_chan qry.table in
     write_line outc writable; 
     close_out outc
-(*
-(* Parses the table name form delete query*)
-let delete_table qry =
-  match qry with
-  | [] -> raise Malformed
-  | "FROM" :: t -> if List.length t = 0 then raise Malformed
-    else if List.length t = 1 then List.hd t, []
-    else List.hd t, List.tl t
-  | h :: t -> raise Malformed
 
-let where_conditional lst =
-  match List.tl lst with
-  | col :: cond :: v :: [] -> begin
-      match cond with
-      | "=" -> col, (=), v
-      | "!=" -> col, (<>), v
-      | ">" -> col, (>), v
-      | "<" -> col, (<), v
-      | ">=" -> col, (>=), v
-      | "<=" -> col, (<=), v
-      | _ -> raise Malformed
-    end
-  | h :: t -> raise Malformed
-  | [] -> raise Malformed
+(* DELETE *)
 
-let rec find_col acc (col: string) sch : int =
-  match sch with
-  | [] -> -1
-  | h :: t -> if h = col then acc
-    else find_col (acc+1) col t
-
-let rec get_col n lst : string =
-  match lst with 
-  | [] -> failwith "column not found"
-  | h :: t -> if n = 0 then h else get_col (n-1) t
-*)
 let rec delete_helper inc outc schema ind op ptn =
   try let line = read_next_line inc in
     if op (List.nth line ind) ptn
@@ -424,27 +368,6 @@ let delete qry =
         close_out outc;
         Sys.remove (get_path qry.table);
         Sys.rename (get_path temp_file) (get_path qry.table)
-(*
-      match where_rec.ptn with
-      | EQ -> 
-      | GT ->
-      | LT ->
-      | GEQ ->
-      | LEQ ->
-      | Like ->
-      | NEQ ->
-      | None ->
-
-        let col, cond, v = where_conditional rest in
-
-        let col_no = find_col 0 col schema in
-        if col_no = -1 then raise Malformed else begin
-          delete_helper inc outc col_no cond v;
-          close_in inc;
-          close_out outc;
-          Sys.remove (get_path tablename);
-          Sys.rename (get_path temp_file) (get_path tablename)
-          *)
     end
 
 let rec create_table (qry: Query.create_obj) = 
@@ -473,3 +396,102 @@ let drop_table qry =
   Sys.remove (get_schema_path ());
   Sys.rename (get_schema_temp_path ()) (get_schema_path ());
   Sys.remove (get_path qry.table)
+
+let general_msg = 
+  "'HELP' Command: \n"
+  ^ "To get help for a command, type HELP and the command name \n"
+  ^ "The list of valid commands is: SELECT, INSERT INTO, DELETE, TRUNCATE"
+  ^ " TABLE, CREATE TABLE, DROP TABLE, CHANGE DATABASE, READ, HELP, and QUIT\n"
+
+let select_msg = 
+  "'SELECT' QUERY: \n"
+
+let insert_msg = 
+  "'INSERT INTO' QUERY: \n"
+  ^ "'INSERT INTO' inserts a new row into a table inserting data into the"
+  ^ " specified coulmns\n"
+  ^ "USAGE: 1) INSERT INTO [tablename] (f1, f2,... fn) VALUES (v1, v2,... vn)\n"
+  ^ "       2) INSERT INTO [tablename] VALUES (v1, v2,... vn)*\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table and" 
+  ^ "(f1, f2,... fn) are colmum names in [tablename]\n"
+  ^ "*For this case, length of (v1, v2,... vn) must match the number of"
+  ^ " columns\n"
+
+let delete_msg = 
+  "'DELETE' QUERY: \n"
+  ^ "'DELETE' deletes rows from a table, optionally meeting a given condition\n"
+  ^ "USAGE: 1) DELETE FROM [tablename]\n"
+  ^ "       2) DELETE FROM [tablename] WHERE [b]\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table and"
+  ^ "b is a conditional following WHERE guidelines\n"
+
+let truncate_msg = 
+  "'TRUNCATE TABLE' QUERY: \n"
+  ^ "'TRUNCATE TABLE' removes all data from a specified table\n"
+  ^ "USAGE: TRUNCATE TABLE [tablename]\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table\n"
+
+
+let create_msg = 
+  "'CREATE TABLE' QUERY: \n"
+  ^ "'CREATE TABLE' creates a new, empty table with the specified name\n"
+  ^ "USAGE: CREATE TABLE [tablename]\n"
+  ^ "REQUIRES: [tablename] is a valid table name (no whitespace, commas, \n"
+  ^ "parentheses, colons, or other syntactiaclly improtant characters)"
+  ^ "oh? Create!\n"
+
+let drop_msg = 
+  "'DROP TABLE' QUERY: \n"
+  ^ "'DROP TABLE' removes a specified table from the database\n"
+  ^ "USAGE: DROP TABLE [tablename]\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table\n"
+
+let change_msg = 
+  "'CHANGE DATABASE' Command: \n"
+  ^ "'CHANGE DATABASE' changes the working database\n"
+  ^ "USAGE: CHANGE DATABASE [databasename]\n"
+  ^ "REQUIRES: [databasename] is the name of an existing database visible to"
+  ^ " the system\n"
+
+let read_msg = 
+  "'READ' Command: \n"
+  ^ "'READ' reads queries from an input file and sends their results to an"
+  ^ " output file\n"
+  ^ "USAGE: READ FROM [filename]\n"
+  ^ "REQUIRES: [filename] is the name of an existing file in the 'input' folder"
+  ^ "containing properly formatted queries\n"
+
+let quit_msg = 
+  "'QUIT' Command: \n"
+  ^ "'QUIT' exits the dbms\n"
+  ^ "USAGE: QUIT\n"
+
+let help_msg = 
+  "'HELP' Command: \n"
+
+let where_msg = 
+  "'WHERE' Keyword: \n"
+
+let join_msg = 
+  "'JOIN' Keyword: \n"
+
+let order_msg = 
+  "'ORDER BY' Keyword: \n"
+
+let help_with qry =
+  match qry.s1, qry.s2 with
+  | "", "" -> general_msg
+  | "SELECT", _ -> select_msg
+  | "INSERT", _ -> insert_msg
+  | "DELETE", _ -> delete_msg
+  | "TRUNCATE", _ -> truncate_msg
+  | "CREATE", _ -> create_msg
+  | "DROP", _ -> drop_msg
+  | "CHANGE", _ -> change_msg
+  | "READ", _ -> read_msg
+  | "QUIT", _ -> quit_msg
+  | "HELP", _ -> general_msg
+  | "WHERE", _ -> where_msg
+  | "JOIN", _ -> join_msg
+  | "ORDER", "BY" -> order_msg
+  | s1, s2 -> "Sorry, I can't help you with '" ^ s1 ^ " " ^ s2 ^ "'\n"

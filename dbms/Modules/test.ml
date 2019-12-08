@@ -198,7 +198,7 @@ let queries_tests = [
     "Must provide a field, operator and pattern after 'WHERE'"
     "SELECT name, netid FROM students WHERE name oops %i%";
   malformed_test "SELECT name, netid FROM students WHERE name <="
-    "Must provide a pattern to match with after 'WHERE'"
+    "Must provide a pattern to match with after WHERE operator"
     "SELECT name, netid FROM students WHERE name <=";
   malformed_test "SELECT name, netid FROM students ORDER BY"
     "Must provide a field to order by"
@@ -228,6 +228,7 @@ let queries_tests = [
     "CREATE TABLE dorms (name, location, ";
 ]
 
+
 (* COMPUTATION TESTS **********************************************************)
 
 (** TODO: document *)
@@ -241,11 +242,11 @@ let select_test name expected s =
       assert_equal expected (select s))
 
 (* [malformed_select_test name s] constructs an OUnit test named 
-   [name] that asserts [s] applied to Computation.select raises a 
+   [name] that asserts [name] applied to get_qry |> Computation.select raises a 
    query.Malformed exception*)
-let malformed_select_test name m s = 
+let malformed_select_test name m = 
   "Malformed select test: " ^ name >:: (fun _ ->
-      assert_raises (Malformed m) (fun () -> (select s)))
+      assert_raises (Malformed m) (fun () -> (select (get_qry name))))
 
 let select1 = get_qry "SELECT netid FROM students"
 let select2 = get_qry "SELECT netid, name FROM students"
@@ -319,12 +320,14 @@ let buildings_join = [
 ]
 
 let select_tests = [
+  (* Basic Select*)
   select_test "SELECT netid FROM students" 
     (fields1, [["dis52"]; ["rjm448"]; ["vml39"]; ["t123"]]) select1;
   select_test "SELECT netid, name FROM students" 
     (fields2, name_netid) select2;
   select_test "SELECT * FROM students" 
     (schema1, students) select3;
+  (* Select Where *)
   select_test "SELECT * FROM students WHERE name LIKE %i%" 
     (schema1, students_where_like1) where_like1;
   select_test "SELECT * FROM students WHERE name = Test" 
@@ -339,15 +342,77 @@ let select_tests = [
     (fields2, students_where_geq1) where_geq1; 
   select_test "SELECT * FROM students WHERE major <= ECE"
     (schema1, students_where_leq1) where_leq1; 
+  (* Select Order By *)
   select_test "SELECT * FROM students ORDER BY name" 
     (schema1, students_ordered) order1;
-  select_test "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
+  (* Select Join *)
+  select_test 
+    "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
     (schema2, buildings_join) join_inner;
-
-  (* malformed_select_test "SELECT * FROM students WHERE name = test" 
-     ""
-     qry_where_eq_malformed; *)
+  malformed_select_test "SELEC netid FROM students" "Illegal query";
+  malformed_select_test "select asdf FROM students" "Illegal query";
+  malformed_select_test "SELECT FROM students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT asdf FROM students" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT asdf from students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT name netid FROM students" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT name, netid, FROM students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT asdf students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT asdf FROM " 
+    "No table specified";
+  (* where malformed *)
+  malformed_select_test "SELECT asdf FROM students where" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students WHERE" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE LIKE" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE class like" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE class LIKE" 
+    "Must provide a pattern to match with after WHERE operator";
+  malformed_select_test "SELECT asdf FROM students WHERE asdf LIKE hello" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT class FROM students WHERE asdf LIKE asdf" 
+    "WHERE field not in schema";
+  (* Order by malformed *)
+  malformed_select_test "SELECT asdf FROM students order" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students ORDER by" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students ORDERBY" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students ORDER BY" 
+    "Must provide a field to order by";
+  malformed_select_test "SELECT asdf FROM students ORDER BY asdf" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT class FROM students ORDER BY classsssss" 
+    "ORDER BY field is not in schema";
+  (* where & order by malformed *)
+  malformed_select_test "SELECT asdf FROM students where name = i ORDER BY" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students WHERE ORDER BY" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE name ORDER BY" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE x = 1 ORDER BY" 
+    "Must provide a field to order by";
+  malformed_select_test "SELECT asdf FROM students WHERE x = 1 ORDER BY y" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT class FROM students WHERE x = 1 ORDER BY y"
+    "WHERE field not in schema";
+  malformed_select_test "SELECT class FROM students WHERE class = 1 ORDER BY y"
+    "ORDER BY field is not in schema";
 ]
+
+(* malformed_select_test "SELECT * FROM students WHERE name = test" 
+   ""
+   qry_where_eq_malformed; *)
 
 (* let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
    let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry

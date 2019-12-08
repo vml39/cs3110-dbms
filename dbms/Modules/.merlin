@@ -2,3 +2,5 @@ B _build
 PKG str
 PKG oUnit
 PKG ANSITerminal
+PKG ocamlbuild
+PKG bisect_ppx-ocamlbuild
