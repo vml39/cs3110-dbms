@@ -1,6 +1,9 @@
 open Query
 open Datardwt
 
+let ps s = 
+  print_newline (); print_string s
+
 let rec pp_list = function 
   | [] -> ()
   | h::t -> print_string (h^", "); pp_list t
@@ -115,29 +118,25 @@ let parse_pattern pattern =
     |> List.filter ( fun s -> s <> "") in 
   convert_to_regex patternList
 
+(** TODO: document *)
+let filter_list fields row i = 
+  List.filter (fun _ -> i := !i + 1; List.nth fields !i) row
+
 (* [filter_pattern fields row ind pattern i operator] is [Some row] with only 
    the fields specified in [fields].  Returns the row if the row follows the SQL
    [pattern]. Returns [None] if the row does not follow the SQL [pattern] *)
 let filter_pattern fields row ind pattern i operator = 
   if operator (List.nth row ind) pattern
-  then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+  then Some (filter_list fields row i)
   else None
 
-(** [filter_row schema fields where pattern row] is [Some row] with only the 
-    fields specified in [fields]. Returns the row if [where] is [false] or if 
-    [where] is [true] and the row follows the SQL [pattern]. Returns [None] if
-    [where] is [true] and the row does not follow the SQL [pattern]. *)
-let filter_row schema fields (where: Query.where_obj option) row =
-  let i = ref (-1) in 
-  match where with 
-  | None -> Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
-  | Some where -> 
-    let ind = index where.field schema in
-    let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
+(** TODO: document *)
+let match_pattern fields row ind where i = 
+  let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
     match where.op with
     | Like ->
       if Str.string_match (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
-      then Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
+      then Some (filter_list fields row i)
       else None
     | EQ -> partial_filter_pattern (=)
     | NEQ -> partial_filter_pattern (<>)
@@ -147,7 +146,29 @@ let filter_row schema fields (where: Query.where_obj option) row =
     | LEQ -> partial_filter_pattern (<=)
     | s -> failwith "Expected a valid operator"
 
-  (* else Some (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row) *)
+(** [filter_row schema fields where pattern row] is [Some row] with only the 
+    fields specified in [fields]. Returns the row if [where] is [false] or if 
+    [where] is [true] and the row follows the SQL [pattern]. Returns [None] if
+    [where] is [true] and the row does not follow the SQL [pattern]. *)
+let filter_row schema fields (where: Query.where_obj option) row =
+  let i = ref (-1) in 
+  match where with 
+  | None -> Some (filter_list fields row i)
+  | Some where -> 
+    let ind = index where.field schema in
+    match_pattern fields row ind where i
+
+(** TODO: document *)
+let filter_row_join table schema fields (where: Query.where_obj option) row =
+  let i = ref (-1) in 
+  match where with 
+  | None -> Some (filter_list fields row i) 
+  | Some where -> 
+    let where_field = get_field where.field in 
+    if fst where_field = table then 
+      let ind = index (snd where_field) schema in
+      match_pattern fields row ind where i
+    else Some (filter_list fields row i)
 
 (** [filter_table fc schema fields where acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
@@ -189,53 +210,51 @@ let where tablename (qry_where : Query.where_obj option) schema fields fc =
   | None -> filter_table fc schema fields None [] 
   | Some w -> like_equal fc schema fields w
 
-(** [filter_row2 schema fields row] is... *)
-let filter_row2 schema fields row =
-  let bool_fields = filter_fields schema fields [] in
-  match filter_row schema bool_fields None row with 
-  | None -> []
-  | Some r -> r
-
 (** [get_cond field schema row] is... *)
 let get_cond field schema row = 
   index (snd (get_field field)) schema |> List.nth row
 
+(** [filter_row2 schema fields row] is... *)
+let filter_row2 (qry: select_obj) table schema fields row =
+  let bool_fields = filter_fields schema fields [] in
+  filter_row_join table schema bool_fields qry.where row
+
 (** [filter_table2 qry_join cond field_index fc1] is...  *)
-let rec filter_table2 qry_join cond field_index schema2 fields fc1 = 
+let rec filter_table2 qry (qry_join: join_obj) cond field_index schema2 fields fc1 = 
   try 
     let row = read_next_line fc1 in 
     if List.nth row field_index = cond 
-    then Some (filter_row2 schema2 (snd fields) row)
-    else filter_table2 qry_join cond field_index schema2 fields fc1
+    then filter_row2 qry qry_join.table schema2 (snd fields) row
+    else filter_table2 qry qry_join cond field_index schema2 fields fc1
   with 
     | exn -> Stdlib.close_in fc1; None
 
-(** [filter_row_join qry qry_join schema schema2 fields row] is...  *)
-let filter_row_join qry (qry_join : join_obj) schema fields row : string list option = 
-  (* match qry.where with 
-  (* get only the rows from each table that we need *)
-  | None -> (List.filter (fun _ -> i := !i + 1; List.nth fields !i) row)
-  (* run rows through where condition *)
-  | Some ->  *)
+(** [join_row qry qry_join schema schema2 fields row] is...  *)
+let join_row qry (qry_join: join_obj) schema fields row : string list option =
   let fc1 = get_in_chan qry_join.table in 
   let cond = get_cond (fst qry_join.on) (fst schema) row in 
   let field_ind = index (snd (get_field (snd qry_join.on))) (snd schema) in 
-  match filter_table2 qry.join cond field_ind (snd schema) fields fc1 with 
+  match filter_table2 qry qry_join cond field_ind (snd schema) fields fc1 with 
   | None -> None
-  | Some r' -> let r = filter_row2 (fst schema) (fst fields) row in 
-    Some (r@r')
+  | Some r' -> begin 
+    match filter_row2 qry qry.table (fst schema) (fst fields) row with 
+    | None -> None
+    | Some r -> Some (r@r')
+  end 
 
 (** [inner_join qry qry_join schema1 schema2 fields fc acc] is... *)
 let rec inner_join qry qry_join schema fields fc acc = 
-  let row = try read_next_line fc |> filter_row_join qry qry_join schema fields with 
+  let row = try read_next_line fc |> join_row qry qry_join schema fields 
+  with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
   | None -> inner_join qry qry_join schema fields fc acc
   | Some e when e = [] -> List.rev acc 
   | Some r -> inner_join qry qry_join schema fields fc (r::acc)
 
-(** [join qry qry_join schema1 schema2 fields fc] is... *)
-let join (qry: Query.select_obj) (qry_join: Query.join_obj) schema fields fc = 
+(** [join qry qry_join schema1 schema2 fields fc] is... 
+    Raises [Malformed] if the query contains an invalid type of join. *)
+let join qry (qry_join: Query.join_obj) schema fields fc = 
   match qry_join.join with 
   | Inner ->  inner_join qry qry_join schema fields fc []
   | Left -> failwith "left" (* return all rows from left table and have null columns if something doesn't exist in right table *)
