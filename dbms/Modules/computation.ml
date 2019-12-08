@@ -2,27 +2,34 @@ open Query
 open Datardwt
 
 (* PRINT DEBUG HELPERS *)
+(* TODO: Document*)
 let ps s = 
   print_newline (); print_string s
 
+(* TODO: Document*)
 let rec pp_list = function 
   | [] -> ()
   | h::t -> print_string (h^", "); pp_list t
 
+(* TODO: Document*)
 let rec pp_list_bool = function 
   | [] -> ()
   | h::t -> 
     if h then (print_string ("true , "); pp_list_bool t)
     else (print_string ("false , "); pp_list_bool t)
 
+(* TODO: Document*)
 let rec pp_list_list = function 
   | [] -> ()
   | h::t -> print_newline (pp_list h); pp_list_list t
 
+(* TODO: Document*)
 let select_msg = "Field(s) selected not in schema"
 
+(* TODO: Document*)
 let where_msg = "WHERE field not in schema"
 
+(* TODO: Document*)
 let orderby_msg = "ORDER BY field is not in schema"
 
 (** [index field schema] is the index of [field] in list [schema]. *)

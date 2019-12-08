@@ -203,10 +203,6 @@ let queries_from_file filename =
     close_out oc
   else invalid_file filename
 
-(* [table_height rows] is the # of lines [rows] would take up as a table with
-   an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
-let table_height rows = 4 + List.length rows 
-
 (* [change_db] is the switch from the current database to the new database [db].
    If the database doesn't exist, an error message is displayed*)
 let change_db db = 
@@ -219,14 +215,26 @@ let change_db db =
         "\n" ^ db ^ " selected. Please enter your query\n\n"))
   end
 
+(* [table_height rows] is the # of lines [rows] would take up as a table with
+   an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
+let table_height rows = 4 + List.length rows 
+
+(* [table_width rows] is the # of characters the longest list in [rows] 
+   would take up as a table *)
+let table_width fields rows = 
+  Array.fold_left (fun a i -> a + i) 0 (calc_widths fields rows) +
+  (List.length fields) * 2
+
 (* [print_or_write_select obj num] is the display of select commands in either
-   terminal if the terminal screen is big enough to display the entire table or 
-   to a file otherwise*)
+     terminal if the terminal screen is big enough to display the entire table or 
+     to a file otherwise*)
 let print_or_write_select obj num = 
   begin
     let terminal_w, terminal_h = ANSITerminal.size () in 
     let (fields, rows) = select obj in
-    if table_height rows < terminal_h
+    let table_width =  table_width fields rows  in
+    let table_height = table_height rows in
+    if table_height < terminal_h && table_width < terminal_w
     then (* Print to terminal *)
       try pp_table (fields, rows)
       with Failure s ->  malformed_exception s

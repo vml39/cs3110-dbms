@@ -86,20 +86,22 @@ type t =
   | Help of help_obj
   | Quit
 
-(** TODO: document *)
+(** [new_field s1 s2] is sw if s1 = "" otherwise it is s1 ^ " " ^ s2 *)
 let new_field s1 s2 =
   if s1 = "" 
   then s2
   else s1 ^ " " ^ s2
 
-(** TODO: document *)
+(** [order_by fieldname record lst] is a select_obj with order = Some [fieldname]
+    if [lst] follows order by SQL syntax. Malformed otherwise. *)
 let rec order_by fieldname (record : select_obj) = function
   | [] when fieldname = "" -> 
     raise (Malformed "Must provide a field to order by")
   | [] -> {record with order = Some fieldname}
   | h::t -> order_by (new_field fieldname h) record t
 
-(** TODO: document *)
+(** [create_where_record fieldname h op] if a new where record with
+    field = [field], op =[op] and ptn = ""*)
 let create_where_record fieldname h op = 
   {
     field = new_field fieldname h;
@@ -107,7 +109,9 @@ let create_where_record fieldname h op =
     ptn = "";
   }
 
-(** TODO: document *)
+(** [select_where_ptn ptn where_rec record lst] is [record] with where 
+    and/orderby record filled in if [lst] follows select where SQL syntax. 
+    Malformed otherwise*)
 let rec select_where_ptn ptn where_rec (record: select_obj) = function 
   | [] -> 
     raise (Malformed "Must provide a pattern to match with after WHERE operator")
@@ -122,7 +126,8 @@ let rec select_where_ptn ptn where_rec (record: select_obj) = function
     }
   | h::t -> select_where_ptn (new_field ptn h) where_rec record t
 
-(** TODO: document *)
+(** [select_where fieldname where_rec record lst] is a select_obj if 
+    if [lst] matches one of the valid where operators *)
 let rec select_where fieldname where_rec (record : select_obj) = function
   | [] ->
     raise (Malformed "Must provide a field, operator and pattern after 'WHERE'")
@@ -142,7 +147,8 @@ let rec select_where fieldname where_rec (record : select_obj) = function
     select_where_ptn "" (create_where_record fieldname h Like) record t
   | h::t -> select_where (new_field fieldname h) where_rec record t
 
-(** TODO: document *)
+(** [select_join_qry record lst] is [record] with the rest of the select_record
+    filled out if [lst] follows select join SQL syntax. Malformed otherwise*)
 let select_join_qry (record: select_obj) = function
   | [] -> record
   | h::t when h = "WHERE" -> 
@@ -157,7 +163,8 @@ let select_join_qry (record: select_obj) = function
   | _ -> 
     raise (Malformed "'JOIN' can only be followed by 'WHERE' or 'ORDER BY'")
 
-(** TODO: document *)
+(** [select_join_field join_rec record lst] is record with fields included if
+    [lst] follows select join SQL syntax. Malformed otherwise.*)
 let select_join_field (join_rec: join_obj) (record: select_obj) = function 
   | [] -> 
     raise (Malformed "You must provide a column from each table to join on")
@@ -170,35 +177,30 @@ let select_join_field (join_rec: join_obj) (record: select_obj) = function
   | _ -> 
     raise (Malformed "You must provide a column from each table to join on")
 
-(** TODO: document *)
+(** [select_join join_rec record lst] is [record] with the join_obj updated if
+    [lst] follows select join SQL syntax. Malformed otherwise.*)
 let select_join (join_rec: join_obj) (record: select_obj) = function 
   | [] -> raise (Malformed "You must join 'ON' another table")
   | h::i::t when i = "ON" -> 
     select_join_field {join_rec with table = h} record t
   | _ -> raise (Malformed "You must join 'ON' another table")
 
-(** TODO: document *)
+(** [match_join join] is a join_type if [join] is a valid join operation.
+    Malformed otherwise.*)
 let match_join join = 
   if join = "INNER" then Inner 
   else if join = "LEFT" then Left
   else if join = "RIGHT" then Right
   else raise (Malformed "Invalid join operation")
 
-(** TODO: document *)
+(** [select_table record lst] is [record] with join and/or table filled in if
+    [lst] follows select SQL syntax. Malformed otherwise. *)
 let select_table (record : select_obj) = function
   | [] ->  raise (Malformed "No table specified")
   | h::[] -> {record with table = h}
   | h::i::j::t when j = "JOIN" -> 
-    let init_join = {
-      table = "";
-      join = match_join i;
-      on = ("", "")
-    } in 
-    let new_record = {
-      record with 
-      table = h;
-      join = Some init_join
-    } in 
+    let init_join = { table = ""; join = match_join i; on = ("", "") } in 
+    let new_record = {record with table = h; join = Some init_join } in 
     select_join init_join new_record t
   | h::i::t when i = "WHERE" -> 
     let new_record = {record with table = h} in
@@ -215,7 +217,7 @@ let select_table (record : select_obj) = function
            (Malformed "The table name can only be followed by 'WHERE' or 'ORDER BY'")
 
 (** [select_fields acc fieldname record q] is [record] with 
-    fields = [fieldname] *)
+    fields = [fieldname]*)
 let rec select_fields acc fieldname (record : select_obj) q = 
   match q with 
   | [] -> raise (Malformed "Field names malformed or no 'FROM' keyword")
@@ -227,8 +229,8 @@ let rec select_fields acc fieldname (record : select_obj) q =
     select_fields ((new_field fieldname h)::acc) "" record t
   | h::t -> select_fields acc (new_field fieldname h) record t
 
-(** [select_parse lst] is a select_obj if [lst] follows the select query rules.
-    Malformed otherwise.*)
+(** [select_parse lst] is a select_obj if [lst] follows the select query SQL 
+    syntax. Malformed otherwise.*)
 let select_parse = function
   | [] -> raise 
             (Malformed "You must include the field names and tables to be selected")
@@ -243,7 +245,7 @@ let select_parse = function
     select_fields [] "" init_rec lst
 
 (** [insert_fields acc value record lst] is [record] with 
-    values = [value] filled in if [lst] follows the insert query rules. 
+    values = [value] filled in if [lst] follows the insert query SQL syntax. 
     Malformed otherwise *)
 let rec insert_values acc value (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify a valid list of values")
@@ -255,7 +257,7 @@ let rec insert_values acc value (record: insert_obj) = function
 
 (** [insert_fields acc fieldname record lst] is an [record] with 
     fields = [fieldname], and values filled in if [lst] follows the insert query 
-    rules.  Malformed otherwise *)
+    SQL syntax.  Malformed otherwise *)
 let rec insert_fields acc fieldname (record: insert_obj) = function 
   | [] -> raise (Malformed "You must specify values")
   | h::i::j::k::t when i = ")" && j = "VALUES" && k = "(" -> 
@@ -267,7 +269,7 @@ let rec insert_fields acc fieldname (record: insert_obj) = function
   | h::t -> insert_fields acc (new_field fieldname h) record t
 
 (** [insert_parse t] is an insert_obj with table, fields, and values filled in
-    if [t] follows the insert query rules. Malformed otherwise *)
+    if [t] follows the insert query SQL syntax. Malformed otherwise *)
 let insert_parse t =
   let init_record = {
     table = "";
@@ -283,7 +285,7 @@ let insert_parse t =
   | _ -> raise (Malformed "Table name must be followed by a list of fields")
 
 (** [delete_where_ptn ptn where_rec record lst] is a delete_obj if [lst] follows
-    the delete where query rules *)
+    the delete where query SQL syntax. Malformed otherwise. *)
 let rec delete_where_ptn ptn where_rec (record : delete_obj) = function 
   | [] -> {record with where = Some {where_rec with ptn = ptn}}
   | h::t -> delete_where_ptn (new_field ptn h) where_rec record t
@@ -308,7 +310,7 @@ let rec delete_where fieldname where_rec (record : delete_obj) = function
     delete_where_ptn "" (create_where_record fieldname h Like) record t
   | h::t -> delete_where (new_field fieldname h) where_rec record t
 
-(** [delete_parse lst] is a delete_obj if lst follows the delete query rules.
+(** [delete_parse lst] is a delete_obj if lst follows the delete query SQL syntax.
     Malformed otherwise. *)
 let delete_parse = function 
   | [] -> raise (Malformed "You must specify a table name")
@@ -327,8 +329,7 @@ let delete_parse = function
       ptn = ""
     } in
     delete_where "" init_where new_record t
-  | _ -> raise (Malformed 
-                  "You can delete all values from a table or specify a WHERE condition") 
+  | _ -> raise (Malformed "You can delete all values from a table or specify a WHERE condition") 
 
 (** [create_fields acc fieldname lst] is the list of fields to be populated by
     the create query *)
@@ -339,7 +340,7 @@ let rec create_fields acc fieldname = function
   | h::t -> create_fields acc (new_field fieldname h) t 
 
 (** [create_table_parse lst] is a create_obj if [lst] matches the create table
-    query rules.  Malformed otherwise*)
+    query SQL syntax.  Malformed otherwise*)
 let create_table_parse = function 
   | [] -> raise (Malformed "Must specify fields for the new table")
   | h::i::t when i = "(" -> {
@@ -350,7 +351,7 @@ let create_table_parse = function
 
 
 (** [drop_table_parse lst] is a drop_obj if [lst] matches the drop table 
-    query rules. Malformed otherwise.*)
+    query SQL syntax. Malformed otherwise.*)
 let drop_table_parse = function 
   | [] -> raise (Malformed "Must specify table to delete")
   | h::[] -> {
@@ -359,7 +360,8 @@ let drop_table_parse = function
   | _ -> raise (Malformed "Invalid DROP TABLE query")
 
 
-(** [help_parse lst] is a help_obj if [lst] follows the help query rules *)
+(** [help_parse lst] is a help_obj if [lst] follows the help query SQL syntax.
+    Malformed otherwise. *)
 let help_parse = function 
   | [] -> {
       s1 = "";
@@ -375,10 +377,6 @@ let help_parse = function
     }
   | _ -> raise (Malformed "please specify a command from the approved list")
 
-(* [parse str] is the parsing of [str].  [str] is split into a list with each 
-   word, ',', '(', and ')' as a seperate element.  The list is then parsed 
-   according to the type of command it is identified as.  Illegal queries
-   result in a <Malformed message>.*)
 let parse str =
   match str 
         |> Str.global_replace (Str.regexp "[ ]+") " " 
