@@ -24,7 +24,6 @@ type join_type =
   | Inner
   | Left
   | Right
-  | Outer
   | None
 
 type where_obj = {
@@ -183,7 +182,6 @@ let match_join join =
   if join = "INNER" then Inner 
   else if join = "LEFT" then Left
   else if join = "RIGHT" then Right
-  else if join = "OUTER" then Outer 
   else raise (Malformed "Invalid join operation")
 
 (** TODO: document *)

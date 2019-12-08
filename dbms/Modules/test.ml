@@ -16,7 +16,7 @@ let pp_list pp_elt lst =
     in loop 0 "" lst
   in "[" ^ pp_elts lst ^ "]"
 
-(** [pp_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
+(** [pp_list_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
     to pretty-print each element of [lst]. *)
 let pp_list_list pp_elt lst =
   let pp_elts lst =
@@ -29,6 +29,8 @@ let pp_list_list pp_elt lst =
     in loop 0 "" lst
   in "[" ^ pp_elts (List.flatten lst) ^ "]"
 
+(** [pp_list_list' pp_elt lst] pretty-prints [snd lst], using [pp_elt]
+    to pretty-print each element of [snd lst]. *)
 let pp_list_list' pp_elt lst =
   let lst' = snd lst in 
   let pp_elts lst' =
@@ -237,9 +239,29 @@ let get_qry qry =
   | Select qry -> qry
   | _ -> failwith "unimplemented"
 
+let get_ins_qry qry = 
+  match parse qry with 
+  | Insert qry -> qry
+  | _ -> failwith "unimplemented"
+
+let get_del_qry qry = 
+  match parse qry with 
+  | Delete qry -> qry
+  | _ -> failwith "unimplemented"
+
 let select_test name expected s = 
   "Select table test: " ^ name >:: (fun _ -> 
       assert_equal expected (select s))
+
+let insert_test name insq expected s = 
+  (* insert insq; *)
+  "Insert table test: " ^ name >:: (fun _ -> 
+      assert_equal ~printer:(pp_list_list' pp_query) expected (select s))
+
+let delete_test name insq expected s = 
+  (* delete insq; *)
+  "Delete table test: " ^ name >:: (fun _ -> 
+      assert_equal  ~printer:(pp_list_list' pp_query) expected (select s))
 
 (* [malformed_select_test name s] constructs an OUnit test named 
    [name] that asserts [name] applied to get_qry |> Computation.select raises a 
@@ -414,91 +436,99 @@ let select_tests = [
 (* malformed_select_test "SELECT * FROM students WHERE name = test" 
    ""
    qry_where_eq_malformed; *)
+(*
+let ins_qry1 = get_ins_qry ("INSERT INTO students VALUES (Joe, jfs9, 1969, ECE,"
+                            ^ " Collegetown)")
+let post_ins1 = get_qry "SELECT * FROM students"
+let ins_qry2 = get_ins_qry ("INSERT INTO students (name, netid, major) VALUES" ^ 
+                            " (Joe, jfs9, ECE)")
+let post_ins2 = get_qry "SELECT * FROM students"
 
-(* let ins_qry1 = parse "INSERT INTO students VALUES (Joe, jfs9, 1969, ECE, Collegetown)" 
-   let post_ins1 = (*insert ins_qry1;*) parse "SELECT * FROM students" |> get_qry
-   let ins_qry2 = parse "INSERT INTO students (name, netid, major) VALUES (Joe, jfs9, ECE)" 
-   let post_ins2 = (*insert ins_qry2;*) parse "SELECT * FROM students" |> get_qry
-
-   let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
-   let students_up_2 = students_up_1 @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
-
-
-   let insert_tests = [
-   (* select_test "INSERT full" (fields', students_up_1) post_ins1; *)
-   (* select_test "INSERT partial" (fields', students_up_2) post_ins2; *)
-   ]
+let students_up_1 = students @ [["Joe"; "jfs9"; "1969"; "ECE"; "Collegetown"]]
+let students_up_2 = students_up_1 @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
 
 
-   let del_qry1 = parse "DELETE FROM students WHERE class = 1969" 
-   let post_del1 = (*delete del_qry1;*) parse "SELECT * FROM students" |> get_qry
-   let del_qry2 = parse "DELETE FROM students WHERE name = Joe" 
-   let post_del2 = (*delete del_qry2;*) parse "SELECT * FROM students" |> get_qry
+let del_qry1 = get_del_qry "DELETE FROM students WHERE class = 1969" 
+let post_del1 = get_qry "SELECT * FROM students"
+let del_qry2 = get_del_qry "DELETE FROM students WHERE name = Joe" 
+let post_del2 = get_qry "SELECT * FROM students"
 
-   let students_up_3 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
+let students_up_3 = students @ [["Joe"; "jfs9"; ""; "ECE"; ""]]
 
-   let delete_tests = [
-   (* These test cases are failing even though expected and received look the *)
-   (* select_test "DELETE partial1" (fields', students_up_3) post_del1; *)
-   (* select_test "DELETE partial2" (fields', students) post_del2; *)
-   ]
+let insert_and_delete_tests = [
+  (delete del_qry2;
+   delete_test "DELETE partial2" del_qry2 (schema1, students) post_del2);
+  (delete del_qry1;
+   delete_test "DELETE partial1" del_qry1 (schema1, students_up_3) post_del1);
+  (insert ins_qry2;
+   insert_test "INSERT partial" ins_qry2 (schema1, students_up_2) post_ins2);
+  (insert ins_qry1;
+   insert_test "INSERT full" ins_qry1 (schema1, students_up_1) post_ins1); 
+]
 
-   (* DATA READ WRITE TESTS ******************************************************)
+*)
 
-   (* [table_from_txt_test name expected s] constructs an OUnit test named 
+let delete_tests = [
+  (* These test cases are failing even though expected and received look the *)
+
+]
+
+(* DATA READ WRITE TESTS ******************************************************)
+
+(* [table_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.table_from_text*)
-   let table_from_txt_test name expected s = 
-   "Table from Text test: " ^ name >:: (fun _ -> 
+let table_from_txt_test name expected s = 
+  "Table from Text test: " ^ name >:: (fun _ -> 
       assert_equal ~printer:(pp_list_list pp_query) 
         expected (table_from_txt s))
 
-   (* [schema_from_txt_test name expected s] constructs an OUnit test named 
+(* [schema_from_txt_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] applied to 
    DataRdWt.schema_from_text*)
-   let schema_from_txt_test name expected s = 
-   "Schema from Text test: " ^ name >:: (fun _ -> 
+let schema_from_txt_test name expected s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_equal expected (schema_from_txt s))
 
-   (* [str_equ_test name expected s] constructs an OUnit test named 
+(* [str_equ_test name expected s] constructs an OUnit test named 
    [name] that asserts the equality of [expected] of [s] 
- *)
-   let str_lst_eq_test name expected s = 
-   "Schema from Text test: " ^ name >:: (fun _ -> 
+*)
+let str_lst_eq_test name expected s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_equal ~printer:(pp_list pp_query) expected s)
 
-   (* [func_raises_test name expected f s] constructs an OUnit test named 
+(* [func_raises_test name expected f s] constructs an OUnit test named 
    [name] that asserts [f] applied to [s] raises [expected]
- *)
-   let f_raises_test name exn f s = 
-   "Schema from Text test: " ^ name >:: (fun _ -> 
+*)
+let f_raises_test name exn f s = 
+  "Schema from Text test: " ^ name >:: (fun _ -> 
       assert_raises exn (fun _ -> (f s)))
 
-   let fc = get_in_chan "students"
-   let ln1 = read_next_line fc
-   let ln2 = read_next_line fc
-   let fc2 = get_in_chan "students"
+let fc = get_in_chan "students"
+let ln1 = read_next_line fc
+let ln2 = read_next_line fc
+let fc2 = get_in_chan "students"
 
-   let schema2 = [
-   ("students", ["name"; "netid"; "class"; "major"; "home"]);
-   ("buildings", ["name"; "location"; "goodforstudying"])
-   ]
+let schema2 = [
+  ("students", ["name"; "netid"; "class"; "major"; "home"]);
+  ("buildings", ["name"; "location"; "goodforstudying"])
+]
 
-   let data_read_write_tests = [
-   table_from_txt_test "students" students "students";
-   schema_from_txt_test "example" schema2 ();
-   str_lst_eq_test "ln1" (List.nth students_ordered 0) ln1;
-   str_lst_eq_test "ln2" (List.nth students_ordered 1) ln2;
-   str_lst_eq_test "ln3" (List.nth students_ordered 2) (read_next_line fc);
-   str_lst_eq_test "ln4" (List.nth students_ordered 3) (read_next_line fc);
-   f_raises_test "no ln 5" (End_of_file) read_next_line fc;
-   (* Note Reverse Order *)
-   f_raises_test "no ln 5" (End_of_file) read_next_line fc2;
-   str_lst_eq_test "ln4 again" (List.nth students 3) (read_next_line fc2);
-   str_lst_eq_test "ln3 again" (List.nth students 2) (read_next_line fc2);
-   str_lst_eq_test "ln2 again" (List.nth students 1) (read_next_line fc2);
-   str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
-   ] *)
+let data_read_write_tests = [
+  table_from_txt_test "students" students "students";
+  schema_from_txt_test "example" schema2 ();
+  str_lst_eq_test "ln1" (List.nth students_ordered 0) ln1;
+  str_lst_eq_test "ln2" (List.nth students_ordered 1) ln2;
+  str_lst_eq_test "ln3" (List.nth students_ordered 2) (read_next_line fc);
+  str_lst_eq_test "ln4" (List.nth students_ordered 3) (read_next_line fc);
+  f_raises_test "no ln 5" (End_of_file) read_next_line fc;
+  (* Note Reverse Order *)
+  f_raises_test "no ln 5" (End_of_file) read_next_line fc2;
+  str_lst_eq_test "ln4 again" (List.nth students 3) (read_next_line fc2);
+  str_lst_eq_test "ln3 again" (List.nth students 2) (read_next_line fc2);
+  str_lst_eq_test "ln2 again" (List.nth students 1) (read_next_line fc2);
+  str_lst_eq_test "ln1 again" (List.nth students 0) (read_next_line fc2);
+] 
 
 (******************************************************************************)
 
@@ -507,8 +537,8 @@ let suite =
     (* data_read_write_tests; *)
     queries_tests;
     select_tests;
-    (* insert_tests; *)
-    (* delete_tests; *)
+    (* insert_and_delete_tests; *)
+    (*delete_tests;*)
   ]
 
 let _ = run_test_tt_main suite
