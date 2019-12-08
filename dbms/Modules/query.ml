@@ -385,6 +385,7 @@ let parse str =
         |> Str.global_replace (Str.regexp ",") " , " 
         |> Str.global_replace (Str.regexp "(") " ( " 
         |> Str.global_replace (Str.regexp ")") " ) "
+        |> Str.global_replace (Str.regexp ":") " : "
         |> String.split_on_char ' ' 
         |> List.filter ( fun s -> s <> "") with
   | [] -> raise Empty

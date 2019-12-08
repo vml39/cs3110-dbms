@@ -272,7 +272,11 @@ let rec read_input_db () =
   print_string  "> ";
   match read_line () with
   | exception End_of_file -> ()
+  | exception (Empty) -> read_input_db ()
+  | "" -> read_input_db ()
   | "QUIT" -> print_endline "Goodbye for now.\n"; exit 0
+  | "quit" -> print_endline "Goodbye for now.\n"; exit 0
+  | "q" -> print_endline "Goodbye for now.\n"; exit 0
   | db -> begin
       if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
                                 "input" ^ Filename.dir_sep ^ db)))
@@ -289,7 +293,7 @@ let rec read_input_db () =
    to check if database exists*)
 let main () = 
   ANSITerminal.(print_string [red] "
-   \n\nWelcome to Ocaml DBMS\n");
+   \n\nWelcome to Ocaml DBMS\nType 'HELP' for help with Ocaml DBMS commands\n");
   print_endline "Please select your database\n";
   read_input_db ()
 

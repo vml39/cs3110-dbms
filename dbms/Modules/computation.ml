@@ -398,6 +398,20 @@ let select (qry : Query.select_obj) =
 
 (* INSERT *)
 
+let rec check_chars (l : string list) acc =
+  match l with 
+  | [] -> ()
+  | h :: t -> 
+    if String.contains h ':' 
+    then raise (Malformed "Illegal character: ':'")
+    else if String.contains h ')'
+    then raise (Malformed "Illegal character: ')'")
+    else if String.contains h '('
+    then raise (Malformed "Illegal character: '('")
+    else if String.contains h ','
+    then raise (Malformed "Illegal character: ','")
+    else check_chars t (h :: acc)
+
 (** [vals_update sch cols vals acc] is the list of values to insert into a
     table with empty strings inserted for uninputted columns*)
 let rec vals_update sch cols vals acc =
@@ -411,10 +425,13 @@ let rec vals_update sch cols vals acc =
 
 let insert (qry: insert_obj) = 
   let schema = table_schema (schema_from_txt ()) qry.table in 
+  check_chars qry.values [];
   match qry.fields with 
   | None -> if List.length qry.values <> List.length schema 
     then raise (Malformed "Values given do not match schema")
     else begin
+      (* additional erro check*)
+
       (* you have all cols so insert them all*)
       let outc = get_out_chan qry.table in
       write_line outc qry.values; 
@@ -494,6 +511,7 @@ let delete qry =
     end
 
 let rec create_table (qry: Query.create_obj) = 
+  check_chars (qry.table :: qry.fields) [];
   let outc_schema = get_out_chan_schema () in
   write_line_table_schema outc_schema qry.table qry.fields; 
   close_out outc_schema;
@@ -502,12 +520,12 @@ let rec create_table (qry: Query.create_obj) =
 
 (** [drop_helper inc outc name] removes the line contaning the columns for
     the table with name [name]*)
-let rec drop_helper inc outc name = 
+let rec drop_helper inc outc schema name = 
   try let found_name, line = read_next_schema_line inc in
     if name = found_name
-    then drop_helper inc outc name
+    then drop_helper inc outc schema name
     else write_line_table_schema outc (found_name) (line); 
-    drop_helper inc outc name
+    drop_helper inc outc schema name
   with | End_of_file -> ()
 
 let drop_table qry = 
@@ -515,7 +533,7 @@ let drop_table qry =
   let outc_schema = get_out_chan_temp_schema () in
   let inc_schema = get_in_chan_schema () in
   output_string outc_schema (List.hd (read_next_line inc_schema) ^ "\n");
-  drop_helper inc_schema outc_schema qry.table;
+  drop_helper inc_schema outc_schema schema qry.table;
   close_out outc_schema;
   close_in inc_schema;
   Sys.remove (get_schema_path ());
@@ -565,7 +583,7 @@ let truncate_msg =
 let create_msg = 
   "'CREATE TABLE' QUERY: \n"
   ^ "'CREATE TABLE' creates a new, empty table with the specified name.\n"
-  ^ "USAGE: CREATE TABLE [tablename]\n"
+  ^ "USAGE: CREATE TABLE [tablename] (colname1, colname2,... colnamen)\n "
   ^ "REQUIRES: [tablename] is a valid table name (no whitespace, commas, "
   ^ "parentheses, or colons).\n"
   ^ "oh? Create!\n"
