@@ -110,7 +110,8 @@ let create_where_record fieldname h op =
 
 (** TODO: document *)
 let rec select_where_ptn ptn where_rec (record: select_obj) = function 
-  | [] -> raise (Malformed "Must provide a pattern to match with after 'WHERE'")
+  | [] -> 
+    raise (Malformed "Must provide a pattern to match with after WHERE operator")
   | h::i::j::t when i = "ORDER" && j = "BY" -> 
     order_by "" {
       record with 

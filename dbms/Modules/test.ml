@@ -198,7 +198,7 @@ let queries_tests = [
     "Must provide a field, operator and pattern after 'WHERE'"
     "SELECT name, netid FROM students WHERE name oops %i%";
   malformed_test "SELECT name, netid FROM students WHERE name <="
-    "Must provide a pattern to match with after 'WHERE'"
+    "Must provide a pattern to match with after WHERE operator"
     "SELECT name, netid FROM students WHERE name <=";
   malformed_test "SELECT name, netid FROM students ORDER BY"
     "Must provide a field to order by"
@@ -346,12 +346,68 @@ let select_tests = [
   select_test "SELECT * FROM students ORDER BY name" 
     (schema1, students_ordered) order1;
   (* Select Join *)
-  select_test "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
+  select_test 
+    "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
     (schema2, buildings_join) join_inner;
   malformed_select_test "SELEC netid FROM students" "Illegal query";
-  malformed_select_test "SELECT FROM students" "Field names malformed or no 'FROM' keyword";
-  malformed_select_test "SELECT asdf FROM students" "Field(s) selected not in schema";
-
+  malformed_select_test "select asdf FROM students" "Illegal query";
+  malformed_select_test "SELECT FROM students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT asdf FROM students" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT asdf from students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT name netid FROM students" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT name, netid, FROM students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT asdf students" 
+    "Field names malformed or no 'FROM' keyword";
+  malformed_select_test "SELECT asdf FROM " 
+    "No table specified";
+  (* where malformed *)
+  malformed_select_test "SELECT asdf FROM students where" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students WHERE" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE LIKE" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE class like" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE class LIKE" 
+    "Must provide a pattern to match with after WHERE operator";
+  malformed_select_test "SELECT asdf FROM students WHERE asdf LIKE hello" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT class FROM students WHERE asdf LIKE asdf" 
+    "WHERE field not in schema";
+  (* Order by malformed *)
+  malformed_select_test "SELECT asdf FROM students order" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students ORDER by" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students ORDERBY" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students ORDER BY" 
+    "Must provide a field to order by";
+  malformed_select_test "SELECT asdf FROM students ORDER BY asdf" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT class FROM students ORDER BY classsssss" 
+    "ORDER BY field is not in schema";
+  (* where & order by malformed *)
+  malformed_select_test "SELECT asdf FROM students where name = i ORDER BY" 
+    "The table name can only be followed by 'WHERE' or 'ORDER BY'";
+  malformed_select_test "SELECT asdf FROM students WHERE ORDER BY" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE name ORDER BY" 
+    "Must provide a field, operator and pattern after 'WHERE'";
+  malformed_select_test "SELECT asdf FROM students WHERE x = 1 ORDER BY" 
+    "Must provide a field to order by";
+  malformed_select_test "SELECT asdf FROM students WHERE x = 1 ORDER BY y" 
+    "Field(s) selected not in schema";
+  malformed_select_test "SELECT class FROM students WHERE x = 1 ORDER BY y"
+    "WHERE field not in schema";
+  malformed_select_test "SELECT class FROM students WHERE class = 1 ORDER BY y"
+    "ORDER BY field is not in schema";
 ]
 
 (* malformed_select_test "SELECT * FROM students WHERE name = test" 
