@@ -3,7 +3,7 @@ open Query
 open Computation
 
 (* [repeat_str acc str n] is the string [str] concatenated with itself
-   [n] times concatednated with [acc] on the right*)
+   [n] times concatenated with [acc] on the right*)
 let rec repeat_str acc str n = 
   if n = 0 
   then acc
@@ -74,12 +74,13 @@ let are_rows_empty = function
   | []::t -> true
   | _ -> false
 
-(*[pp_table schema output] is the printing of [schema] and [output]. The
-  elements in [schema] are the  *)
+(* [pp_table (fields, rows)] is the printing of [fields] and [rows] as a table
+   with [fields] at the top and [rows] below seperated by unicode characters*)
 let rec pp_table (fields, rows) =
   let widths = calc_widths fields rows in (* Calc width of each column *)
   let ind = ref(0) in
   let widths_lst = (Array.to_list widths) in
+  print_endline ("Number of records: " ^ (string_of_int (List.length rows)));
   pp_divider "╔═" "╦═" "╗" widths_lst;
   pp_row ind widths fields ; (* Print field names *)
   pp_divider "╠═" "╬═" "╣" widths_lst;
@@ -91,21 +92,20 @@ let rec pp_table (fields, rows) =
 let invalid_command () = ANSITerminal.(
     print_string [red] "Invalid Command, Please try again.\n")
 
-(* [Malformed exception s] prints the exception s *)
+(* [Malformed exception s] prints the exception [s] *)
 let malformed_exception s = ANSITerminal.(
     print_string [red] ("Malformed Query: " ^ s ^ "\n"))
 
-(* [sys exception s] prints the file system error *)
+(* [sys exception s] prints the file system error [s]*)
 let sys_exception s = ANSITerminal.(
     print_string [red] ("File System Exception: " ^ s ^ "\n"))
 
-(* [invalid_db] prints the error message when an invalid database is input
+(* [invalid_db] prints the error message [s] when an invalid database is input
    in the system *)
 let invalid_db s = ANSITerminal.(
     print_string [red] ("Database " ^ s ^ " does not exist, please try again\n"))
 
-
-(* [invalid_file s] prints the error message when an invalid file is input
+(* [invalid_file s] prints the error message [s] when an invalid file is input
    into the system *)
 let invalid_file s = ANSITerminal.(
     print_string [red] ("File " ^ s ^ " does not exist, please try again\n"))
@@ -124,9 +124,9 @@ let rec write_all_rows = function
   | h::[] -> write_row h
   | h::t -> write_row h ^ write_all_rows t
 
-(* [write_to_file fields rows] is the printing of fields and rows into text file
-   in output folder.  Each element in each row is delimited by "," and each
-   row is seperated by a newline character*)
+(* [write_to_file fields rows query_from_file filename query oc_option] is the 
+   printing of fields and rows into text file in output folder. Each element in 
+   each row is delimited by "," & each row is seperated by a newline character*)
 let write_to_file fields rows num query_from_file filename query oc_option=
   match oc_option with
   | Some oc ->
@@ -145,7 +145,31 @@ let write_to_file fields rows num query_from_file filename query oc_option=
         "\n" ^ "Query written to " ^ ".." ^ Filename.dir_sep ^ "output" 
         ^ Filename.dir_sep ^ "query" ^ (string_of_int !num) ^ ".txt\n\n"));()
 
+(* [compute_commands_from_file command query filename oc] is the computation of
+   [command] and writing the result to [oc]*)
+let compute_commands_from_file command query filename oc =
+  begin 
+    try
+      match command with
+      | Quit -> print_endline "Goodbye for now.\n";
+        exit 0
+      | Select obj -> 
+        let (fields, rows) = select obj in
+        write_to_file fields rows (ref (-1)) true filename query (Some oc)
+      | Insert obj -> insert obj; fprintf oc "%s" (query ^ "\n\n")
+      | Delete obj -> delete obj; fprintf oc "%s" (query ^ "\n\n") 
+      | Create obj -> create_table obj; fprintf oc "%s" (query ^ "\n\n")
+      | Drop obj ->  drop_table obj; fprintf oc "%s" (query ^ "\n\n")
+      | Read _ -> failwith "You cannot use READ FROM in a file"  
+      | Help obj -> failwith "You cannot ask for HELP in a file" 
+      | Changedb s -> failwith "You cannot use CHANGE DATABASE in a file"
+    with
+    | Query.Malformed s -> malformed_exception s
+    | Sys_error s -> sys_exception s
+  end 
 
+(** [rd_wt_queries_from_file inc oc filename] is the reading and writing of the
+    computed queries in [filename]*)
 let rec rd_wt_queries_from_file inc oc filename =
   try
     let query = input_line inc in
@@ -155,30 +179,8 @@ let rec rd_wt_queries_from_file inc oc filename =
       invalid_command (); rd_wt_queries_from_file inc oc filename
     | exception (Query.Malformed s) -> 
       malformed_exception s; rd_wt_queries_from_file inc oc filename
-    | command -> begin 
-        try
-          match command with
-          | Quit -> print_endline "Goodbye for now.\n";
-            exit 0
-          | Select obj -> 
-            let (fields, rows) = select obj in
-            write_to_file fields rows (ref (-1)) true filename query (Some oc); 
-            rd_wt_queries_from_file inc oc filename
-          | Insert obj -> insert obj; fprintf oc "%s" (query ^ "\n\n"); 
-            rd_wt_queries_from_file inc oc filename
-          | Delete obj -> delete obj; fprintf oc "%s" (query ^ "\n\n"); 
-            rd_wt_queries_from_file inc oc filename
-          | Create obj -> create_table obj; fprintf oc "%s" (query ^ "\n\n"); 
-            rd_wt_queries_from_file inc oc filename
-          | Drop obj ->  drop_table obj; fprintf oc "%s" (query ^ "\n\n"); 
-            rd_wt_queries_from_file inc oc filename
-          | Read _ -> failwith "You cannot use READ FROM in a file"  
-          | Help obj -> failwith "You cannot ask for HELP in a file" 
-          | Changedb s -> failwith "You cannot use CHANGE DATABASE in a file"
-        with
-        | Query.Malformed s -> malformed_exception s
-        | Sys_error s -> sys_exception s
-      end 
+    | command -> compute_commands_from_file command query filename oc;
+      rd_wt_queries_from_file inc oc filename
   with  End_of_file -> 
     ANSITerminal.(print_string [green] (
         "\n" ^ "Queries written to " ^ ".." ^ Filename.dir_sep ^ "output" 
@@ -186,7 +188,8 @@ let rec rd_wt_queries_from_file inc oc filename =
     close_in inc
 
 
-(* TODO: Document *)
+(* [queries_from_file filename] is the computation of the queries in [filename] 
+*)
 let queries_from_file filename = 
   let filepath = (".." ^ Filename.dir_sep ^ "input" ^ Filename.dir_sep 
                   ^ "commands" ^ Filename.dir_sep ^ filename ^ ".txt") in
@@ -204,6 +207,52 @@ let queries_from_file filename =
    an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
 let table_height rows = 4 + List.length rows 
 
+(* [change_db] is the switch from the current database to the new database [db].
+   If the database doesn't exist, an error message is displayed*)
+let change_db db = 
+  if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
+                            "input" ^ Filename.dir_sep ^ db)))
+  then invalid_db db
+  else begin 
+    Datardwt.database := db;
+    ANSITerminal.(print_string [green] (
+        "\n" ^ db ^ " selected. Please enter your query\n\n"))
+  end
+
+(* [print_or_write_select obj num] is the display of select commands in either
+   terminal if the terminal screen is big enough to display the entire table or 
+   to a file otherwise*)
+let print_or_write_select obj num = 
+  begin
+    let terminal_w, terminal_h = ANSITerminal.size () in 
+    let (fields, rows) = select obj in
+    if table_height rows < terminal_h
+    then (* Print to terminal *)
+      try pp_table (fields, rows)
+      with Failure s ->  malformed_exception s
+    else (* Print to file *)
+      write_to_file fields rows num false "" "" None
+  end
+
+(* [compute_command_from_terminal command num] is the computation of commands.
+   READ, CHANGE DATABASE, and HELP commands are allowed*)
+let compute_command_from_terminal command num = 
+  try
+    match command with
+    | Quit -> print_endline "Goodbye for now.\n";
+      exit 0
+    | Select obj -> print_or_write_select obj num
+    | Insert obj -> insert obj
+    | Delete obj -> delete obj
+    | Create obj -> create_table obj
+    | Drop obj ->  drop_table obj
+    | Read file -> queries_from_file file 
+    | Changedb db' -> change_db db'
+    | Help obj -> print_string (help_with obj) 
+  with
+  | Query.Malformed s -> malformed_exception s
+  | Sys_error s -> sys_exception s
+
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
   user queries*)
 let rec process_queries num () =
@@ -213,72 +262,35 @@ let rec process_queries num () =
   | exception (Query.Malformed "") -> invalid_command (); process_queries num () 
   | exception (Query.Malformed s) -> 
     malformed_exception s; process_queries num ()
-  | command -> begin 
-      try
-        match command with
-        | Quit -> print_endline "Goodbye for now.\n";
-          exit 0
-        | Select obj -> 
-          begin
-            let terminal_w, terminal_h = ANSITerminal.size () in 
-            let (fields, rows) = select obj in
-            if table_height rows < terminal_h
-            then (* Print to terminal *)
-              try pp_table (fields, rows); process_queries num ()
-              with Failure s ->  malformed_exception s; process_queries num ()
-            else (* Print to file *)
-              write_to_file fields rows num false "" "" None; process_queries num ()
-          end
-        | Insert obj -> insert obj; process_queries num ()
-        | Delete obj -> delete obj; process_queries num ()
-        | Create obj -> create_table obj; process_queries num ()
-        | Drop obj ->  drop_table obj; process_queries num ()
-        | Read file -> queries_from_file file; process_queries num () 
-        | Changedb db' -> begin
-            let num = ref 1 in
-            if (not 
-                  (Sys.file_exists 
-                     (Filename.parent_dir_name ^ Filename.dir_sep ^
-                      "input" ^ Filename.dir_sep ^ db')))
-            then begin invalid_db db'; process_queries num () end
-            else
-              Datardwt.database := db';
-            ANSITerminal.(print_string [green] (
-                "\n" ^ db' ^ " selected. Please enter your query\n\n"));
+  | command -> compute_command_from_terminal command num; process_queries num ()
 
-            process_queries num ()
-          end
-        | Help obj -> print_string (help_with obj); process_queries num () 
-      (*| Help lst -> *)
-      with
-      | Query.Malformed s -> malformed_exception s; process_queries num ()
-      | Sys_error s -> sys_exception s; process_queries num ()
-    end 
-
+(* [read_input_db ()] checks if inputed database exists and continues to prompt
+   for a database until the user uses the QUIT command, which exits the program, 
+   or inputs a valid database, at which point the user is prompted for a query
+   and engine to process queries is called *)
 let rec read_input_db () =
+  print_string  "> ";
   match read_line () with
   | exception End_of_file -> ()
   | "QUIT" -> print_endline "Goodbye for now.\n"; exit 0
   | db -> begin
       if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
                                 "input" ^ Filename.dir_sep ^ db)))
-      then begin invalid_db db;   print_string  "> ";
+      then begin invalid_db db;   
         read_input_db () end
       else
         Datardwt.database := db;
       ANSITerminal.(print_string [green] (
           "\n" ^ db ^ " selected. Please enter your query\n\n"));
-      let num = ref 1 in
-      process_queries num ()
+      process_queries (ref 1) ()
     end
 
-(* [main ()] prompts the user to insert query, and then starts the engine to 
-   process them *)
+(* [main ()] prompts the user to select a database, and then calls read_input_db
+   to check if database exists*)
 let main () = 
   ANSITerminal.(print_string [red] "
    \n\nWelcome to Ocaml DBMS\n");
   print_endline "Please select your database\n";
-  print_string  "> ";
   read_input_db ()
 
 (* Execute the dbms. *)
