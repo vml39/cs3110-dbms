@@ -184,7 +184,7 @@ let filter_row_join table schema fields (where: Query.where_obj option) row =
 
 (** [filter_table fc schema fields where acc] is the table constructed
     from filtering the [fields] from each row of [fc]. *)
-let rec filter_table fc (schema: string list) fields (where: Query.where_obj option) acc = 
+let rec filter_table fc (schema: string list) fields (where: where_obj option) acc = 
   let row = try read_next_line fc |> filter_row schema fields where with 
     | exn -> Stdlib.close_in fc; Some []
   in match row with 
@@ -202,7 +202,7 @@ let comp n x y =
 
 (** [order table schema qry table] is [table] with rows sorted by the the field
     following the "ORDER BY" keyword in [qry]. *)
-let order schema (qry_order: Query.fieldname option) table = 
+let order schema (qry_order: fieldname option) table = 
   match qry_order with 
   | None -> table
   | Some field -> 
@@ -212,19 +212,41 @@ let order schema (qry_order: Query.fieldname option) table =
 (** [like_equal fc schema fields qry] is the OCaml table constructed from the
     rows in [fc] based on the "WHERE" condition in [qry]. Table only contains
     the fields specified in [fields] from the table [schema]. *)
-let rec like_equal fc schema fields (qry_where : Query.where_obj) = 
+let rec like_equal fc schema fields (qry_where: where_obj) = 
   filter_table fc schema fields (Some qry_where) []
 
 (** [where tablename qry schema fields] is the OCaml table created from parsing 
     each row in the database table with [tablename]. Table results are filtered
     if there is a "WHERE" keyword in [qry]. Table only contains the fields
     specified in [fields] from the table [schema]. *)
-let where tablename (qry_where : Query.where_obj option) schema fields fc = 
+let where tablename (qry_where: where_obj option) schema fields fc = 
   match qry_where with
   | None -> filter_table fc schema fields None [] 
   | Some w -> 
     check_fields schema where_msg [w.field]; 
     like_equal fc schema fields w
+
+(** [order table schema qry table] is [table] with rows sorted by the the field
+    following the "ORDER BY" keyword in [qry]. *)
+let order_join (qry: select_obj) (join: join_obj) (qry_order: fieldname option) schema fields table = 
+  match qry_order with 
+  | None -> table
+  | Some field -> 
+    let field' = get_field field in 
+    if fst field' = qry.table then 
+      begin 
+      check_fields (fst schema) orderby_msg [snd field'];
+      let comp_f = fst schema |> index (snd field') |> comp in 
+      List.sort comp_f table
+      end 
+    else if fst field' = join.table then 
+      begin 
+      check_fields (snd schema) orderby_msg [snd field'];
+      let comp_f = fst schema |> index (snd field') |> (+) (List.length fields)
+      in 
+      List.sort (comp comp_f) table
+      end 
+    else raise (Malformed "Must sort by a column in either table.") 
 
 (** [get_cond field schema row] is the value at the index of [field] in 
     [schema]. *)
@@ -266,7 +288,6 @@ let rec rj_filter_table qry (qry_join: join_obj) cond ind schema1 fields fc1 =
     if List.nth row ind = cond 
     then join_filter_row qry qry.table schema1 (fst fields) row
     else rj_filter_table qry qry_join cond ind schema1 fields fc1
-    (* right join with where isn't working *)
   with 
   | exn -> 
     Stdlib.close_in fc1; 
@@ -406,7 +427,7 @@ let join (qry: select_obj) (join: join_obj) schema fields =
     right_join qry join schema fields fc []
   | None -> raise (Malformed "Must provide a type of join")
 
-let select (qry: Query.select_obj) =
+let select (qry: select_obj) =
   let tablename = qry.table in 
   let schema = table_schema (schema_from_txt ()) tablename in 
   match qry.join with 
@@ -420,9 +441,9 @@ let select (qry: Query.select_obj) =
     let schema1 = table_schema (schema_from_txt ()) join_obj.table in 
     let fields' = 
       select_fields_join qry.table join_obj.table (schema, schema1) qry.fields 
-    in 
+    in let table = join qry join_obj (schema, schema1) fields' in 
     (order_fields_join (schema, schema1) fields', 
-     join qry join_obj (schema, schema1) fields')
+     order_join qry join_obj qry.order (schema, schema1) (fst fields') table)
 
 (* INSERT *)
 
