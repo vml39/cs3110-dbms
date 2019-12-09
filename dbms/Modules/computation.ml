@@ -282,15 +282,14 @@ let rj_row (qry: select_obj) join schema fields row : string list option =
   | None -> begin 
     match check_where qry.where (fst schema) (fst fields) row with 
       | None -> None 
-      | Some r' -> Some ((snd fields |> populate_null [])@r')
+      | Some r' -> Some ((fst fields |> populate_null [])@r')
     end 
   | Some r' when r' = [] -> begin 
     match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None 
-      | Some r -> Some (r@(snd fields |> populate_null []))
+      | Some r' -> Some ((snd fields |> populate_null [])@r')
     end 
   | Some r -> begin 
-      ps "Some r";
       match join_filter_row qry join.table (snd schema) (snd fields) row with 
       | None -> None
       | Some r' -> Some (r@r')
