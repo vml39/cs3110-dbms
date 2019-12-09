@@ -372,6 +372,7 @@ let select_tests = [
   select_test 
     "SELECT * FROM buildings INNER JOIN dorms ON buildings.id = dorms.buildingid"
     (schema2, buildings_join) join_inner;
+  (* Malformed *)
   malformed_select_test "SELEC netid FROM students" "Illegal query";
   malformed_select_test "select asdf FROM students" "Illegal query";
   malformed_select_test "SELECT FROM students" 

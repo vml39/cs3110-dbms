@@ -74,10 +74,7 @@ type help_obj = {
 
 type t = 
   | Select of select_obj
-  (* SELECT * FROM table *)
   | Insert of insert_obj
-  (* INSERT INTO table_name (column1, column2, column3, ...)
-     VALUES (value1, value2, value3, ...); *)
   | Delete of delete_obj
   | Create of create_obj
   | Drop of drop_obj
@@ -148,7 +145,7 @@ let rec select_where fieldname where_rec (record : select_obj) = function
   | h::t -> select_where (new_field fieldname h) where_rec record t
 
 (** [select_join_qry record lst] is [record] with the rest of the select_record
-    filled out if [lst] follows select join SQL syntax. Malformed otherwise*)
+    filled out if [lst] follows select join SQL syntax. Malformed otherwise. *)
 let select_join_qry (record: select_obj) = function
   | [] -> record
   | h::t when h = "WHERE" -> 
@@ -164,7 +161,7 @@ let select_join_qry (record: select_obj) = function
     raise (Malformed "'JOIN' can only be followed by 'WHERE' or 'ORDER BY'")
 
 (** [select_join_field join_rec record lst] is record with fields included if
-    [lst] follows select join SQL syntax. Malformed otherwise.*)
+    [lst] follows select join SQL syntax. Malformed otherwise. *)
 let select_join_field (join_rec: join_obj) (record: select_obj) = function 
   | [] -> 
     raise (Malformed "You must provide a column from each table to join on")
@@ -178,7 +175,7 @@ let select_join_field (join_rec: join_obj) (record: select_obj) = function
     raise (Malformed "You must provide a column from each table to join on")
 
 (** [select_join join_rec record lst] is [record] with the join_obj updated if
-    [lst] follows select join SQL syntax. Malformed otherwise.*)
+    [lst] follows select join SQL syntax. Malformed otherwise. *)
 let select_join (join_rec: join_obj) (record: select_obj) = function 
   | [] -> raise (Malformed "You must join 'ON' another table")
   | h::i::t when i = "ON" -> 
@@ -186,7 +183,7 @@ let select_join (join_rec: join_obj) (record: select_obj) = function
   | _ -> raise (Malformed "You must join 'ON' another table")
 
 (** [match_join join] is a join_type if [join] is a valid join operation.
-    Malformed otherwise.*)
+    Malformed otherwise. *)
 let match_join join = 
   if join = "INNER" then Inner 
   else if join = "LEFT" then Left
