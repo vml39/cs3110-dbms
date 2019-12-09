@@ -1,4 +1,5 @@
 SELECT * FROM students
+SELECT netid, home, major FROM students
 INSERT INTO students (name, netid) VALUES (Clarkson, csd23)
 SELECT * FROM students
 DELETE FROM students WHERE name = Clarkson
@@ -11,12 +12,11 @@ INSERT INTO stooges (name, netid) VALUES (Daniel Stabile, dis52)
 SELECT * FROM stooges
 INSERT INTO stooges (name) VALUES (Vivian Li)
 SELECT * FROM stooges
-SELECT * FROM students ORDER BY netid
-SELECT * FROM students WHERE name LIKE %i% ORDER BY netid
+SELECT * FROM stooges ORDER BY netid
+SELECT * FROM stooges WHERE name LIKE %a% ORDER BY netid
 
 DELETE FROM stooges WHERE netid <> rjm448
 SELECT * FROM stooges
-SELECT * FROM students
 TRUNCATE TABLE stooges
 SELECT * FROM stooges
 INSERT INTO stooges (netid) VALUES (dis52)
@@ -25,7 +25,14 @@ DROP TABLE stooges
 
 SELECT * FROM orders
 SELECT * FROM customers
+
 SELECT orders.OrderID, customers.CustomerName FROM orders INNER JOIN customers ON orders.CustomerID = customers.CustomerID
+
+SELECT orders.OrderID, customers.CustomerName FROM orders INNER JOIN customers ON orders.CustomerID = customers.CustomerID WHERE customers.CustomerName LIKE %a%
+
 SELECT orders.OrderID, customers.CustomerName FROM orders LEFT JOIN customers ON orders.CustomerID = customers.CustomerID
+
 SELECT orders.OrderID, customers.CustomerName FROM orders RIGHT JOIN customers ON orders.CustomerID = customers.CustomerID
+
+SELECT buildings.id, dorms.name FROM buildings RIGHT JOIN dorms ON buildings.id = dorms.buildingid
 
