@@ -239,11 +239,9 @@ let rec rj_filter_table qry (qry_join: join_obj) cond ind schema1 fields fc1 =
   try 
     let row = read_next_line fc1 in 
     if List.nth row ind = cond 
-    (* need to return the left table with vals = null *)
     then join_filter_row qry qry.table schema1 (fst fields) row
-    else 
-    (* need to keep the row?? *)
-    rj_filter_table qry qry_join cond ind schema1 fields fc1
+    else rj_filter_table qry qry_join cond ind schema1 fields fc1
+    (* right join with where isn't working *)
   with 
   | exn -> 
     Stdlib.close_in fc1; 
