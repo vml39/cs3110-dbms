@@ -247,6 +247,16 @@ let rec populate_null acc = function
   | [] -> acc 
   | h::t -> populate_null (""::acc) t
 
+(** TODO: document *)
+let check_where (where: where_obj option) schema fields row : string list option = 
+  match where with 
+  | None -> None
+  | Some w -> 
+    let i = ref (-1) in 
+    let ind = index w.field schema in
+    let bool_fields = filter_fields schema fields [] in
+    match_pattern bool_fields row ind w i
+
 (* RIGHT JOIN *)
 
 (** TODO: document *)
@@ -269,14 +279,18 @@ let rj_row (qry: select_obj) join schema fields row : string list option =
   let cond = get_cond (snd join.on) (snd schema) row in 
   let f_ind = (fst join.on |> get_field |> fst |> index) (fst schema) in 
   match rj_filter_table qry join cond f_ind (fst schema) fields fc1 with 
-  | None -> None 
-  | Some r when r = [] -> begin 
-      match join_filter_row qry join.table (snd schema) (snd fields) row with 
+  | None -> begin 
+    match check_where qry.where (fst schema) (fst fields) row with 
       | None -> None 
-      | Some r' -> 
-        Some ((fst fields |> populate_null [])@r')
+      | Some r' -> Some ((snd fields |> populate_null [])@r')
+    end 
+  | Some r' when r' = [] -> begin 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None 
+      | Some r -> Some (r@(snd fields |> populate_null []))
     end 
   | Some r -> begin 
+      ps "Some r";
       match join_filter_row qry join.table (snd schema) (snd fields) row with 
       | None -> None
       | Some r' -> Some (r@r')
@@ -305,7 +319,7 @@ let rec lj_filter_table qry (join: join_obj) cond ind schema2 fields fc1 =
   | exn -> 
     Stdlib.close_in fc1; 
     if qry.where = None then Some []
-    else None 
+    else None
 
 (** TODO: document *)
 let lj_row qry (join: join_obj) schema fields row : string list option =
@@ -313,13 +327,16 @@ let lj_row qry (join: join_obj) schema fields row : string list option =
   let cond = get_cond (fst join.on) (fst schema) row in 
   let f_ind = (snd join.on |> get_field |> snd |> index) (snd schema) in 
   match lj_filter_table qry join cond f_ind (snd schema) fields fc1 with 
-  | None -> None 
-  | Some r' when r' = [] -> begin 
-      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+  | None -> begin 
+    match check_where qry.where (fst schema) (fst fields) row with 
       | None -> None 
-      | Some r -> 
-        Some (r@(snd fields |> populate_null []))
-    end 
+      | Some r -> Some (r@(snd fields |> populate_null []))
+    end  
+  | Some r' when r' = [] -> begin 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None 
+      | Some r -> Some (r@(snd fields |> populate_null []))
+    end
   | Some r' -> begin 
       match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None
