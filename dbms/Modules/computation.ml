@@ -109,9 +109,18 @@ let order_fields_join schema fields =
      filter_fields (snd schema) (snd fields) [])
   in (order_fields (fst schema) bfields1)@(order_fields (snd schema) bfields2)
 
+(* [add_boundary_characters pattern] is [pattern] with "\\b" cons onto the front
+*)
+let add_boundary_characters pattern = 
+  match pattern with
+  | h::t  -> "\\b":: pattern
+  | [] -> pattern
+
+
 (** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
     regex pattern. *)
-let rec convert_to_regex = function (* TODO: Remove this function and consolidate below *)
+let rec convert_to_regex pattern = 
+  match pattern with
   | [] -> ""
   | h::t when h = "%" -> ".*" ^ convert_to_regex t
   | h::t when h = "_" -> "." ^ convert_to_regex t
@@ -125,8 +134,9 @@ let parse_pattern pattern =
     |> Str.global_replace (Str.regexp "_") " _ " 
     |> Str.global_replace (Str.regexp "%") " % " 
     |> String.split_on_char ' ' 
-    |> List.filter ( fun s -> s <> "") in 
-  convert_to_regex patternList
+    |> List.filter ( fun s -> s <> "")
+    |> add_boundary_characters in 
+  List.rev (add_boundary_characters (List.rev patternList)) |> convert_to_regex
 
 (** TODO: document *)
 let filter_list fields row i = 
@@ -235,16 +245,16 @@ let order_join (qry: select_obj) (join: join_obj) (qry_order: fieldname option) 
     let field' = get_field field in 
     if fst field' = qry.table then 
       begin 
-      check_fields (fst schema) orderby_msg [snd field'];
-      let comp_f = fst schema |> index (snd field') |> comp in 
-      List.sort comp_f table
+        check_fields (fst schema) orderby_msg [snd field'];
+        let comp_f = fst schema |> index (snd field') |> comp in 
+        List.sort comp_f table
       end 
     else if fst field' = join.table then 
       begin 
-      check_fields (snd schema) orderby_msg [snd field'];
-      let comp_f = fst schema |> index (snd field') |> (+) (List.length fields)
-      in 
-      List.sort (comp comp_f) table
+        check_fields (snd schema) orderby_msg [snd field'];
+        let comp_f = fst schema |> index (snd field') |> (+) (List.length fields)
+        in 
+        List.sort (comp comp_f) table
       end 
     else raise (Malformed "Must sort by a column in either table.") 
 
@@ -301,12 +311,12 @@ let rj_row (qry: select_obj) join schema fields row : string list option =
   let f_ind = (fst join.on |> get_field |> fst |> index) (fst schema) in 
   match rj_filter_table qry join cond f_ind (fst schema) fields fc1 with 
   | None -> begin 
-    match check_where qry.where (fst schema) (fst fields) row with 
+      match check_where qry.where (fst schema) (fst fields) row with 
       | None -> None 
       | Some r' -> Some ((fst fields |> populate_null [])@r')
     end 
   | Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None 
       | Some r' -> Some ((snd fields |> populate_null [])@r')
     end 
@@ -348,12 +358,12 @@ let lj_row qry (join: join_obj) schema fields row : string list option =
   let f_ind = (snd join.on |> get_field |> snd |> index) (snd schema) in 
   match lj_filter_table qry join cond f_ind (snd schema) fields fc1 with 
   | None -> begin 
-    match check_where qry.where (fst schema) (fst fields) row with 
+      match check_where qry.where (fst schema) (fst fields) row with 
       | None -> None 
       | Some r -> Some (r@(snd fields |> populate_null []))
     end  
   | Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None 
       | Some r -> Some (r@(snd fields |> populate_null []))
     end
