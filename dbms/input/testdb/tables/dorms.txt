@@ -2,3 +2,4 @@
 (Bethe Hall, West, 7)
 (Becker Hall, West, 8)
 (Cascadilla Hall, Collegetown, null)
+(Becker Hall Copy, West, 8)
