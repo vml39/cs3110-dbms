@@ -277,13 +277,23 @@ let join_filter_row (qry: select_obj) table schema fields row =
   filter_row_join table schema bool_fields qry.where row
 
 (** TODO: document *)
-let rec append_rows r acc (lst: string list option list) = 
+let rec rj_append_rows r acc (lst: string list option list) = 
   match lst with 
   | [] -> acc 
   | h::t -> begin 
     match h with 
-    | None -> append_rows r acc t
-    | Some r' -> append_rows r ((r'@r)::acc) t
+    | None -> rj_append_rows r acc t
+    | Some r' -> rj_append_rows r ((r'@r)::acc) t
+  end 
+
+(** TODO: document *)
+let rec ilj_append_rows r acc (lst: string list option list) = 
+  match lst with 
+  | [] -> acc 
+  | h::t -> begin 
+    match h with 
+    | None -> ilj_append_rows r acc t
+    | Some r' -> ilj_append_rows r ((r@r')::acc) t
   end 
 
 (** TODO: document *)
@@ -343,7 +353,7 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
   | Some r -> begin 
       match join_filter_row qry join.table (snd schema) (snd fields) row with 
       | None -> None
-      | Some r' -> Some (append_rows r' [] r)
+      | Some r' -> Some (rj_append_rows r' [] r)
     end 
 
 (** TODO: document *)
@@ -394,7 +404,7 @@ let lj_row qry (join: join_obj) schema fields row : string list list option =
   | Some r' -> begin 
       match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None
-      | Some r -> Some (append_rows r [] r')
+      | Some r -> Some (ilj_append_rows r [] r')
       (* order is off but it works *)
     end 
 
@@ -439,7 +449,7 @@ let ij_row qry (join: join_obj) schema fields row : string list list option =
   | Some r' -> begin 
       match join_filter_row qry qry.table (fst schema) (fst fields) row with 
       | None -> None
-      | Some r -> Some (append_rows r [] r')
+      | Some r -> Some (ilj_append_rows r [] r')
     end 
 
 (** TODO: document *)
