@@ -3,4 +3,4 @@ students: name, netid, class, major, home
 buildings: id, name, location, goodforstudying
 dorms: name, location, buildingid
 customers: CustomerID,	CustomerName,	ContactName,	Address,	City,	PostalCode,	Country
-orders: OrderID,	CustomerID,	EmployeeID,	OrderDate,	ShipperIDstooges: name, netid
+orders: OrderID,	CustomerID,	EmployeeID,	OrderDate,	ShipperID
