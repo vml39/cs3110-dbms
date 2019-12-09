@@ -25,6 +25,9 @@ bisect: clean bisect-test
 query:
 	$(OCAMLBUILD)  $(MAIN) && rlwrap ./$(MAIN)
 
+sad-query:
+	$(OCAMLBUILD)  $(MAIN) && ./$(MAIN)
+
 zip:
 	zip dbms.zip *.ml* _tags Makefile
 	

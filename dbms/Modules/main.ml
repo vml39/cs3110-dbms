@@ -137,13 +137,13 @@ let write_to_file fields rows num query_from_file filename query oc_option=
   | None ->
     let oc = open_out (".." ^ Filename.dir_sep ^ "output" ^ Filename.dir_sep 
                        ^ "query" ^ (string_of_int !num) ^ ".txt") in  
-    num := !num +1;
     fprintf oc "%s" (write_row fields);         (* write fields *)  
     fprintf oc "%s" (write_all_rows rows);      (* write all rows *)
     close_out oc; 
     ANSITerminal.(print_string [green] (
         "\n" ^ "Query written to " ^ ".." ^ Filename.dir_sep ^ "output" 
-        ^ Filename.dir_sep ^ "query" ^ (string_of_int !num) ^ ".txt\n\n"));()
+        ^ Filename.dir_sep ^ "query" ^ (string_of_int !num) ^ ".txt\n\n"));
+    num := !num +1; ()
 
 (* [compute_commands_from_file command query filename oc] is the computation of
    [command] and writing the result to [oc]*)
@@ -260,6 +260,7 @@ let compute_command_from_terminal command num =
   with
   | Query.Malformed s -> malformed_exception s
   | Sys_error s -> sys_exception s
+  | Invalid_argument s -> sys_exception s
 
 (*[process_queries ()] is the reading, parsing, computation, and printing of 
   user queries*)

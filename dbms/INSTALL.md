@@ -1,9 +1,18 @@
-No installation needed.
+rlwrap must be installed for 'make query' to work.
+  - for example to install on macOS using homebrew type <brew install rlwrap>
+  - otherwise use whatever package management software/method you prefer
+If you're unable to install rlwrap you can run queries using 'make sad-query'
+instead which runs the same engine but without command history, which is sad.
 
-Type `make query` in the command prompt **in the modules folder** to start the
+Type `make query` (or 'make sad-query') in the command prompt **in the modules folder** to start the
 database.  When promted type the database you want to use, <testdb> or <bigdb> 
 Current functionality only allows the user to SELECT, INSERT, CREATE TABLE, DELETE, and QUIT. 
-Test tables are students and buildings.
+Testdb tables are buildings, customers, dorms, orders, and students.
+Bigdb tables are customers, icecream, and info
+
+Queries whose results don't fit in your terminal  window are written to the 
+file displayed after the query is processed
+
 Examples:
   **In testdb**
 - SELECT * FROM students
