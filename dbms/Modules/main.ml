@@ -145,7 +145,8 @@ let write_to_file fields rows num query_from_file filename query oc_option=
         "\n" ^ "Query written to " ^ ".." ^ Filename.dir_sep ^ "output" 
         ^ Filename.dir_sep ^ "query" ^ (string_of_int !num) ^ ".txt\n\n"));()
 
-
+(* [compute_commands_from_file command query filename oc] is the computation of
+   [command] and writing the result to [oc]*)
 let compute_commands_from_file command query filename oc =
   begin 
     try
@@ -167,6 +168,8 @@ let compute_commands_from_file command query filename oc =
     | Sys_error s -> sys_exception s
   end 
 
+(** [rd_wt_queries_from_file inc oc filename] is the reading and writing of the
+    computed queries in [filename]*)
 let rec rd_wt_queries_from_file inc oc filename =
   try
     let query = input_line inc in
@@ -185,7 +188,8 @@ let rec rd_wt_queries_from_file inc oc filename =
     close_in inc
 
 
-(* TODO: Document *)
+(* [queries_from_file filename] is the computation of the queries in [filename] 
+*)
 let queries_from_file filename = 
   let filepath = (".." ^ Filename.dir_sep ^ "input" ^ Filename.dir_sep 
                   ^ "commands" ^ Filename.dir_sep ^ filename ^ ".txt") in
@@ -199,11 +203,8 @@ let queries_from_file filename =
     close_out oc
   else invalid_file filename
 
-(* [table_height rows] is the # of lines [rows] would take up as a table with
-   an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
-let table_height rows = 4 + List.length rows 
-
-(* TODO: Comment *)
+(* [change_db] is the switch from the current database to the new database [db].
+   If the database doesn't exist, an error message is displayed*)
 let change_db db = 
   if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
                             "input" ^ Filename.dir_sep ^ db)))
@@ -214,12 +215,26 @@ let change_db db =
         "\n" ^ db ^ " selected. Please enter your query\n\n"))
   end
 
-(* TODO: Comment *)
+(* [table_height rows] is the # of lines [rows] would take up as a table with
+   an additional row for fields, 1 row for dividers, and 2 rows for boundaries*)
+let table_height rows = 4 + List.length rows 
+
+(* [table_width rows] is the # of characters the longest list in [rows] 
+   would take up as a table *)
+let table_width fields rows = 
+  Array.fold_left (fun a i -> a + i) 0 (calc_widths fields rows) +
+  (List.length fields) * 2
+
+(* [print_or_write_select obj num] is the display of select commands in either
+     terminal if the terminal screen is big enough to display the entire table or 
+     to a file otherwise*)
 let print_or_write_select obj num = 
   begin
     let terminal_w, terminal_h = ANSITerminal.size () in 
     let (fields, rows) = select obj in
-    if table_height rows < terminal_h
+    let table_width =  table_width fields rows  in
+    let table_height = table_height rows in
+    if table_height < terminal_h && table_width < terminal_w
     then (* Print to terminal *)
       try pp_table (fields, rows)
       with Failure s ->  malformed_exception s
@@ -227,7 +242,8 @@ let print_or_write_select obj num =
       write_to_file fields rows num false "" "" None
   end
 
-(* TODO: Comment *)
+(* [compute_command_from_terminal command num] is the computation of commands.
+   READ, CHANGE DATABASE, and HELP commands are allowed*)
 let compute_command_from_terminal command num = 
   try
     match command with
@@ -264,7 +280,11 @@ let rec read_input_db () =
   print_string  "> ";
   match read_line () with
   | exception End_of_file -> ()
+  | exception (Empty) -> read_input_db ()
+  | "" -> read_input_db ()
   | "QUIT" -> print_endline "Goodbye for now.\n"; exit 0
+  | "quit" -> print_endline "Goodbye for now.\n"; exit 0
+  | "q" -> print_endline "Goodbye for now.\n"; exit 0
   | db -> begin
       if (not (Sys.file_exists (Filename.parent_dir_name ^ Filename.dir_sep ^
                                 "input" ^ Filename.dir_sep ^ db)))
@@ -281,7 +301,7 @@ let rec read_input_db () =
    to check if database exists*)
 let main () = 
   ANSITerminal.(print_string [red] "
-   \n\nWelcome to Ocaml DBMS\n");
+   \n\nWelcome to Ocaml DBMS\nType 'HELP' for help with Ocaml DBMS commands\n");
   print_endline "Please select your database\n";
   read_input_db ()
 

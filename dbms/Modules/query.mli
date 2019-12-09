@@ -90,7 +90,6 @@ exception Empty
 (** Raised when a malformed query is encountered. *)
 exception Malformed of string
 
-(** TODO: document *)
 (** [parse str] parses a user's input into a [query], as follows. The first
     word (i.e., consecutive sequence of non-space characters) of [str] becomes 
     the command. The rest of the words, if any, become the object phrase.

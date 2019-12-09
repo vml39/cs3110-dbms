@@ -1,3 +1,4 @@
 cornell
 students: name, netid, class, major, home
 buildings: name, location, goodforstudying
+customers: CustomerID, CustomerName, ContactName, Address, City, PostalCode, Country
