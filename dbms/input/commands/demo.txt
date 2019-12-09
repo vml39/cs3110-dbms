@@ -1,5 +1,11 @@
 SELECT * FROM students
+INSERT INTO students (name, netid) VALUES (Clarkson, csd23)
+SELECT * FROM students
+DELETE FROM students WHERE name = Clarkson
+SELECT * FROM students
+
 CREATE TABLE stooges (name, netid)
+SELECT * FROM stooges
 INSERT INTO stooges VALUES (Robert Morgowicz, rjm448)
 INSERT INTO stooges (name, netid) VALUES (Daniel Stabile, dis52)
 SELECT * FROM stooges
@@ -8,7 +14,7 @@ SELECT * FROM stooges
 SELECT * FROM students ORDER BY netid
 SELECT * FROM students WHERE name LIKE %i% ORDER BY netid
 
-DELETE FROM stooges WHERE netid != rjm448
+DELETE FROM stooges WHERE netid <> rjm448
 SELECT * FROM stooges
 SELECT * FROM students
 TRUNCATE TABLE stooges

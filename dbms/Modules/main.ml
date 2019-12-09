@@ -120,7 +120,7 @@ let rec write_row = function
 (* [concate_all_rows rows] is the concatenation of each row in [rows] using
    function write_row. Each row in [rows] is seperated by a newline character*)
 let rec write_all_rows = function
-  | [] -> failwith "No rows to be printed"
+  | [] -> ""
   | h::[] -> write_row h
   | h::t -> write_row h ^ write_all_rows t
 
