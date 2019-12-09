@@ -15,5 +15,11 @@ TRUNCATE TABLE stooges
 SELECT * FROM stooges
 INSERT INTO stooges (netid) VALUES (dis52)
 SELECT * FROM stooges
-DROP TABE stooges
+DROP TABLE stooges
+
+SELECT * FROM orders
+SELECT * FROM customers
+SELECT orders.OrderID, customers.CustomerName FROM orders INNER JOIN customers ON orders.CustomerID = customers.CustomerID
+SELECT orders.OrderID, customers.CustomerName FROM orders LEFT JOIN customers ON orders.CustomerID = customers.CustomerID
+SELECT orders.OrderID, customers.CustomerName FROM orders RIGHT JOIN customers ON orders.CustomerID = customers.CustomerID
 
