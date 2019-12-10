@@ -270,7 +270,7 @@ let order_join (qry: select_obj) (join: join_obj) (qry_order: fieldname option)
         in 
         List.sort (comp comp_f) table
       end 
-    else raise (Malformed "Must sort by a column in either table.") 
+    else raise (Malformed "Must sort by a field in either table") 
 
 (** [get_cond field schema row] is the value at the index of [field] in 
     [schema]. *)
@@ -323,14 +323,22 @@ let rec populate_null acc = function
 (** [check_where where schema fields row] is [Some r] if [where] is not [None]
     and [row] satisfies the condition for [where]. Returns [None] if [where] 
     is [None] or if [row] does not satisfy the condition for [where]. *)
-let check_where (w: where_obj option) schema fields row : string list option = 
-  match w with 
+let check_where (qry: select_obj) (where: where_obj option) (join: join_obj)
+schema fields row : string list option = 
+  match where with 
   | None -> None
-  | Some w' -> 
+  | Some w -> 
     let i = ref (-1) in 
-    let ind = index w'.field schema in
-    let bool_fields = filter_fields schema fields [] in
-    match_pattern bool_fields row ind w' i
+    let where_field = get_field w.field in 
+    if fst where_field = qry.table then 
+      let ind = fst schema |> index (snd where_field) in
+      let bool_fields = filter_fields (fst schema) (fst fields) [] in
+      match_pattern bool_fields row ind {w with field = snd where_field} i
+    else if fst where_field = join.table then 
+      let ind = snd schema |> index (snd where_field) in
+      let bool_fields = filter_fields (snd schema) (snd fields) [] in
+      match_pattern bool_fields row ind {w with field = snd where_field} i
+    else raise (Malformed "WHERE field by a field in either table")
 
 (* RIGHT JOIN *)
 
@@ -365,7 +373,7 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
   let f_ind = (fst join.on |> get_field |> fst |> index) (fst schema) in 
   match rj_filter_table qry join cond f_ind (fst schema) fields fc1 [] with 
   | None -> begin 
-    match check_where qry.where (fst schema) (fst fields) row with 
+    match check_where qry qry.where join schema fields row with 
     | None -> None 
     | Some r' -> Some [((fst fields |> populate_null [])@r')]
   end 
@@ -380,6 +388,8 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
     | Some r' -> Some (rj_append_rows r' [] r)
   end 
 
+(* where works selectively *)
+
 (** [right_join qry join schema fields fc acc] is the list of results from
     performing the right join operation on the tables [qry.table] and
     [join.table] *)
@@ -393,6 +403,8 @@ let rec right_join qry join schema fields fc acc =
   | Some r ->
     let new_acc = append_rows' acc r in  
     right_join qry join schema fields fc new_acc
+
+  (* failure when ordering by for any of them *)
 
 (* LEFT JOIN *)
 
@@ -427,7 +439,7 @@ let lj_row qry (join: join_obj) schema fields row : string list list option =
   let f_ind = (snd join.on |> get_field |> snd |> index) (snd schema) in 
   match lj_filter_table qry join cond f_ind (snd schema) fields fc1 [] with 
   | None -> begin 
-    match check_where qry.where (fst schema) (fst fields) row with 
+    match check_where qry qry.where join schema fields row with 
     | None -> None 
     | Some r -> Some [(r@(snd fields |> populate_null []))]
   end  
@@ -490,7 +502,6 @@ let ij_row qry (join: join_obj) schema fields row : string list list option =
     | None -> None
     | Some r -> Some (ilj_append_rows r [] r')
   end 
-(* TODO: where doesn't work with left join or inner join *)
 
 (** [inner_join qry join schema fields fc acc] is the list of results from
     performing the inner join operation on the tables [qry.table] and
