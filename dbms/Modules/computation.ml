@@ -133,13 +133,14 @@ let rec convert_to_regex pattern =
   | h::t -> h ^ convert_to_regex t
 
 (** [parse_pattern pattern] is the SQL [pattern] following the "LIKE" operator 
-    in the query and coverted to an OCaml regex pattern. *)
+    in the query and coverted to an OCaml regex pattern. 
+    Requires: pattern to be parsed cannot include '~'*)
 let parse_pattern pattern = 
   let patternList = 
     pattern
-    |> Str.global_replace (Str.regexp "_") " _ " 
-    |> Str.global_replace (Str.regexp "%") " % " 
-    |> String.split_on_char ' ' 
+    |> Str.global_replace (Str.regexp "_") "~_~" 
+    |> Str.global_replace (Str.regexp "%") "~%~" 
+    |> String.split_on_char '~' 
     |> List.filter ( fun s -> s <> "")
     |> add_boundary_characters in 
   List.rev (add_boundary_characters (List.rev patternList)) |> convert_to_regex
