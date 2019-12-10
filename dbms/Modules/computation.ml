@@ -155,7 +155,6 @@ let filter_pattern fields row ind pattern i operator =
     the [where] condition and [Some row] if it does. *)
 let match_pattern fields row ind where i = 
   let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
-  print_endline (parse_pattern where.ptn);
   match where.op with
   | Like ->
     if Str.string_match 
