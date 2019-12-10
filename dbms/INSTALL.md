@@ -10,8 +10,12 @@ Current functionality only allows the user to SELECT, INSERT, CREATE TABLE, DELE
 Testdb tables are buildings, customers, dorms, orders, and students.
 Bigdb tables are customers, icecream, and info
 
-Queries whose results don't fit in your terminal  window are written to the 
-file displayed after the query is processed
+Queries whose results don't fit in your terminal window are written to the 
+file displayed after the query is processed.  Tables that contain special 
+characters, such as letters with accents, will not be displayed correctly because
+characters with accents count for length 2 instead of 1 which messes with 
+computation of row lengths.  Displaying tables in terminal is meant for only
+letters in the English language a-zA-Z.
 
 Examples:
   **In testdb**

@@ -239,7 +239,12 @@ let print_or_write_select obj num =
       try pp_table (fields, rows)
       with Failure s ->  malformed_exception s
     else (* Print to file *)
-      write_to_file fields rows num false "" "" None
+      begin
+        ANSITerminal.(
+          print_string [red] 
+            ("Terminal window not big enough to display results."));
+        write_to_file fields rows num false "" "" None
+      end
   end
 
 (* [compute_command_from_terminal command num] is the computation of commands.

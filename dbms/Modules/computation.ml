@@ -151,8 +151,8 @@ let filter_list fields row i =
   List.filter (fun _ -> i := !i + 1; List.nth fields !i) row
 
 (** [filter_pattern fields row ind pattern i operator] is [Some row] with only 
-   the fields specified in [fields].  Returns the row if the row follows the SQL
-   [pattern]. Returns [None] if the row does not follow the SQL [pattern] *)
+    the fields specified in [fields].  Returns the row if the row follows the SQL
+    [pattern]. Returns [None] if the row does not follow the SQL [pattern] *)
 let filter_pattern fields row ind pattern i operator = 
   if operator (List.nth row ind) pattern
   then Some (filter_list fields row i)
@@ -164,7 +164,8 @@ let match_pattern fields row ind where i =
   let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
   match where.op with
   | Like ->
-    if Str.string_match (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
+    if Str.string_match 
+        (Str.regexp (parse_pattern where.ptn)) (List.nth row ind) 0
     then Some (filter_list fields row i)
     else None
   | EQ -> partial_filter_pattern (=)
@@ -251,7 +252,7 @@ let where tablename (qry_where: where_obj option) schema fields fc =
 (** [order_join table schema qry table] is [table] with rows sorted by the the 
     field following the "ORDER BY" keyword in [qry]. *)
 let order_join (qry: select_obj) (join: join_obj) (qry_order: fieldname option)
-schema fields table = 
+    schema fields table = 
   match qry_order with 
   | None -> table
   | Some field -> 
@@ -291,20 +292,20 @@ let rec rj_append_rows r acc (lst: string list option list) =
   match lst with 
   | [] -> acc 
   | h::t -> begin 
-    match h with 
-    | None -> rj_append_rows r acc t
-    | Some r' -> rj_append_rows r ((r'@r)::acc) t
-  end 
+      match h with 
+      | None -> rj_append_rows r acc t
+      | Some r' -> rj_append_rows r ((r'@r)::acc) t
+    end 
 
 (** TODO: document *)
 let rec ilj_append_rows r acc (lst: string list option list) = 
   match lst with 
   | [] -> acc 
   | h::t -> begin 
-    match h with 
-    | None -> ilj_append_rows r acc t
-    | Some r' -> ilj_append_rows r ((r@r')::acc) t
-  end 
+      match h with 
+      | None -> ilj_append_rows r acc t
+      | Some r' -> ilj_append_rows r ((r@r')::acc) t
+    end 
 
 (** TODO: document *)
 let rec append_rows' acc = function 
@@ -439,9 +440,9 @@ let rec ij_filter_table qry (join: join_obj) cond ind schema2 fields fc1 acc =
     let row = read_next_line fc1 in 
     if List.nth row ind = cond 
     then 
-    let row' = join_filter_row qry join.table schema2 (snd fields) row in 
+      let row' = join_filter_row qry join.table schema2 (snd fields) row in 
       ij_filter_table qry join cond ind schema2 fields fc1 (row'::acc)
-    (* join_filter_row qry join.table schema2 (snd fields) row *)
+      (* join_filter_row qry join.table schema2 (snd fields) row *)
     else ij_filter_table qry join cond ind schema2 fields fc1 acc 
   with 
   | exn -> Stdlib.close_in fc1; 
@@ -531,7 +532,7 @@ let rec check_chars (l : string list) acc =
 let rec vals_update sch cols vals acc =
   match sch, cols with
   | [], [] -> List.rev acc
-  | [], h :: t -> raise (Malformed "scoop") (* TODO: update this msg plz *)
+  | [], h :: t -> raise (Malformed "schema and columns do not match") 
   | h :: t, [] -> vals_update t cols vals ("" :: acc)
   | h1 :: t1, h2 :: t2 -> if h1 = h2 
     then vals_update t1 t2 (List.tl vals) (List.hd vals :: acc)
@@ -664,6 +665,14 @@ let general_msg =
 (** help message for select*)
 let select_msg = 
   "'SELECT' QUERY: \n"
+  ^ "'SELECT' selects specified fields from rows of a table \n"
+  ^ "USAGE: 1) SELECT [fields] FROM [tablename]\n"
+  ^ "       2) SELECT [fields] FROM [tablename] WHERE [b]\n"
+  ^ "       3) SELECT [fields] FROM [tablename] WHERE [b] ORDER BY [c]\n"
+  ^ "REQUIRES: [tablename] is the name of an existing table, [fields] is\n"
+  ^ "'*' or valid fields in the schema seperated by commas, b is a "
+  ^ "conditional following WHERE guidelines and c is a conditional following"
+  ^ "ORDER BY guidelines.\n"
 
 (** help message for insert*)
 let insert_msg = 
@@ -724,7 +733,8 @@ let read_msg =
   ^ " output file\n"
   ^ "USAGE: READ FROM [filename]\n"
   ^ "REQUIRES: [filename] is the name of an existing file in the 'input' folder"
-  ^ " containing properly formatted queries.\n"
+  ^ " containing properly formatted queries. Do not include the file extension."
+  ^ "\n"
 
 (** help message for quit*)
 let quit_msg = 
@@ -755,9 +765,11 @@ let join_msg =
 (** help message for order by*)
 let order_msg = 
   "'ORDER BY' Keyword: \n"
-  ^ "'ORDER BY' allows you to sort the output of the SELECT query by one of "
+  ^ "'ORDER BY' allows you to sort the output of a query in ascending order.\n"
+  ^ "Note that all records are strings and numbers are sorted as strings.\n"
+  ^ "For example '2' is greater than '12'."
   ^ "USAGE: ORDER BY [columnname]\n"
-  ^ "REQUIRES: [columnanme] is the name of a column in the queried table"
+  ^ "REQUIRES: [columnanme] is the name of a column in the queried table\n"
 
 (** help message for like*)
 let like_msg = 
@@ -765,9 +777,9 @@ let like_msg =
   ^ "The LIKE operator is used in a WHERE clause to search for a specified "
   ^ "pattern in a column.\n"
   ^ "There are two wildcards often used in conjunction with the LIKE operator\n"
-  ^ " 1) % - The percent sign represents zero, one, or multiple characters\n"
-  ^ " 2) _ - The underscore represents a single character\n"
-  ^ "USAGE: WHERE [columnname] LIKE [pattern]"
+  ^ "    1) % - The percent sign represents zero, one, or multiple characters\n"
+  ^ "    2) _ - The underscore represents a single character\n"
+  ^ "USAGE: WHERE [columnname] LIKE [pattern]\n"
 
 let help_with qry =
   match qry.s1, qry.s2 with
