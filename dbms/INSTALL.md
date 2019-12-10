@@ -1,4 +1,5 @@
-rlwrap must be installed for 'make query' to work.
+rlwrap must be installed for 'make query' to work, as it's part of the command
+history implementation.
   - for example to install on macOS using homebrew type <brew install rlwrap>
   - otherwise use whatever package management software/method you prefer
 If you're unable to install rlwrap you can run queries using 'make sad-query'
@@ -6,7 +7,8 @@ instead which runs the same engine but without command history, which is sad.
 
 Type `make query` (or 'make sad-query') in the command prompt **in the modules folder** to start the
 database.  When promted type the database you want to use, <testdb> or <bigdb> 
-Current functionality only allows the user to SELECT, INSERT, CREATE TABLE, DELETE, and QUIT. 
+Current functionality only allows the user to SELECT, INSERT, CREATE TABLE, DELETE, 
+DROP TABLE, TRUNCATE TABLE, CHANGE DATABASE, READ FROM, HELP, and QUIT. 
 Testdb tables are buildings, customers, dorms, orders, and students.
 Bigdb tables are customers, icecream, and info
 
@@ -34,3 +36,5 @@ Examples:
 **In bigdb**
 - SELECT * FROM icecream WHERE calories LIKE %2% (* Selects all rows where calorie field includes a 2*)
 - SELECT * FROM icecream (* Due to large table size, the table is written to file in output folder, not to terminal*)
+
+- more query examples can be found in readable files, found in /input/commands

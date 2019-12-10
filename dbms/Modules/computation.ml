@@ -771,6 +771,7 @@ let read_msg =
   ^ "REQUIRES: [filename] is the name of an existing file in the 'input' folder"
   ^ " containing properly formatted queries. Do not include the file extension."
   ^ "\n"
+  ^ "files with query sequences must be placed in ../input/commands\n"
 
 (** help message for quit*)
 let quit_msg = 
