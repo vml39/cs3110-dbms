@@ -704,10 +704,12 @@ let select_msg =
   ^ "USAGE: 1) SELECT [fields] FROM [tablename]\n"
   ^ "       2) SELECT [fields] FROM [tablename] WHERE [b]\n"
   ^ "       3) SELECT [fields] FROM [tablename] WHERE [b] ORDER BY [c]\n"
+  ^ "       4) SELECT [feilds] FROM [tablename1] [JOIN] [tablename2] ON [b]**\n"
   ^ "REQUIRES: [tablename] is the name of an existing table, [fields] is\n"
   ^ "'*' or valid fields in the schema seperated by commas, b is a "
   ^ "conditional following WHERE guidelines and c is a conditional following"
   ^ "ORDER BY guidelines.\n"
+  ^ "'**' can be followed by WHERE and ORDER BY statements as in 2 and 3\n"
 
 (** Help message for insert*)
 let insert_msg = 
@@ -796,6 +798,17 @@ let where_msg =
 (** help message for join*)
 let join_msg = 
   "'JOIN' Keyword: \n"
+  ^ "'JOIN' allows the user to synthesize an output from two different tables "
+  ^ "which share comparable columns\n"
+  ^ "INNER JOIN includes only those values where the fields resolve for both "
+  ^ "tables, LEFT JOIN includes all values from the left table and those from "
+  ^ "from the right satisfying the condition, and RIGHT JOIN is the same as "
+  ^ "left join but reversed\n"
+  ^ "USAGE: 1) [t1] INNER JOIN [t2] ON [t1].[f1] = [t2].[f2]\n"
+  ^ "       2) [t1] LEFT JOIN [t2] ON [t1].[f1] = [t2].[f2]\n"
+  ^ "       2) [t1] RIGHT JOIN [t2] ON [t1].[f1] = [t2].[f2]\n"
+  ^ "REQUIRES: [t1] and [t2] are valid table names and [f1] is a column name "
+  ^ "in [t1] and [f2] is a column name in [t2]\n"
 
 (** help message for order by*)
 let order_msg = 
