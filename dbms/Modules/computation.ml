@@ -546,7 +546,9 @@ let select (qry: select_obj) =
 
 (* INSERT *)
 
-(** TODO: document *)
+(** [check_chars l] is unit if [l] contains no illegal characters for naming
+    columns or files. 
+    Raises: Malformed if an illegal character is detected *)
 let rec check_chars (l : string list) acc =
   match l with 
   | [] -> ()
