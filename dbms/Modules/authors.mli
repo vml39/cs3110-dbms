@@ -1,8 +1,8 @@
 (**
    Metadata about this submission.
-   @author TODO All author names and NetIDs.
-   Robert Morgowicz rjm448
-   Daniel Stabile dis52 
+   @author
+   Robert Morgowicz (rjm448)
+   Daniel Stabile (dis52)
    Vivian Li (vml39)
 *)
 

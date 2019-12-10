@@ -1,1 +1,1 @@
-(* The main entry point for the dbms interface. *)
+(** The main entry point for the dbms interface. *)

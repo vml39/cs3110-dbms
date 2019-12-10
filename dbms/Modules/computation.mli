@@ -1,3 +1,4 @@
+(** Computation of parsed queries*)
 open Query
 
 (** [select qry] is the result of performing the select [qry] on the 
