@@ -33,7 +33,7 @@ let where_msg = "WHERE field not in schema"
 
 (** [orderby_msg] is the Malformed message if the order by field is not in the 
     schema. *)
-let orderby_msg = "ORDER BY field is not in schema"
+let orderby_msg = "ORDER BY field is not in fields selected or in schema"
 
 (** [where_msg] is the Malformed message if the join field is not in either 
     schema. *)
@@ -252,18 +252,20 @@ let order_join (qry: select_obj) (join: join_obj) (qry_order: fieldname option)
     let field' = get_field field in 
     if fst field' = qry.table then 
       begin 
-        check_fields (fst schema) orderby_msg [snd field'];
+        check_fields (fst fields) orderby_msg [snd field'];
         let comp_f = fst schema |> index (snd field') |> comp in 
         List.sort comp_f table
       end 
     else if fst field' = join.table then 
       begin 
         check_fields (snd schema) orderby_msg [snd field'];
-        let comp_f = fst schema |> index (snd field') |> (+) (List.length fields)
-        in 
+        let comp_f = 
+          snd fields |> index (snd field') |> (+) (List.length (fst fields)) in 
+        ps (string_of_int comp_f);
         List.sort (comp comp_f) table
       end 
     else raise (Malformed "Must sort by a field in either table") 
+    (* order by fails on the second field *)
 
 (** [get_cond field schema row] is the value at the index of [field] in 
     [schema]. *)
@@ -542,7 +544,7 @@ let select (qry: select_obj) =
       select_fields_join qry.table join_obj.table (schema, schema1) qry.fields 
     in let table = join qry join_obj (schema, schema1) fields' in 
     (order_fields_join (schema, schema1) fields', 
-     order_join qry join_obj qry.order (schema, schema1) (fst fields') table)
+     order_join qry join_obj qry.order (schema, schema1) fields' table)
 
 (* INSERT *)
 
