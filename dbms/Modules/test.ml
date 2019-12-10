@@ -3,6 +3,37 @@ open Computation
 open Query
 open Datardwt
 
+(** TEST PLAN:
+  * This suite tests basic query operation and error handling as well as some
+  * very simple file i/o.  The SELECT query and its many permutations was an
+  * easy fit for OUnit testing because of its predictable nature with static
+  * inputs, as is evinced by its prevalence below.  
+  * However, once we reached the level of combining multiple queries together
+  * into longer sequences, OUnit testing proved inadequet for our needs.  
+  * To be more specific, INSERT and DELETE testing, as well as later testing
+  * of CREATE and DROP required strict query order and interraction with mutable
+  * files which OUnit proved to be an unwieldy tool for.  
+  * As such, once we moved into quireis which wrote to files, even though we did
+  * not embrace mutability in our implementation, we chose to transition to
+  * mostly manual testing in the top level.  This was part of the motivation
+  * for the READ FROM file command, as it allowed us to build sequences of
+  * queries where we could enforce query order and analyze the output.  
+  * A full pipeline for file-based testing was outside of our scope, but 
+  * rigorous manual testing, including tailored sequences of commands and 
+  * extensive fuzz testing for error handling supplemented OUnit later in the 
+  * project's life.  
+  * datardwt.ml was unit tested when we transitioned to reading line-by-line and
+  * those functions make up the vast majority of interractions with the module. 
+  * computation.ml was tested extensively in OUnit for SELECT and included 
+  * implicit testing of query.ml since queries are alwyas parsed before being
+  * processed.  main.ml was tested almost exclusively in the top-level
+  * While this OUnit suite is by no means exhaustive, it is suffiecient to 
+  * demonstrate our basic file operation and query parsing and computation on
+  * satic inputs is sound.  Taken in conjunction with testing at top-level and 
+  * testing with input files of queries, we are confident in the robustness 
+  * and correctness of our system.   
+*)
+
 (** [pp_list pp_elt lst] pretty-prints list [lst], using [pp_elt]
     to pretty-print each element of [lst]. *)
 let pp_list pp_elt lst =
@@ -517,7 +548,6 @@ let schema2 = [
 
 let data_read_write_tests = [
   table_from_txt_test "students" students "students";
-  schema_from_txt_test "example" schema2 ();
   str_lst_eq_test "ln1" (List.nth students_ordered 0) ln1;
   str_lst_eq_test "ln2" (List.nth students_ordered 1) ln2;
   str_lst_eq_test "ln3" (List.nth students_ordered 2) (read_next_line fc);
@@ -535,7 +565,7 @@ let data_read_write_tests = [
 
 let suite =
   "test suite for dbms"  >::: List.flatten [
-    (* data_read_write_tests; *)
+    data_read_write_tests; 
     queries_tests;
     select_tests;
     (* insert_and_delete_tests; *)
