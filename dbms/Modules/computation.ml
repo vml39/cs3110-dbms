@@ -116,18 +116,11 @@ let order_fields_join schema fields =
      filter_fields (snd schema) (snd fields) [])
   in (order_fields (fst schema) bfields1)@(order_fields (snd schema) bfields2)
 
-(** [add_boundary_characters pattern] is [pattern] with "\\b" cons onto the 
-    front. *)
-let add_boundary_characters pattern = 
-  match pattern with
-  | h::t  -> "\\b":: pattern
-  | [] -> pattern
-
 (** [convert_to_regex pattern] is the SQL [pattern] converted to an OCaml 
     regex pattern. *)
-let rec convert_to_regex pattern = 
+let rec convert_to_regex pattern =
   match pattern with
-  | [] -> ""
+  | [] -> "$"
   | h::t when h = "%" -> ".*" ^ convert_to_regex t
   | h::t when h = "_" -> "." ^ convert_to_regex t
   | h::t -> h ^ convert_to_regex t
@@ -141,9 +134,8 @@ let parse_pattern pattern =
     |> Str.global_replace (Str.regexp "_") "~_~" 
     |> Str.global_replace (Str.regexp "%") "~%~" 
     |> String.split_on_char '~' 
-    |> List.filter ( fun s -> s <> "")
-    |> add_boundary_characters in 
-  List.rev (add_boundary_characters (List.rev patternList)) |> convert_to_regex
+    |> List.filter ( fun s -> s <> "") in 
+  convert_to_regex patternList
 
 (** [filter_list fields row i] is [row] with only the values that have the same
     index [i] as the [fields] that are [true]. *)
@@ -163,6 +155,7 @@ let filter_pattern fields row ind pattern i operator =
     the [where] condition and [Some row] if it does. *)
 let match_pattern fields row ind where i = 
   let partial_filter_pattern = filter_pattern fields row ind where.ptn i in
+  print_endline (parse_pattern where.ptn);
   match where.op with
   | Like ->
     if Str.string_match 
@@ -294,10 +287,10 @@ let rec rj_append_rows r acc (lst: string list option list) =
   match lst with 
   | [] -> acc 
   | h::t -> begin 
-    match h with 
-    | None -> rj_append_rows r acc t
-    | Some r' -> rj_append_rows r ((r'@r)::acc) t
-  end 
+      match h with 
+      | None -> rj_append_rows r acc t
+      | Some r' -> rj_append_rows r ((r'@r)::acc) t
+    end 
 
 (** [ilj_append_rows r acc lst] is each row from [lst] appended onto [r] if 
     the row is not [None]. *)
@@ -305,10 +298,10 @@ let rec ilj_append_rows r acc (lst: string list option list) =
   match lst with 
   | [] -> acc 
   | h::t -> begin 
-    match h with 
-    | None -> ilj_append_rows r acc t
-    | Some r' -> ilj_append_rows r ((r@r')::acc) t
-  end 
+      match h with 
+      | None -> ilj_append_rows r acc t
+      | Some r' -> ilj_append_rows r ((r@r')::acc) t
+    end 
 
 (** [append_rows' acc lst] is each row in [lst] cons onto [acc]. *)
 let rec append_rows' acc = function 
@@ -325,7 +318,7 @@ let rec populate_null acc = function
     and [row] satisfies the condition for [where]. Returns [None] if [where] 
     is [None] or if [row] does not satisfy the condition for [where]. *)
 let check_where (qry: select_obj) (where: where_obj option) (join: join_obj)
-schema fields row : string list option = 
+    schema fields row : string list option = 
   match where with 
   | None -> None
   | Some w -> 
@@ -374,20 +367,20 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
   let f_ind = (fst join.on |> get_field |> fst |> index) (fst schema) in 
   match rj_filter_table qry join cond f_ind (fst schema) fields fc1 [] with 
   | None -> begin 
-    match check_where qry qry.where join schema fields row with 
-    | None -> None 
-    | Some r' -> Some [((fst fields |> populate_null [])@r')]
-  end 
-| Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None 
-    | Some r' -> Some [((snd fields |> populate_null [])@r')]
-  end 
-| Some r -> begin 
-    match join_filter_row qry join.table (snd schema) (snd fields) row with 
-    | None -> None
-    | Some r' -> Some (rj_append_rows r' [] r)
-  end 
+      match check_where qry qry.where join schema fields row with 
+      | None -> None 
+      | Some r' -> Some [((fst fields |> populate_null [])@r')]
+    end 
+  | Some r' when r' = [] -> begin 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None 
+      | Some r' -> Some [((snd fields |> populate_null [])@r')]
+    end 
+  | Some r -> begin 
+      match join_filter_row qry join.table (snd schema) (snd fields) row with 
+      | None -> None
+      | Some r' -> Some (rj_append_rows r' [] r)
+    end 
 
 (* where works selectively *)
 
@@ -405,7 +398,7 @@ let rec right_join qry join schema fields fc acc =
     let new_acc = append_rows' acc r in  
     right_join qry join schema fields fc new_acc
 
-  (* failure when ordering by for any of them *)
+(* failure when ordering by for any of them *)
 
 (* LEFT JOIN *)
 
@@ -440,20 +433,20 @@ let lj_row qry (join: join_obj) schema fields row : string list list option =
   let f_ind = (snd join.on |> get_field |> snd |> index) (snd schema) in 
   match lj_filter_table qry join cond f_ind (snd schema) fields fc1 [] with 
   | None -> begin 
-    match check_where qry qry.where join schema fields row with 
-    | None -> None 
-    | Some r -> Some [(r@(snd fields |> populate_null []))]
-  end  
+      match check_where qry qry.where join schema fields row with 
+      | None -> None 
+      | Some r -> Some [(r@(snd fields |> populate_null []))]
+    end  
   | Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None 
-    | Some r -> Some [(r@(snd fields |> populate_null []))]
-  end
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None 
+      | Some r -> Some [(r@(snd fields |> populate_null []))]
+    end
   | Some r' -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None
-    | Some r -> Some (ilj_append_rows r [] r')
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None
+      | Some r -> Some (ilj_append_rows r [] r')
+    end 
 
 (** [left_join qry join schema fields fc acc] is the list of results from
     performing the left join operation on the tables [qry.table] and
@@ -499,10 +492,10 @@ let ij_row qry (join: join_obj) schema fields row : string list list option =
   match ij_filter_table qry join cond f_ind (snd schema) fields fc1 [] with 
   | None -> None
   | Some r' -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-    | None -> None
-    | Some r -> Some (ilj_append_rows r [] r')
-  end 
+      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+      | None -> None
+      | Some r -> Some (ilj_append_rows r [] r')
+    end 
 
 (** [inner_join qry join schema fields fc acc] is the list of results from
     performing the inner join operation on the tables [qry.table] and
@@ -629,43 +622,43 @@ let rec delete_helper_like inc outc schema ind ptn =
 let delete qry = 
   match qry.where with
   | None -> begin 
-    let outc = open_out (get_path qry.table) in
-    output_string outc "";
-    close_out outc
-  end
-  | Some where_rec -> begin
-    let temp_file = qry.table ^ ".tmp" in
-    let outc = get_out_chan temp_file in
-    let inc = get_in_chan qry.table in
-    let schema = table_schema (schema_from_txt ()) qry.table in
-    let ind = index where_rec.field schema in 
-    (* for each row*)
-    if where_rec.op = Like 
-    then begin
-      delete_helper_like inc outc schema ind where_rec.ptn;
-      close_in inc;
-      close_out outc;
-      Sys.remove (get_path qry.table);
-      Sys.rename (get_path temp_file) (get_path qry.table)
+      let outc = open_out (get_path qry.table) in
+      output_string outc "";
+      close_out outc
     end
-    else 
-      let oper =
-        match where_rec.op with
-        | EQ -> (=)
-        | GT -> (>)
-        | LT -> (<)
-        | GEQ -> (>=)
-        | LEQ -> (=)
-        | Like -> (fun s1 s2 -> true)
-        | NEQ -> (<>)
-        | None -> failwith "Expected a valid operator"
-      in
-      delete_helper inc outc schema ind oper where_rec.ptn;
-      close_in inc;
-      close_out outc;
-      Sys.remove (get_path qry.table);
-      Sys.rename (get_path temp_file) (get_path qry.table)
-  end
+  | Some where_rec -> begin
+      let temp_file = qry.table ^ ".tmp" in
+      let outc = get_out_chan temp_file in
+      let inc = get_in_chan qry.table in
+      let schema = table_schema (schema_from_txt ()) qry.table in
+      let ind = index where_rec.field schema in 
+      (* for each row*)
+      if where_rec.op = Like 
+      then begin
+        delete_helper_like inc outc schema ind where_rec.ptn;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path qry.table);
+        Sys.rename (get_path temp_file) (get_path qry.table)
+      end
+      else 
+        let oper =
+          match where_rec.op with
+          | EQ -> (=)
+          | GT -> (>)
+          | LT -> (<)
+          | GEQ -> (>=)
+          | LEQ -> (=)
+          | Like -> (fun s1 s2 -> true)
+          | NEQ -> (<>)
+          | None -> failwith "Expected a valid operator"
+        in
+        delete_helper inc outc schema ind oper where_rec.ptn;
+        close_in inc;
+        close_out outc;
+        Sys.remove (get_path qry.table);
+        Sys.rename (get_path temp_file) (get_path qry.table)
+    end
 
 let rec create_table (qry: create_obj) = 
   check_chars (qry.table :: qry.fields) [];
