@@ -140,6 +140,7 @@ let parse_pattern pattern =
 (** [filter_list fields row i] is [row] with only the values that have the same
     index [i] as the [fields] that are [true]. *)
 let filter_list fields row i = 
+  (* failing here *)
   List.filter (fun _ -> i := !i + 1; List.nth fields !i) row
 
 (** [filter_pattern fields row ind pattern i operator] is [Some row] with only 
@@ -182,11 +183,13 @@ let filter_row schema fields (where: Query.where_obj option) row =
     let ind = index where.field schema in
     match_pattern fields row ind where i
 
-(** [filter_row_join table schema fields wehre row] is [None] if [where] is
+(** [filter_row_join table schema fields where row] is [None] if [where] is
     not [None] and [row] does not satisfy the where condition and [Some row] if
     [where] is [None] or if [where] is not [None] and [row] satisfies the where
     condition. *)
 let filter_row_join table schema fields (where: Query.where_obj option) row =
+  (* pp_list_bool fields;
+  pp_list row; *)
   let i = ref (-1) in 
   match where with 
   | None -> Some (filter_list fields row i) 
@@ -277,6 +280,10 @@ let get_cond field schema row =
     is a [qry.where] is not [None] and [row] does not follow the where 
     pattern. *)
 let join_filter_row (qry: select_obj) table schema fields row =
+  (* ps "schema"; pp_list schema;
+  ps "fields"; pp_list fields;
+  ps "row"; pp_list row;
+  print_newline (); *)
   let bool_fields = filter_fields schema fields [] in
   filter_row_join table schema bool_fields qry.where row
 
@@ -285,14 +292,13 @@ let join_filter_row (qry: select_obj) table schema fields row =
     prepended onto [r] otherwise. *)
 let rec rj_append_rows r acc (lst: string list option list) 
 : string list list option = 
-  (* pp_list r; *)
   match lst with 
   | [] when acc = [] -> None
   | [] -> Some acc 
   | h::t -> begin 
     match h with 
-    | None -> ps "None"; rj_append_rows r acc t
-    | Some r' -> pp_list r'; rj_append_rows r ((r'@r)::acc) t
+    | None -> rj_append_rows r acc t
+    | Some r' -> rj_append_rows r ((r'@r)::acc) t
   end 
 
 (** [ilj_append_rows r acc lst] is each row from [lst] appended onto [r] if 
@@ -375,14 +381,14 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
     | Some r' -> Some [((fst fields |> populate_null [])@r')]
   end 
   | Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+    match join_filter_row qry qry.table (snd schema) (snd fields) row with 
     | None -> None 
     | Some r' -> Some [((snd fields |> populate_null [])@r')]
   end 
   | Some r -> begin 
     match join_filter_row qry join.table (snd schema) (snd fields) row with 
     | None -> None
-    | Some r' -> rj_append_rows r' [] r
+    | Some r' -> ps "here"; rj_append_rows r' [] r
   end 
 
 (** [right_join qry join schema fields fc acc] is the list of results from
