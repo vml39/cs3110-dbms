@@ -261,11 +261,9 @@ let order_join (qry: select_obj) (join: join_obj) (qry_order: fieldname option)
         check_fields (snd schema) orderby_msg [snd field'];
         let comp_f = 
           snd fields |> index (snd field') |> (+) (List.length (fst fields)) in 
-        ps (string_of_int comp_f);
         List.sort (comp comp_f) table
       end 
     else raise (Malformed "Must sort by a field in either table") 
-    (* order by fails on the second field *)
 
 (** [get_cond field schema row] is the value at the index of [field] in 
     [schema]. *)
@@ -282,16 +280,20 @@ let join_filter_row (qry: select_obj) table schema fields row =
   let bool_fields = filter_fields schema fields [] in
   filter_row_join table schema bool_fields qry.where row
 
-(** [rj_append_rows r acc lst] is each row from [lst] prepended onto [r] if 
-    the row is not [None]. *)
-let rec rj_append_rows r acc (lst: string list option list) = 
+(** [rj_append_rows r acc lst] is [None] if no rows in [lst] satisfy the join
+    and where conditions and [Some rows] where rows is each row from [lst] 
+    prepended onto [r] otherwise. *)
+let rec rj_append_rows r acc (lst: string list option list) 
+: string list list option = 
+  (* pp_list r; *)
   match lst with 
-  | [] -> acc 
+  | [] when acc = [] -> None
+  | [] -> Some acc 
   | h::t -> begin 
-      match h with 
-      | None -> rj_append_rows r acc t
-      | Some r' -> rj_append_rows r ((r'@r)::acc) t
-    end 
+    match h with 
+    | None -> ps "None"; rj_append_rows r acc t
+    | Some r' -> pp_list r'; rj_append_rows r ((r'@r)::acc) t
+  end 
 
 (** [ilj_append_rows r acc lst] is each row from [lst] appended onto [r] if 
     the row is not [None]. *)
@@ -299,10 +301,10 @@ let rec ilj_append_rows r acc (lst: string list option list) =
   match lst with 
   | [] -> acc 
   | h::t -> begin 
-      match h with 
-      | None -> ilj_append_rows r acc t
-      | Some r' -> ilj_append_rows r ((r@r')::acc) t
-    end 
+    match h with 
+    | None -> ilj_append_rows r acc t
+    | Some r' -> ilj_append_rows r ((r@r')::acc) t
+  end 
 
 (** [append_rows' acc lst] is each row in [lst] cons onto [acc]. *)
 let rec append_rows' acc = function 
@@ -368,22 +370,20 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
   let f_ind = (fst join.on |> get_field |> fst |> index) (fst schema) in 
   match rj_filter_table qry join cond f_ind (fst schema) fields fc1 [] with 
   | None -> begin 
-      match check_where qry qry.where join schema fields row with 
-      | None -> None 
-      | Some r' -> Some [((fst fields |> populate_null [])@r')]
-    end 
+    match check_where qry qry.where join schema fields row with 
+    | None -> None 
+    | Some r' -> Some [((fst fields |> populate_null [])@r')]
+  end 
   | Some r' when r' = [] -> begin 
-      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-      | None -> None 
-      | Some r' -> Some [((snd fields |> populate_null [])@r')]
-    end 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+    | None -> None 
+    | Some r' -> Some [((snd fields |> populate_null [])@r')]
+  end 
   | Some r -> begin 
-      match join_filter_row qry join.table (snd schema) (snd fields) row with 
-      | None -> None
-      | Some r' -> Some (rj_append_rows r' [] r)
-    end 
-
-(* where works selectively *)
+    match join_filter_row qry join.table (snd schema) (snd fields) row with 
+    | None -> None
+    | Some r' -> rj_append_rows r' [] r
+  end 
 
 (** [right_join qry join schema fields fc acc] is the list of results from
     performing the right join operation on the tables [qry.table] and
@@ -398,8 +398,6 @@ let rec right_join qry join schema fields fc acc =
   | Some r ->
     let new_acc = append_rows' acc r in  
     right_join qry join schema fields fc new_acc
-
-(* failure when ordering by for any of them *)
 
 (* LEFT JOIN *)
 
@@ -434,20 +432,20 @@ let lj_row qry (join: join_obj) schema fields row : string list list option =
   let f_ind = (snd join.on |> get_field |> snd |> index) (snd schema) in 
   match lj_filter_table qry join cond f_ind (snd schema) fields fc1 [] with 
   | None -> begin 
-      match check_where qry qry.where join schema fields row with 
-      | None -> None 
-      | Some r -> Some [(r@(snd fields |> populate_null []))]
-    end  
+    match check_where qry qry.where join schema fields row with 
+    | None -> None 
+    | Some r -> Some [(r@(snd fields |> populate_null []))]
+  end  
   | Some r' when r' = [] -> begin 
-      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-      | None -> None 
-      | Some r -> Some [(r@(snd fields |> populate_null []))]
-    end
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+    | None -> None 
+    | Some r -> Some [(r@(snd fields |> populate_null []))]
+  end
   | Some r' -> begin 
-      match join_filter_row qry qry.table (fst schema) (fst fields) row with 
-      | None -> None
-      | Some r -> Some (ilj_append_rows r [] r')
-    end 
+    match join_filter_row qry qry.table (fst schema) (fst fields) row with 
+    | None -> None
+    | Some r -> Some (ilj_append_rows r [] r')
+  end 
 
 (** [left_join qry join schema fields fc acc] is the list of results from
     performing the left join operation on the tables [qry.table] and
@@ -583,16 +581,11 @@ let insert (qry: insert_obj) =
   | None -> if List.length qry.values <> List.length schema 
     then raise (Malformed "Values given do not match schema")
     else begin
-      (* additional erro check*)
-
-      (* you have all cols so insert them all*)
       let outc = get_out_chan qry.table in
       write_line outc qry.values; 
       close_out outc
     end
   | Some lst -> 
-    (* step through schema and vals, inserting empty strings where necessary,
-       then write that*)
     let writable = vals_update schema lst qry.values [] in
     let outc = get_out_chan qry.table in
     write_line outc writable; 
@@ -635,7 +628,6 @@ let delete qry =
       let inc = get_in_chan qry.table in
       let schema = table_schema (schema_from_txt ()) qry.table in
       let ind = index where_rec.field schema in 
-      (* for each row*)
       if where_rec.op = Like 
       then begin
         delete_helper_like inc outc schema ind where_rec.ptn;
@@ -777,7 +769,7 @@ let read_msg =
   ^ "\n"
   ^ "files with query sequences must be placed in ../input/commands\n"
 
-(** help message for quit*)
+(** Help message for quit *)
 let quit_msg = 
   "'QUIT' Command: \n"
   ^ "'QUIT' exits the dbms\n"
@@ -789,7 +781,7 @@ let quit_msg =
 let help_msg = 
   "'HELP' Command: \n"
 
-(** help message for where*)
+(** Help message for where *)
 let where_msg = 
   "'WHERE' Keyword: \n"
   ^ "'WHERE' specifies a condition under which a query performs its operation. "
@@ -799,7 +791,7 @@ let where_msg =
   ^ "USAGE: WHERE [columnname] [op] [value]"
   ^ "SUPPORTED OPERATORS: =, <, >, <=, >=, !=, LIKE\n"
 
-(** help message for join*)
+(** Help message for join *)
 let join_msg = 
   "'JOIN' Keyword: \n"
   ^ "'JOIN' allows the user to synthesize an output from two different tables "
@@ -814,7 +806,7 @@ let join_msg =
   ^ "REQUIRES: [t1] and [t2] are valid table names and [f1] is a column name "
   ^ "in [t1] and [f2] is a column name in [t2]\n"
 
-(** help message for order by*)
+(** Help message for order by *)
 let order_msg = 
   "'ORDER BY' Keyword: \n"
   ^ "'ORDER BY' allows you to sort the output of a query in ascending order.\n"
