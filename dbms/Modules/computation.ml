@@ -188,8 +188,6 @@ let filter_row schema fields (where: Query.where_obj option) row =
     [where] is [None] or if [where] is not [None] and [row] satisfies the where
     condition. *)
 let filter_row_join table schema fields (where: Query.where_obj option) row =
-  (* pp_list_bool fields;
-  pp_list row; *)
   let i = ref (-1) in 
   match where with 
   | None -> Some (filter_list fields row i) 
@@ -280,10 +278,6 @@ let get_cond field schema row =
     is a [qry.where] is not [None] and [row] does not follow the where 
     pattern. *)
 let join_filter_row (qry: select_obj) table schema fields row =
-  (* ps "schema"; pp_list schema;
-  ps "fields"; pp_list fields;
-  ps "row"; pp_list row;
-  print_newline (); *)
   let bool_fields = filter_fields schema fields [] in
   filter_row_join table schema bool_fields qry.where row
 
@@ -355,13 +349,13 @@ let rec rj_filter_table qry (join: join_obj) cond ind schema1 fields fc1 acc =
     if List.nth row ind = cond 
     then let row' = join_filter_row qry qry.table schema1 (fst fields) row in 
       rj_filter_table qry join cond ind schema1 fields fc1 (row'::acc)
-    else rj_filter_table qry join cond ind schema1 fields fc1 acc 
+    else rj_filter_table qry join cond ind schema1 fields fc1 acc
   with 
   | exn -> 
     Stdlib.close_in fc1; 
-    if acc <> [] then Some acc 
+    if acc <> [] then Some acc
     else if qry.where = None then Some []
-    else None 
+    else None
 
 (** [rj_row qry join schema fields row] is [Some] of all the rows in 
     [qry.table] that match the join condition [join.on]. Populates the fields
@@ -373,7 +367,7 @@ let rec rj_filter_table qry (join: join_obj) cond ind schema1 fields fc1 acc =
 let rj_row (qry: select_obj) join schema fields row : string list list option =
   let fc1 = get_in_chan qry.table in 
   let cond = get_cond (snd join.on) (snd schema) row in 
-  let f_ind = (fst join.on |> get_field |> fst |> index) (fst schema) in 
+  let f_ind = (fst join.on |> get_field |> snd |> index) (fst schema) in 
   match rj_filter_table qry join cond f_ind (fst schema) fields fc1 [] with 
   | None -> begin 
     match check_where qry qry.where join schema fields row with 
@@ -381,14 +375,14 @@ let rj_row (qry: select_obj) join schema fields row : string list list option =
     | Some r' -> Some [((fst fields |> populate_null [])@r')]
   end 
   | Some r' when r' = [] -> begin 
-    match join_filter_row qry qry.table (snd schema) (snd fields) row with 
+    match join_filter_row qry join.table (snd schema) (snd fields) row with 
     | None -> None 
-    | Some r' -> Some [((snd fields |> populate_null [])@r')]
+    | Some r' -> Some [((fst fields |> populate_null [])@r')]
   end 
   | Some r -> begin 
     match join_filter_row qry join.table (snd schema) (snd fields) row with 
     | None -> None
-    | Some r' -> ps "here"; rj_append_rows r' [] r
+    | Some r' -> rj_append_rows r' [] r
   end 
 
 (** [right_join qry join schema fields fc acc] is the list of results from
